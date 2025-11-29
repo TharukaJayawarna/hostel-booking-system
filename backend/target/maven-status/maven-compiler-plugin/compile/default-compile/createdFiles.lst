@@ -1,0 +1,12 @@
+com/hostel/hostel_backend/model/Room.class
+com/hostel/hostel_backend/model/Bed.class
+com/hostel/hostel_backend/model/Floor.class
+com/hostel/hostel_backend/model/ReservationStatus.class
+com/hostel/hostel_backend/model/ReservationPeriod.class
+com/hostel/hostel_backend/model/Payment.class
+com/hostel/hostel_backend/model/Issue.class
+com/hostel/hostel_backend/model/Hub.class
+com/hostel/hostel_backend/model/PaymentStatus.class
+com/hostel/hostel_backend/model/ReservedFor.class
+com/hostel/hostel_backend/model/Reservation.class
+com/hostel/hostel_backend/model/Gender.class

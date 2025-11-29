@@ -1,0 +1,41 @@
+package com.hostel.hostel_backend.model;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.time.LocalDate;
+
+@Entity
+@Data
+@Table(name = "reservations")
+public class Reservation {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String reservationNumber;
+    private LocalDate fromDate;
+    private LocalDate toDate;
+    private String studentName;
+    private String studentRegistrationNumber;
+    private String studentEmail;
+    private String studentContactNumber;
+    private String studentAddress;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Gender studentGender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReservationStatus reservationStatus;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bed_id")
+    @JsonIgnore
+    private Bed bed;
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
+    private Payment payment;
+}
