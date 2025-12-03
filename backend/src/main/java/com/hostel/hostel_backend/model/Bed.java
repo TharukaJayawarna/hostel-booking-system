@@ -14,6 +14,7 @@ public class Bed {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String bedNumber;
+    private Boolean isBooked;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")

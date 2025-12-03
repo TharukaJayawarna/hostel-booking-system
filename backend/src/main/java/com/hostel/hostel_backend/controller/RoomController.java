@@ -20,7 +20,6 @@ public class RoomController {
 
     @PostMapping(value = "/floors/{floor-id}/rooms", headers = "X-Api-Version=v1")
     public void createRoom(@PathVariable("floor-id") Long floorId,@RequestBody CreateRoomRequestDTO dto) throws ResourceNotFoundException {
-        System.out.println("DTO: " + dto);
         roomService.createRoom(floorId, dto);
     }
 

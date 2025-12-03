@@ -1,7 +1,9 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/HostelBackendApplication.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/BedController.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/FloorController.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/HubController.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/RoomController.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateBedRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateFloorRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateHubRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateRoomRequestDTO.java
@@ -22,12 +24,15 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/ReservationStatus.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/ReservedFor.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/Room.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/BedRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/FloorRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/HubRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/RoomRepository.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/BedService.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/FloorService.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/HubService.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/RoomService.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/BedServiceImpl.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/FloorServiceImpl.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/HubServiceImpl.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/RoomServiceImpl.java

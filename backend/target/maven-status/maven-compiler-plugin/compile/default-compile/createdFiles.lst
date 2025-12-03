@@ -1,3 +1,4 @@
+com/hostel/hostel_backend/repository/BedRepository.class
 com/hostel/hostel_backend/repository/FloorRepository.class
 com/hostel/hostel_backend/model/Room.class
 com/hostel/hostel_backend/model/Bed.class
@@ -5,6 +6,7 @@ com/hostel/hostel_backend/controller/HubController.class
 com/hostel/hostel_backend/controller/request/CreateHubRequestDTO.class
 com/hostel/hostel_backend/model/Floor.class
 com/hostel/hostel_backend/controller/request/CreateRoomRequestDTO.class
+com/hostel/hostel_backend/service/impl/BedServiceImpl.class
 com/hostel/hostel_backend/model/ReservationPeriod.class
 com/hostel/hostel_backend/service/impl/RoomServiceImpl.class
 com/hostel/hostel_backend/service/RoomService.class
@@ -24,7 +26,10 @@ com/hostel/hostel_backend/repository/RoomRepository.class
 com/hostel/hostel_backend/model/Payment.class
 com/hostel/hostel_backend/model/Hub.class
 com/hostel/hostel_backend/model/PaymentStatus.class
+com/hostel/hostel_backend/service/BedService.class
 com/hostel/hostel_backend/repository/HubRepository.class
+com/hostel/hostel_backend/controller/request/CreateBedRequestDTO.class
+com/hostel/hostel_backend/controller/BedController.class
 com/hostel/hostel_backend/controller/FloorController.class
 com/hostel/hostel_backend/model/Reservation.class
 com/hostel/hostel_backend/exception/ResourceNotFoundException.class
