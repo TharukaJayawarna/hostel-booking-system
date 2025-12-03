@@ -3,7 +3,7 @@ package com.hostel.hostel_backend.controller;
 import com.hostel.hostel_backend.controller.request.CreateHubRequestDTO;
 import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.Hub;
-import com.hostel.hostel_backend.service.impl.HubServiceImpl;
+import com.hostel.hostel_backend.service.HubService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +15,7 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class HubController {
 
-    private HubServiceImpl hubService;
+    private HubService hubService;
 
     @PostMapping(headers = "X-Api-Version=v1")
     public void createHub(@RequestBody CreateHubRequestDTO createHubRequestDTO) {

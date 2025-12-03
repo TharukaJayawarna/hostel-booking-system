@@ -3,8 +3,7 @@ package com.hostel.hostel_backend.controller;
 import com.hostel.hostel_backend.controller.request.CreateFloorRequestDTO;
 import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.Floor;
-import com.hostel.hostel_backend.model.Hub;
-import com.hostel.hostel_backend.service.impl.FloorServiceImpl;
+import com.hostel.hostel_backend.service.FloorService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +14,7 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class FloorController {
 
-    private FloorServiceImpl floorService;
+    private FloorService floorService;
 
     @PostMapping(value ="/hubs/{hub-id}/floors", headers = "X-Api-Version=v1")
     public void createFloor(@PathVariable ("hub-id") Long hubId, @RequestBody CreateFloorRequestDTO dto) throws ResourceNotFoundException {
