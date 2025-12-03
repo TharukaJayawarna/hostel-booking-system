@@ -6,11 +6,9 @@ import com.hostel.hostel_backend.model.Hub;
 import com.hostel.hostel_backend.repository.HubRepository;
 import com.hostel.hostel_backend.service.HubService;
 import lombok.AllArgsConstructor;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @AllArgsConstructor
 @Service
