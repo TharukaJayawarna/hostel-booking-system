@@ -16,11 +16,15 @@ com/hostel/hostel_backend/model/Issue.class
 com/hostel/hostel_backend/service/FloorService.class
 com/hostel/hostel_backend/model/ReservedFor.class
 com/hostel/hostel_backend/service/impl/FloorServiceImpl.class
+com/hostel/hostel_backend/service/impl/EmailServiceImpl.class
+com/hostel/hostel_backend/service/IssueService.class
+com/hostel/hostel_backend/service/impl/IssueServiceImpl.class
 com/hostel/hostel_backend/model/Gender.class
 com/hostel/hostel_backend/controller/RoomController.class
 com/hostel/hostel_backend/controller/request/CreateFloorRequestDTO.class
 com/hostel/hostel_backend/exception/NotCreatedException.class
 com/hostel/hostel_backend/controller/response/ErrorResponse.class
+com/hostel/hostel_backend/controller/request/CreateIssueRequestDTO.class
 com/hostel/hostel_backend/model/ReservationStatus.class
 com/hostel/hostel_backend/repository/RoomRepository.class
 com/hostel/hostel_backend/model/Payment.class
@@ -31,8 +35,10 @@ com/hostel/hostel_backend/repository/HubRepository.class
 com/hostel/hostel_backend/controller/request/CreateBedRequestDTO.class
 com/hostel/hostel_backend/controller/BedController.class
 com/hostel/hostel_backend/controller/FloorController.class
+com/hostel/hostel_backend/controller/IssueController.class
 com/hostel/hostel_backend/model/Reservation.class
 com/hostel/hostel_backend/exception/ResourceNotFoundException.class
 com/hostel/hostel_backend/exception/AppControllerAdvisor$AppControllerAdviser.class
 com/hostel/hostel_backend/service/HubService.class
+com/hostel/hostel_backend/service/EmailService.class
 com/hostel/hostel_backend/exception/GlobalExceptionHandler.class

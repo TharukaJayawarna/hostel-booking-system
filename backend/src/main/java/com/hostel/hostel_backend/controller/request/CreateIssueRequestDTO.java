@@ -1,27 +1,21 @@
-package com.hostel.hostel_backend.model;
+package com.hostel.hostel_backend.controller.request;
 
-import jakarta.annotation.Nullable;
-import jakarta.persistence.*;
+import com.hostel.hostel_backend.model.ReservationPeriod;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-@Entity
 @Data
-@Table(name = "issues")
-public class Issue {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@AllArgsConstructor
+@NoArgsConstructor
+public class CreateIssueRequestDTO {
     private String studentId;
     private String studentName;
     private String studentEmail;
     private String studentPhone;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private ReservationPeriod duration;
-
     private LocalDate checkinDate;
     private LocalDate checkoutDate;
     private String bank;
