@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class CreateRoomRequestDTO {
     private String roomNumber;
     private Boolean isPrivate;
+    private Double price;
     private ReservationPeriod reservationPeriod;
     private ReservedFor reservedFor;
 }

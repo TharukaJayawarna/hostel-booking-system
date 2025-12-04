@@ -28,6 +28,7 @@ public class RoomServiceImpl implements RoomService {
         room.setFloor(floor);
         room.setRoomNumber(dto.getRoomNumber());
         room.setIsPrivate(dto.getIsPrivate());
+        room.setPrice(dto.getPrice());
         room.setReservationPeriod(dto.getReservationPeriod());
         room.setReservedFor(dto.getReservedFor());
         roomRepository.save(room);

@@ -1,7 +1,7 @@
 package com.hostel.hostel_backend.service.impl;
 
 import com.hostel.hostel_backend.controller.dto.IssueDTO;
-import com.hostel.hostel_backend.service.EmailService;
+import com.hostel.hostel_backend.service.EmailProducer;
 import com.hostel.hostel_backend.service.IssueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +13,8 @@ import org.springframework.stereotype.Service;
 public class IssueServiceImpl implements IssueService {
 
     @Autowired
-    private EmailService emailService;
+    private EmailProducer emailProducer;
+
 
     @Value("${admin.email}")
     private String adminEmail;
@@ -44,7 +45,7 @@ public class IssueServiceImpl implements IssueService {
                 "--------------------------------------------------\n" +
                 "Please contact the student via " + dto.getStudentEmail() + " if necessary.";
 
-        emailService.sendEmail(adminEmail, subject, body);
+        emailProducer.sendEmail(adminEmail, subject, body);
     }
 
 }

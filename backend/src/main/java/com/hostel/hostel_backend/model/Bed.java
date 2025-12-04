@@ -16,6 +16,9 @@ public class Bed {
     private String bedNumber;
     private Boolean isBooked;
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
     @JsonIgnore

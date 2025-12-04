@@ -15,6 +15,7 @@ public class Room {
     private Long id;
     private String roomNumber;
     private Boolean isPrivate;
+    private Double price;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

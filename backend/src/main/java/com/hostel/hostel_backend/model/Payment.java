@@ -1,5 +1,6 @@
 package com.hostel.hostel_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -22,5 +23,6 @@ public class Payment {
     private PaymentStatus paymentStatus;
 
     @OneToOne(mappedBy = "payment", fetch = FetchType.LAZY)
+    @JsonIgnore
     private Reservation reservation;
 }

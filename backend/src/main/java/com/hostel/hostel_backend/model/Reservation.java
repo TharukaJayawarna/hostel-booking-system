@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -13,7 +14,7 @@ public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String reservationNumber;
+    private String reservationNumber;// This will be the PayHere Order ID
     private LocalDate fromDate;
     private LocalDate toDate;
     private String studentName;
@@ -30,6 +31,9 @@ public class Reservation {
     @Column(nullable = false)
     private ReservationStatus reservationStatus;
 
+    // Scheduler එකට වෙලාව බලන්න ඕන නිසා
+    private LocalDateTime createdDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bed_id")
     @JsonIgnore
@@ -38,4 +42,9 @@ public class Reservation {
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id")
     private Payment payment;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdDate = LocalDateTime.now();
+    }
 }
