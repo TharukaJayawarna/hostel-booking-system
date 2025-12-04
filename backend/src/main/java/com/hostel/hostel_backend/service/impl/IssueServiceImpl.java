@@ -1,6 +1,6 @@
 package com.hostel.hostel_backend.service.impl;
 
-import com.hostel.hostel_backend.controller.request.CreateIssueRequestDTO;
+import com.hostel.hostel_backend.controller.dto.IssueDTO;
 import com.hostel.hostel_backend.service.EmailService;
 import com.hostel.hostel_backend.service.IssueService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ public class IssueServiceImpl implements IssueService {
     @Value("${admin.email}")
     private String adminEmail;
 
-    public void reportIssue(CreateIssueRequestDTO dto) {
+    public void reportIssue(IssueDTO dto) {
 
         String subject = "New Hostel Issue - Student ID: " + dto.getStudentId();
 

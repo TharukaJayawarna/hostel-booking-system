@@ -7,12 +7,12 @@ com/hostel/hostel_backend/controller/request/CreateHubRequestDTO.class
 com/hostel/hostel_backend/model/Floor.class
 com/hostel/hostel_backend/controller/request/CreateRoomRequestDTO.class
 com/hostel/hostel_backend/service/impl/BedServiceImpl.class
+com/hostel/hostel_backend/controller/dto/IssueDTO.class
 com/hostel/hostel_backend/model/ReservationPeriod.class
 com/hostel/hostel_backend/service/impl/RoomServiceImpl.class
 com/hostel/hostel_backend/service/RoomService.class
 com/hostel/hostel_backend/exception/AppControllerAdvisor.class
 com/hostel/hostel_backend/service/impl/HubServiceImpl.class
-com/hostel/hostel_backend/model/Issue.class
 com/hostel/hostel_backend/service/FloorService.class
 com/hostel/hostel_backend/model/ReservedFor.class
 com/hostel/hostel_backend/service/impl/FloorServiceImpl.class
@@ -24,7 +24,6 @@ com/hostel/hostel_backend/controller/RoomController.class
 com/hostel/hostel_backend/controller/request/CreateFloorRequestDTO.class
 com/hostel/hostel_backend/exception/NotCreatedException.class
 com/hostel/hostel_backend/controller/response/ErrorResponse.class
-com/hostel/hostel_backend/controller/request/CreateIssueRequestDTO.class
 com/hostel/hostel_backend/model/ReservationStatus.class
 com/hostel/hostel_backend/repository/RoomRepository.class
 com/hostel/hostel_backend/model/Payment.class

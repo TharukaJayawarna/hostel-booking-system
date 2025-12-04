@@ -4,10 +4,10 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/HubController.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/IssueController.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/RoomController.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/dto/IssueDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateBedRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateFloorRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateHubRequestDTO.java
-/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateIssueRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateRoomRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/response/ErrorResponse.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/exception/AppControllerAdvisor.java
@@ -18,7 +18,6 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/Floor.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/Gender.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/Hub.java
-/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/Issue.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/Payment.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/PaymentStatus.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/Reservation.java

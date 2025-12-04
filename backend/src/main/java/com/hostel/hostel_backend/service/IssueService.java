@@ -1,7 +1,7 @@
 package com.hostel.hostel_backend.service;
 
-import com.hostel.hostel_backend.controller.request.CreateIssueRequestDTO;
+import com.hostel.hostel_backend.controller.dto.IssueDTO;
 
 public interface IssueService {
-    void reportIssue(CreateIssueRequestDTO dto);
+    void reportIssue(IssueDTO dto);
 }
