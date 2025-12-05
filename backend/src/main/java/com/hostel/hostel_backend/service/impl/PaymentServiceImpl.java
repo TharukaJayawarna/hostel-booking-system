@@ -10,6 +10,7 @@ import com.hostel.hostel_backend.util.PayHereUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,7 @@ public class PaymentServiceImpl implements PaymentService {
     private String ADMIN_EMAIL;
 
     @Override
+    @Transactional
     public String processPaymentNotification(Map<String, String> payload) {
 
         String orderId = payload.get("order_id");
@@ -52,6 +54,13 @@ public class PaymentServiceImpl implements PaymentService {
         if (paymentOpt.isEmpty()) return "FAILED";
 
         Payment payment = paymentOpt.get();
+
+        Double receivedAmount = Double.parseDouble(payhereAmount);
+        if (payment.getPaymentAmount() != null && !payment.getPaymentAmount().equals(receivedAmount)) {
+            System.err.println("Amount Mismatch! Expected: " + payment.getPaymentAmount() + ", Received: " + receivedAmount);
+            return "FAILED";
+        }
+
         Reservation reservation = payment.getReservation();
 
         // 3. Status Check

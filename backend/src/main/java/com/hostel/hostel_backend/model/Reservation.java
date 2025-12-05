@@ -2,13 +2,15 @@ package com.hostel.hostel_backend.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Data
+@Getter
+@Setter
+@ToString
 @Table(name = "reservations")
 public class Reservation {
     @Id
@@ -37,10 +39,13 @@ public class Reservation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bed_id")
     @JsonIgnore
+    @ToString.Exclude
     private Bed bed;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id")
+    @JsonIgnore
+    @ToString.Exclude
     private Payment payment;
 
     @PrePersist

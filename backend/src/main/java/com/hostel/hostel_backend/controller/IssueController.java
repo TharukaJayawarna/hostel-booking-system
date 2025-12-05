@@ -1,6 +1,7 @@
 package com.hostel.hostel_backend.controller;
 
 import com.hostel.hostel_backend.controller.dto.IssueDTO;
+import com.hostel.hostel_backend.controller.response.ApiResponse;
 import com.hostel.hostel_backend.service.IssueService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +18,9 @@ public class IssueController {
     private IssueService issueService;
 
     @PostMapping(value = "/issues", headers = "X-Api-Version=v1")
-    public ResponseEntity<String> createIssue(@RequestBody IssueDTO dto) {
+    public ResponseEntity<ApiResponse<String>> createIssue(@RequestBody IssueDTO dto) {
         issueService.reportIssue(dto);
-        return ResponseEntity.ok("Issue forwarded to admins successfully!");
+        return ResponseEntity.ok(ApiResponse.success("Issue forwarded to admins successfully!"));
     }
 
 

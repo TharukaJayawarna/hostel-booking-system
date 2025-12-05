@@ -2,12 +2,16 @@ package com.hostel.hostel_backend.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 
 @Entity
-@Data
+@Getter
+@Setter
+@ToString
 @Table(name = "rooms")
 public class Room {
     @Id
@@ -28,8 +32,10 @@ public class Room {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "floor_id")
     @JsonIgnore
+    @ToString.Exclude
     private Floor floor;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<Bed> beds;
 }

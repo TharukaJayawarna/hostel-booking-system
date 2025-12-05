@@ -4,7 +4,9 @@ import com.hostel.hostel_backend.controller.request.AvailableBedDTO;
 import com.hostel.hostel_backend.controller.request.CreateReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.DateChangeRequestDTO;
 import com.hostel.hostel_backend.controller.response.PayHereInitResponseDTO;
+import com.hostel.hostel_backend.controller.response.ReservationDetailResponseDTO;
 import com.hostel.hostel_backend.controller.response.ReservationListResponseDTO;
+import com.hostel.hostel_backend.exception.AppException;
 import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.*;
 import com.hostel.hostel_backend.repository.*;
@@ -13,6 +15,8 @@ import com.hostel.hostel_backend.service.ReservationService;
 import com.hostel.hostel_backend.util.PayHereUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReservationServiceImpl implements ReservationService {
 
     private final ReservationRepository reservationRepository;
@@ -42,73 +47,81 @@ public class ReservationServiceImpl implements ReservationService {
     @Value("${payhere.currency}")
     private String currency;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public PayHereInitResponseDTO initiateReservation(CreateReservationRequestDTO dto) {
 
-        // 1. Bed Availability Check
-        Bed bed = bedRepository.findById(dto.getBedId())
-                .orElseThrow(() -> new RuntimeException("Bed not found"));
+       try {
+           // 1. Bed Availability Check
+           Bed bed = bedRepository.findById(dto.getBedId())
+                   .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id: " + dto.getBedId()));
 
-        if (Boolean.TRUE.equals(bed.getIsBooked())) {
-            throw new RuntimeException("Bed is already booked!");
-        }
+           if (Boolean.TRUE.equals(bed.getIsBooked())) {
+               throw new AppException("This bed is already booked!", HttpStatus.CONFLICT);
+           }
 
-        Double calculatedAmount = calculateTotalAmount(dto.getBedId(), dto.getFromDate(), dto.getToDate());
+           Double calculatedAmount = calculateTotalAmount(dto.getBedId(), dto.getFromDate(), dto.getToDate());
 
-        // 2. Generate Order ID
-        String orderId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+           // 2. Generate Order ID
+           String orderId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-        // 3. Create Payment Record (PENDING)
-        Payment payment = new Payment();
-        payment.setPaymentId(orderId);
-        payment.setPaymentDate(LocalDate.now());
-        payment.setPaymentTime(LocalTime.now());
-        payment.setPaymentStatus(PaymentStatus.PENDING);
+           // 3. Create Payment Record (PENDING)
+           Payment payment = new Payment();
+           payment.setPaymentId(orderId);
+           payment.setPaymentDate(LocalDate.now());
+           payment.setPaymentTime(LocalTime.now());
+           payment.setPaymentStatus(PaymentStatus.PENDING);
+           payment.setPaymentAmount(calculatedAmount);
 
-        // 4. Create Reservation Record (PENDING)
-        Reservation reservation = new Reservation();
-        reservation.setReservationNumber(orderId);
-        reservation.setStudentName(dto.getStudentName());
-        reservation.setStudentRegistrationNumber(dto.getRegistrationNumber());
-        reservation.setStudentEmail(dto.getEmail());
-        reservation.setStudentContactNumber(dto.getContactNumber());
-        reservation.setStudentAddress(dto.getAddress());
-        reservation.setStudentGender(dto.getGender());
-        reservation.setFromDate(dto.getFromDate());
-        reservation.setToDate(dto.getToDate());
-        reservation.setReservationStatus(ReservationStatus.PENDING);
+           // 4. Create Reservation Record (PENDING)
+           Reservation reservation = new Reservation();
+           reservation.setReservationNumber(orderId);
+           reservation.setStudentName(dto.getStudentName());
+           reservation.setStudentRegistrationNumber(dto.getRegistrationNumber());
+           reservation.setStudentEmail(dto.getEmail());
+           reservation.setStudentContactNumber(dto.getContactNumber());
+           reservation.setStudentAddress(dto.getAddress());
+           reservation.setStudentGender(dto.getGender());
+           reservation.setFromDate(dto.getFromDate());
+           reservation.setToDate(dto.getToDate());
+           reservation.setReservationStatus(ReservationStatus.PENDING);
 
-        // Link Objects
-        reservation.setBed(bed);
-        reservation.setPayment(payment);
-        payment.setReservation(reservation);
+           // Link Objects
+           reservation.setBed(bed);
+           reservation.setPayment(payment);
+           payment.setReservation(reservation);
 
-        // 5. Block the Bed (Optimistic Lock will handle concurrency here)
-        bed.setIsBooked(true);
+           // 5. Block the Bed (Optimistic Lock will handle concurrency here)
+           bed.setIsBooked(true);
 
-        paymentRepository.save(payment);
-        bedRepository.save(bed);
-        reservationRepository.save(reservation);
+           paymentRepository.save(payment);
+           bedRepository.save(bed);
+           reservationRepository.save(reservation);
 
-        // 6. Generate Hash
-        String hash = payHereUtil.generateHash(merchantId, orderId, calculatedAmount, currency, merchantSecret);
+           // 6. Generate Hash
+           String hash = payHereUtil.generateHash(merchantId, orderId, calculatedAmount, currency, merchantSecret);
 
-        // 7. Return Data to Frontend
-        return PayHereInitResponseDTO.builder()
-                .merchantId(merchantId)
-                .orderId(orderId)
-                .amount(calculatedAmount)
-                .currency(currency)
-                .hash(hash)
-                .items("Hostel Bed Reservation - " + bed.getBedNumber())
-                .firstName(dto.getStudentName())
-                .lastName("")
-                .email(dto.getEmail())
-                .phone(dto.getContactNumber())
-                .address(dto.getAddress())
-                .city("Colombo")
-                .country("Sri Lanka")
-                .build();
+           // 7. Return Data to Frontend
+           return PayHereInitResponseDTO.builder()
+                   .merchantId(merchantId)
+                   .orderId(orderId)
+                   .amount(calculatedAmount)
+                   .currency(currency)
+                   .hash(hash)
+                   .items("Hostel Bed Reservation - " + bed.getBedNumber())
+                   .firstName(dto.getStudentName())
+                   .lastName("")
+                   .email(dto.getEmail())
+                   .phone(dto.getContactNumber())
+                   .address(dto.getAddress())
+                   .city("Colombo")
+                   .country("Sri Lanka")
+                   .build();
+       }catch (ObjectOptimisticLockingFailureException e) {
+           // වෙන කෙනෙක් ඒ වෙලාවෙම බුක් කරලා නම්
+           throw new AppException("This bed was just booked by someone else. Please try another.", HttpStatus.CONFLICT);
+       } catch (Exception e) {
+           throw new AppException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+       }
     }
 
     // Email Notification Method
@@ -134,20 +147,20 @@ public class ReservationServiceImpl implements ReservationService {
 
     // 1. තිබුණු ඇඳම නැවත ලබා දීම (Reactivate)
     @Transactional
-    public void reactivateReservation(Long reservationId) {
+    public void reactivateReservation(Long reservationId) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
 
         // Payment එක Confirm වෙලාද කියලා නිකමට බලනවා (ආරක්ෂාවට)
         if (reservation.getPayment() == null || reservation.getPayment().getPaymentStatus() != PaymentStatus.APPROVED) {
-            throw new RuntimeException("Cannot reactivate! Payment is not verified.");
+            throw new AppException("Cannot reactivate! Payment is not verified.", HttpStatus.CONFLICT);
         }
 
         Bed bed = reservation.getBed();
 
         // ඇඳ දැනටමත් වෙන කෙනෙක් අරගෙනද බලනවා
         if (Boolean.TRUE.equals(bed.getIsBooked())) {
-            throw new RuntimeException("Original Bed (" + bed.getBedNumber() + ") is now occupied. Please assign a new bed.");
+            throw new AppException("Original Bed (" + bed.getBedNumber() + ") is now occupied. Please assign a new bed.", HttpStatus.CONFLICT);
         }
 
         // ඇඳ Book කරනවා
@@ -172,13 +185,13 @@ public class ReservationServiceImpl implements ReservationService {
 
     // 2. අලුත් ඇඳක් ලබා දීම (Assign New Bed)
     @Transactional
-    public void assignNewBed(Long reservationId, Long newBedId) {
+    public void assignNewBed(Long reservationId, Long newBedId) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
 
         // අලුත් ඇඳ හොයාගැනීම
         Bed newBed = bedRepository.findById(newBedId)
-                .orElseThrow(() -> new RuntimeException("New Bed not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("New Bed not found with id "+newBedId));
 
         // අලුත් ඇඳ Book කරනවා
         newBed.setIsBooked(true);
@@ -237,9 +250,9 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     // Get Matching Available Beds for Re-assignment ---
-    public List<AvailableBedDTO> getMatchingBedsForRes(Long reservationId) {
+    public List<AvailableBedDTO> getMatchingBedsForRes(Long reservationId) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
 
         Double originalPrice = 0.0;
 
@@ -249,7 +262,7 @@ public class ReservationServiceImpl implements ReservationService {
         } else {
             // Bed එක නැත්නම්, අපිට Price එක හොයන්න අමාරුයි.
             // (Payment Amount එකෙන් ගන්නත් පුළුවන් අවශ්‍ය නම්)
-            throw new RuntimeException("Original room price not found.");
+            throw new AppException("Original room price not found.", HttpStatus.CONFLICT);
         }
 
         // අලුත් Repository Query එක පාවිච්චි කරනවා
@@ -266,12 +279,12 @@ public class ReservationServiceImpl implements ReservationService {
 
     // Cancel Reservation (No Refund Rule) ---
     @Transactional
-    public void cancelReservation(Long reservationId) {
+    public void cancelReservation(Long reservationId) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
 
         if (reservation.getReservationStatus() == ReservationStatus.CANCELLED) {
-            throw new RuntimeException("Reservation is already cancelled.");
+            throw new AppException("Reservation is already cancelled.", HttpStatus.CONFLICT);
         }
 
         // 1. Bed එක නිදහස් කිරීම
@@ -296,9 +309,9 @@ public class ReservationServiceImpl implements ReservationService {
 
     // Change Dates (Same Duration Only) ---
     @Transactional
-    public void updateReservationDates(Long reservationId, DateChangeRequestDTO dto) {
+    public void updateReservationDates(Long reservationId, DateChangeRequestDTO dto) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
 
         // A. පරණ දින ගණන (Duration) ගණනය කිරීම
         long oldDays = ChronoUnit.DAYS.between(reservation.getFromDate(), reservation.getToDate());
@@ -308,7 +321,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         // C. දින ගණන සමානද බැලීම (Rule Check)
         if (oldDays != newDays) {
-            throw new RuntimeException("Invalid Date Change! The duration (" + oldDays + " days) must remain the same.");
+            throw new AppException("Invalid Date Change! The duration (" + oldDays + " days) must remain the same.", HttpStatus.CONFLICT);
         }
 
         // D. Dates Update කිරීම
@@ -327,18 +340,34 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     // GET RESERVATION BY ID (Full Details)
-    public Reservation getReservationById(Long id) throws ResourceNotFoundException {
-        return reservationRepository.findById(id)
+    public ReservationDetailResponseDTO getReservationById(Long id) throws ResourceNotFoundException {
+        Reservation res =  reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with ID: " + id));
+
+        return ReservationDetailResponseDTO.builder()
+                .id(res.getId())
+                .reservationNumber(res.getReservationNumber())
+                .studentName(res.getStudentName())
+                .studentEmail(res.getStudentEmail())
+                .studentContact(res.getStudentContactNumber())
+                .gender(res.getStudentGender())
+                .bedNumber(res.getBed() != null ? res.getBed().getBedNumber() : "N/A")
+                .roomNumber(res.getBed() != null && res.getBed().getRoom() != null ? res.getBed().getRoom().getRoomNumber() : "N/A")
+                .checkIn(res.getFromDate())
+                .checkOut(res.getToDate())
+                .status(res.getReservationStatus())
+                .amountPaid(res.getPayment() != null ? res.getPayment().getPaymentAmount() : 0.0)
+                .build();
+
     }
 
     // ගාණ ගණනය කරන පොදු Method එක (Common Logic)
-    private Double calculateTotalAmount(Long bedId, LocalDate checkIn, LocalDate checkOut) {
+    private Double calculateTotalAmount(Long bedId, LocalDate checkIn, LocalDate checkOut) throws ResourceNotFoundException {
         Bed bed = bedRepository.findById(bedId)
-                .orElseThrow(() -> new RuntimeException("Bed not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id "+bedId));
 
         if (bed.getRoom() == null || bed.getRoom().getPrice() == null) {
-            throw new RuntimeException("Room price is not set!");
+            throw new AppException("Room price is not set!", HttpStatus.CONFLICT);
         }
 
         Double monthlyRate = bed.getRoom().getPrice();
@@ -359,7 +388,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     // Frontend එකට ගාණ පෙන්නන්න API එකට දෙන Method එක
-    public Double getEstimatedPrice(Long bedId, LocalDate checkIn, LocalDate checkOut) {
+    public Double getEstimatedPrice(Long bedId, LocalDate checkIn, LocalDate checkOut) throws ResourceNotFoundException {
         return calculateTotalAmount(bedId, checkIn, checkOut);
     }
 }

@@ -1,12 +1,16 @@
 package com.hostel.hostel_backend.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 
 @Entity
-@Data
+@Setter
+@Getter
+@ToString
 @Table(name = "hubs")
 public class Hub {
     @Id
@@ -15,7 +19,7 @@ public class Hub {
     private String hubNumber;
 
     @OneToMany(mappedBy = "hub" ,cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<Floor> floors;
-
 
 }
