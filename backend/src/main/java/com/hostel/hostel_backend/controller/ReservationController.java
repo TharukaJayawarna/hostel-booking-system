@@ -5,12 +5,15 @@ import com.hostel.hostel_backend.controller.request.CreateReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.DateChangeRequestDTO;
 import com.hostel.hostel_backend.controller.response.PayHereInitResponseDTO;
 import com.hostel.hostel_backend.controller.response.ReservationListResponseDTO;
+import com.hostel.hostel_backend.exception.ResourceNotFoundException;
+import com.hostel.hostel_backend.model.Reservation;
 import com.hostel.hostel_backend.service.impl.ReservationServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -57,24 +60,39 @@ public class ReservationController {
         }
     }
 
-    //Get All Reservations
+    //Get All Active Reservations (TRASH නැති ඒවා)
+    // URL: GET/reservations
     @GetMapping
-    public ResponseEntity<List<ReservationListResponseDTO>> getAllReservations() {
-        return ResponseEntity.ok(reservationService.getAllReservations());
+    public ResponseEntity<List<ReservationListResponseDTO>> getAllActiveReservations() {
+        return ResponseEntity.ok(reservationService.getAllActiveReservations());
     }
 
-    //Cancel Reservation (Student)
+    //Get Trash Reservations (TRASH ඒවා විතරයි)
+    // URL: GET /reservations/trash
+    @GetMapping("/trash")
+    public ResponseEntity<List<ReservationListResponseDTO>> getTrashReservations() {
+        return ResponseEntity.ok(reservationService.getTrashReservations());
+    }
+
+    //Get Reservation By ID
+    // URL: GET /reservations/{id}
+    @GetMapping("/{id}")
+    public ResponseEntity<Reservation> getReservationById(@PathVariable Long id) throws ResourceNotFoundException {
+        return ResponseEntity.ok(reservationService.getReservationById(id));
+    }
+
+    //Cancel Reservation
     @PatchMapping("/{reservation-id}/cancel")
     public ResponseEntity<String> cancelReservation(@PathVariable("reservation-id") Long reservationId) {
         try {
-            reservationService.cancelReservationByStudent(reservationId);
+            reservationService.cancelReservation(reservationId);
             return ResponseEntity.ok("Reservation cancelled successfully. (No Refund)");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    //Change Dates (Student)
+    //Change Dates
     @PatchMapping("/{reservation-id}/change-dates")
     public ResponseEntity<String> updateDates(@PathVariable("reservation-id") Long reservationId, @RequestBody DateChangeRequestDTO dto) {
         try {
@@ -88,5 +106,16 @@ public class ReservationController {
     @GetMapping("/{id}/matching-beds")
     public ResponseEntity<List<AvailableBedDTO>> getMatchingBeds(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.getMatchingBedsForRes(id));
+    }
+
+    // ළමයාට ගාණ බලාගන්න API එක
+    // URL: GET /reservations/calculate?bedId=1&fromDate=2024-05-01&toDate=2024-06-01
+    @GetMapping("/calculate")
+    public ResponseEntity<Double> calculateAmount(
+            @RequestParam Long bedId,
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
+    ) {
+        return ResponseEntity.ok(reservationService.getEstimatedPrice(bedId, fromDate, toDate));
     }
 }

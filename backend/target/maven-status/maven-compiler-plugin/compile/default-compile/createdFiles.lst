@@ -5,6 +5,7 @@ com/hostel/hostel_backend/controller/dto/IssueDTO.class
 com/hostel/hostel_backend/model/ReservationPeriod.class
 com/hostel/hostel_backend/controller/response/PayHereInitResponseDTO.class
 com/hostel/hostel_backend/service/FloorService.class
+com/hostel/hostel_backend/controller/response/ReservationListResponseDTO.class
 com/hostel/hostel_backend/controller/PaymentController.class
 com/hostel/hostel_backend/service/impl/FloorServiceImpl.class
 com/hostel/hostel_backend/service/impl/EmailServiceImpl.class
@@ -14,6 +15,8 @@ com/hostel/hostel_backend/service/impl/PaymentServiceImpl.class
 com/hostel/hostel_backend/scheduler/ReservationCleanupScheduler.class
 com/hostel/hostel_backend/controller/RoomController.class
 com/hostel/hostel_backend/controller/dto/EmailDTO.class
+com/hostel/hostel_backend/controller/response/ReservationListResponseDTO$ReservationListResponseDTOBuilder.class
+com/hostel/hostel_backend/controller/request/DateChangeRequestDTO.class
 com/hostel/hostel_backend/model/ReservationStatus.class
 com/hostel/hostel_backend/controller/ReservationController.class
 com/hostel/hostel_backend/service/ReservationService.class
@@ -41,8 +44,11 @@ com/hostel/hostel_backend/service/IssueService.class
 com/hostel/hostel_backend/repository/PaymentRepository.class
 com/hostel/hostel_backend/model/Gender.class
 com/hostel/hostel_backend/util/PayHereUtil.class
+com/hostel/hostel_backend/scheduler/TrashCleanupScheduler.class
 com/hostel/hostel_backend/controller/request/CreateFloorRequestDTO.class
 com/hostel/hostel_backend/exception/NotCreatedException.class
+com/hostel/hostel_backend/controller/request/AvailableBedDTO.class
+com/hostel/hostel_backend/controller/request/AvailableBedDTO$AvailableBedDTOBuilder.class
 com/hostel/hostel_backend/controller/response/ErrorResponse.class
 com/hostel/hostel_backend/repository/RoomRepository.class
 com/hostel/hostel_backend/model/Payment.class

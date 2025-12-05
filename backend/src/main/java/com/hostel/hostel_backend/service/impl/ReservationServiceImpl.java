@@ -5,6 +5,7 @@ import com.hostel.hostel_backend.controller.request.CreateReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.DateChangeRequestDTO;
 import com.hostel.hostel_backend.controller.response.PayHereInitResponseDTO;
 import com.hostel.hostel_backend.controller.response.ReservationListResponseDTO;
+import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.*;
 import com.hostel.hostel_backend.repository.*;
 import com.hostel.hostel_backend.service.EmailProducer;
@@ -52,6 +53,8 @@ public class ReservationServiceImpl implements ReservationService {
             throw new RuntimeException("Bed is already booked!");
         }
 
+        Double calculatedAmount = calculateTotalAmount(dto.getBedId(), dto.getFromDate(), dto.getToDate());
+
         // 2. Generate Order ID
         String orderId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
@@ -88,13 +91,13 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         // 6. Generate Hash
-        String hash = payHereUtil.generateHash(merchantId, orderId, dto.getAmount(), currency, merchantSecret);
+        String hash = payHereUtil.generateHash(merchantId, orderId, calculatedAmount, currency, merchantSecret);
 
         // 7. Return Data to Frontend
         return PayHereInitResponseDTO.builder()
                 .merchantId(merchantId)
                 .orderId(orderId)
-                .amount(dto.getAmount())
+                .amount(calculatedAmount)
                 .currency(currency)
                 .hash(hash)
                 .items("Hostel Bed Reservation - " + bed.getBedNumber())
@@ -199,9 +202,23 @@ public class ReservationServiceImpl implements ReservationService {
         emailProducer.sendEmail(reservation.getStudentEmail(), subject, body);
     }
 
-    // --- ADMIN: Get All Reservations ---
-    public List<ReservationListResponseDTO> getAllReservations() {
-        return reservationRepository.findAll().stream()
+    //Get All Reservations ---
+    // 2. GET ALL ACTIVE RESERVATIONS (Hide Trash)
+    public List<ReservationListResponseDTO> getAllActiveReservations() {
+        // Status එක TRASH නොවන ඒවා පමණක් ගෙන එයි
+        List<Reservation> activeList = reservationRepository.findByReservationStatusNot(ReservationStatus.TRASH);
+
+        return activeList.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // 3. GET TRASH RESERVATIONS (Show Only Trash)
+    public List<ReservationListResponseDTO> getTrashReservations() {
+        // Status එක TRASH වන ඒවා පමණක් ගෙන එයි
+        List<Reservation> trashList = reservationRepository.findByReservationStatus(ReservationStatus.TRASH);
+
+        return trashList.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -219,7 +236,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .build();
     }
 
-    // --- ADMIN: Get Matching Available Beds for Re-assignment ---
+    // Get Matching Available Beds for Re-assignment ---
     public List<AvailableBedDTO> getMatchingBedsForRes(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new RuntimeException("Reservation not found"));
@@ -247,9 +264,9 @@ public class ReservationServiceImpl implements ReservationService {
                 .collect(Collectors.toList());
     }
 
-    // --- STUDENT: Cancel Reservation (No Refund Rule) ---
+    // Cancel Reservation (No Refund Rule) ---
     @Transactional
-    public void cancelReservationByStudent(Long reservationId) {
+    public void cancelReservation(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new RuntimeException("Reservation not found"));
 
@@ -277,7 +294,7 @@ public class ReservationServiceImpl implements ReservationService {
         emailProducer.sendEmail(reservation.getStudentEmail(), subject, body);
     }
 
-    // --- STUDENT: Change Dates (Same Duration Only) ---
+    // Change Dates (Same Duration Only) ---
     @Transactional
     public void updateReservationDates(Long reservationId, DateChangeRequestDTO dto) {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -307,5 +324,42 @@ public class ReservationServiceImpl implements ReservationService {
                 "New Check-out: " + dto.getNewCheckOutDate() + "\n\n" +
                 "Thank you.";
         emailProducer.sendEmail(reservation.getStudentEmail(), subject, body);
+    }
+
+    // GET RESERVATION BY ID (Full Details)
+    public Reservation getReservationById(Long id) throws ResourceNotFoundException {
+        return reservationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with ID: " + id));
+    }
+
+    // ගාණ ගණනය කරන පොදු Method එක (Common Logic)
+    private Double calculateTotalAmount(Long bedId, LocalDate checkIn, LocalDate checkOut) {
+        Bed bed = bedRepository.findById(bedId)
+                .orElseThrow(() -> new RuntimeException("Bed not found"));
+
+        if (bed.getRoom() == null || bed.getRoom().getPrice() == null) {
+            throw new RuntimeException("Room price is not set!");
+        }
+
+        Double monthlyRate = bed.getRoom().getPrice();
+
+        // දින ගණන සොයාගැනීම
+        long days = ChronoUnit.DAYS.between(checkIn, checkOut);
+
+        if (days <= 0) {
+            throw new RuntimeException("Invalid date range selected.");
+        }
+
+        // දිනකට අදාල ගාස්තුව (මාසෙකට දින 30ක් ලෙස සලකා)
+        Double dailyRate = monthlyRate / 30.0;
+
+        // සම්පූර්ණ මුදල (දශමස්ථාන 2කට වටයනවා)
+        double totalAmount = dailyRate * days;
+        return Math.round(totalAmount * 100.0) / 100.0;
+    }
+
+    // Frontend එකට ගාණ පෙන්නන්න API එකට දෙන Method එක
+    public Double getEstimatedPrice(Long bedId, LocalDate checkIn, LocalDate checkOut) {
+        return calculateTotalAmount(bedId, checkIn, checkOut);
     }
 }
