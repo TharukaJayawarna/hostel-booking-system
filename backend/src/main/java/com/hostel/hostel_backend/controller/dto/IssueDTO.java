@@ -27,5 +27,6 @@ public class IssueDTO {
     private LocalDate checkoutDate;
     private String bank;
     private LocalDate paymentDoneDate;
+    private String cardLastFour;
     private String comment;
 }

@@ -37,6 +37,7 @@ public class IssueServiceImpl implements IssueService {
 
                 "=== Payment Info ===\n" +
                 "Bank: " + dto.getBank() + "\n" +
+                "Last 4 Digits of Payment Reference: "+ dto.getCardLastFour() + "\n\n" +
                 "Payment Date: " + dto.getPaymentDoneDate() + "\n\n" +
 
                 "=== ISSUE DESCRIPTION ===\n" +

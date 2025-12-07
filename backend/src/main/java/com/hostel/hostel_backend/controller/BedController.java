@@ -44,4 +44,9 @@ public class BedController {
     public ResponseEntity<ApiResponse<List<BedsResponseDTO>>> getBedsByStatus(@RequestParam Boolean isBooked) {
         return ResponseEntity.ok(ApiResponse.success("Bed filtered successfully", bedService.getBedsByBookingStatus(isBooked)));
     }
+
+    @GetMapping(value = "/rooms/{room-id}/beds", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<List<BedsResponseDTO>>> getBedsByRoom(@PathVariable("room-id") Long roomId) {
+        return ResponseEntity.ok(ApiResponse.success("Beds fetched", bedService.getBedsByRoomId(roomId)));
+    }
 }

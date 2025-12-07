@@ -52,6 +52,7 @@ public class FloorServiceImpl implements FloorService {
         return FloorResponseDTO.builder()
                 .id(floor.getId())
                 .floorNumber(floor.getFloorNumber())
+                .hubNumber(floor.getHub().getHubNumber())
                 .noOfRooms(roomCount)
                 .build();
     }
@@ -69,5 +70,12 @@ public class FloorServiceImpl implements FloorService {
         return floorRepository.findById(floorId)
                 .map(this::mapToDTO)
                 .orElseThrow(()-> new ResourceNotFoundException("Floor not found with id "+floorId));
+    }
+
+    @Override
+    public List<FloorResponseDTO> getFloorsByHubId(Long hubId) {
+        return floorRepository.findByHubId(hubId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 }

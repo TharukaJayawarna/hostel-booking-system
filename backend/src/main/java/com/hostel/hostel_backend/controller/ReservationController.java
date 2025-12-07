@@ -3,6 +3,7 @@ package com.hostel.hostel_backend.controller;
 import com.hostel.hostel_backend.controller.request.AvailableBedDTO;
 import com.hostel.hostel_backend.controller.request.CreateReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.DateChangeRequestDTO;
+import com.hostel.hostel_backend.controller.response.ApiResponse;
 import com.hostel.hostel_backend.controller.response.PayHereInitResponseDTO;
 import com.hostel.hostel_backend.controller.response.ReservationDetailResponseDTO;
 import com.hostel.hostel_backend.controller.response.ReservationListResponseDTO;
@@ -10,7 +11,6 @@ import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.service.impl.ReservationServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -24,93 +24,80 @@ public class ReservationController {
 
     private final ReservationServiceImpl reservationService;
 
+    // 1. Initiate Reservation (Payment Start)
     @PostMapping(value = "/initiate", headers = "X-Api-Version=v1")
-    public ResponseEntity<?> initiateReservation(@RequestBody CreateReservationRequestDTO dto) {
-        try {
-            PayHereInitResponseDTO response = reservationService.initiateReservation(dto);
-            return ResponseEntity.ok(response);
-        } catch (ObjectOptimisticLockingFailureException e) {
-            return ResponseEntity.badRequest().body("Selected bed was just booked by someone else. Please try another.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<ApiResponse<PayHereInitResponseDTO>> initiateReservation(@RequestBody CreateReservationRequestDTO dto) {
+        // Exception Handling is done automatically by GlobalExceptionHandler
+        PayHereInitResponseDTO response = reservationService.initiateReservation(dto);
+        return ResponseEntity.ok(ApiResponse.success("Reservation initiated successfully", response));
     }
 
-    //Reactivate Button එක Click කළාම
+    // 2. Reactivate Reservation (Admin Feature)
     @PostMapping(value = "/{reservation-id}/reactivate", headers = "X-Api-Version=v1")
-    public ResponseEntity<String> reactivateReservation(@PathVariable("reservation-id") Long reservationId) {
-        try {
-            reservationService.reactivateReservation(reservationId);
-            return ResponseEntity.ok("Success: Reservation reactivated and email sent.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed: " + e.getMessage());
-        }
+    public ResponseEntity<ApiResponse<Void>> reactivateReservation(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
+        reservationService.reactivateReservation(reservationId);
+        return ResponseEntity.ok(ApiResponse.success("Success: Reservation reactivated and email sent."));
     }
 
-    //Assign New Bed Button එක Click කළාම (අලුත් Bed ID එකත් එක්ක)
+    // 3. Assign New Bed (Admin Feature)
     @PostMapping(value = "/{reservation-id}/assign/{new-bed-id}", headers = "X-Api-Version=v1")
-    public ResponseEntity<String> assignNewBed(@PathVariable("reservation-id") Long reservationId, @PathVariable("new-bed-id") Long newBedId) {
-        try {
-            reservationService.assignNewBed(reservationId, newBedId);
-            return ResponseEntity.ok("Success: New bed assigned and email sent.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed: " + e.getMessage());
-        }
+    public ResponseEntity<ApiResponse<Void>> assignNewBed(
+            @PathVariable("reservation-id") Long reservationId,
+            @PathVariable("new-bed-id") Long newBedId
+    ) throws ResourceNotFoundException {
+        reservationService.assignNewBed(reservationId, newBedId);
+        return ResponseEntity.ok(ApiResponse.success("Success: New bed assigned and email sent."));
     }
 
-    //Get All Active Reservations (TRASH නැති ඒවා)
+    // 4. Get All Active Reservations
     @GetMapping(headers = "X-Api-Version=v1")
-    public ResponseEntity<List<ReservationListResponseDTO>> getAllActiveReservations() {
-        return ResponseEntity.ok(reservationService.getAllActiveReservations());
+    public ResponseEntity<ApiResponse<List<ReservationListResponseDTO>>> getAllActiveReservations() {
+        return ResponseEntity.ok(ApiResponse.success("Active reservations fetched", reservationService.getAllActiveReservations()));
     }
 
-    //Get Trash Reservations (TRASH ඒවා විතරයි)
-    @GetMapping(value = "/trash",headers = "X-Api-Version=v1")
-    public ResponseEntity<List<ReservationListResponseDTO>> getTrashReservations() {
-        return ResponseEntity.ok(reservationService.getTrashReservations());
+    // 5. Get Trash Reservations
+    @GetMapping(value = "/trash", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<List<ReservationListResponseDTO>>> getTrashReservations() {
+        return ResponseEntity.ok(ApiResponse.success("Trash reservations fetched", reservationService.getTrashReservations()));
     }
 
-    //Get Reservation By ID
-    @GetMapping(value = "/{reservation-id}",headers = "X-Api-Version=v1")
-    public ResponseEntity<ReservationDetailResponseDTO> getReservationById(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
-        return ResponseEntity.ok(reservationService.getReservationById(reservationId));
+    // 6. Get Single Reservation By ID
+    @GetMapping(value = "/{reservation-id}", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<ReservationDetailResponseDTO>> getReservationById(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
+        return ResponseEntity.ok(ApiResponse.success("Reservation details fetched", reservationService.getReservationById(reservationId)));
     }
 
-    //Cancel Reservation
-    @PatchMapping(value = "/{reservation-id}/cancel",headers = "X-Api-Version=v1")
-    public ResponseEntity<String> cancelReservation(@PathVariable("reservation-id") Long reservationId) {
-        try {
-            reservationService.cancelReservation(reservationId);
-            return ResponseEntity.ok("Reservation cancelled successfully. (No Refund)");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    // 7. Cancel Reservation (Student Feature)
+    @PatchMapping(value = "/{reservation-id}/cancel", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<Void>> cancelReservation(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
+        reservationService.cancelReservation(reservationId);
+        return ResponseEntity.ok(ApiResponse.success("Reservation cancelled successfully. (No Refund policy applied)"));
     }
 
-    //Change Dates
-    @PatchMapping(value = "/{reservation-id}/change-dates",headers = "X-Api-Version=v1")
-    public ResponseEntity<String> updateDates(@PathVariable("reservation-id") Long reservationId, @RequestBody DateChangeRequestDTO dto) {
-        try {
-            reservationService.updateReservationDates(reservationId, dto);
-            return ResponseEntity.ok("Dates updated successfully.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    // 8. Update Reservation Dates (Student Feature)
+    @PatchMapping(value = "/{reservation-id}/change-dates", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<Void>> updateDates(
+            @PathVariable("reservation-id") Long reservationId,
+            @RequestBody DateChangeRequestDTO dto
+    ) throws ResourceNotFoundException {
+        reservationService.updateReservationDates(reservationId, dto);
+        return ResponseEntity.ok(ApiResponse.success("Dates updated successfully."));
     }
 
-    @GetMapping(value = "/{reservation-id}/matching-beds",headers = "X-Api-Version=v1")
-    public ResponseEntity<List<AvailableBedDTO>> getMatchingBeds(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
-        return ResponseEntity.ok(reservationService.getMatchingBedsForRes(reservationId));
+    // 9. Get Matching Beds for Re-assignment (Admin Feature)
+    @GetMapping(value = "/{reservation-id}/matching-beds", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<List<AvailableBedDTO>>> getMatchingBeds(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
+        return ResponseEntity.ok(ApiResponse.success("Matching beds fetched", reservationService.getMatchingBedsForRes(reservationId)));
     }
 
-    // ළමයාට ගාණ බලාගන්න API එක
-    // URL: GET /reservations/calculate?bedId=1&fromDate=2024-05-01&toDate=2024-06-01
-    @GetMapping(value = "/calculate",headers = "X-Api-Version=v1")
-    public ResponseEntity<Double> calculateAmount(
+    // 10. Calculate Price (For Frontend Display)
+    @GetMapping(value = "/calculate", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<Double>> calculateAmount(
             @RequestParam Long bedId,
             @RequestParam LocalDate fromDate,
             @RequestParam LocalDate toDate
     ) throws ResourceNotFoundException {
-        return ResponseEntity.ok(reservationService.getEstimatedPrice(bedId, fromDate, toDate));
+        Double amount = reservationService.getEstimatedPrice(bedId, fromDate, toDate);
+        return ResponseEntity.ok(ApiResponse.success("Price calculated successfully", amount));
     }
 }

@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -88,5 +89,17 @@ public class RoomController {
     @GetMapping(value = "/rooms/filterByReservedFor", headers = "X-Api_version=v1")
     public ResponseEntity<ApiResponse<List<RoomResponseDTO>>> getRoomsByReservedFor(@RequestParam ReservedFor reservedFor) {
         return ResponseEntity.ok(ApiResponse.success("Rooms fetched", roomService.getRoomsByReservedFor(reservedFor)));
+    }
+
+    @GetMapping(value = "/rooms/available", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<List<RoomResponseDTO>>> getAvailableRooms(
+            @RequestParam Long hubId,
+            @RequestParam LocalDate checkIn,
+            @RequestParam LocalDate checkOut
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Available rooms fetched",
+                roomService.getAvailableRooms(hubId, checkIn, checkOut)
+        ));
     }
 }

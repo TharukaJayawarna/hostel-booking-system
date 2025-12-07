@@ -6,6 +6,7 @@ import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.ReservationPeriod;
 import com.hostel.hostel_backend.model.ReservedFor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface RoomService {
@@ -22,4 +23,5 @@ public interface RoomService {
     List<RoomResponseDTO> getRoomsByPrivacy(Boolean isPrivate);
     List<RoomResponseDTO> getRoomsByReservationPeriod(ReservationPeriod reservationPeriod);
     List<RoomResponseDTO> getRoomsByReservedFor(ReservedFor reservedFor);
+    List<RoomResponseDTO> getAvailableRooms(Long hubId, LocalDate checkIn, LocalDate checkOut);
 }

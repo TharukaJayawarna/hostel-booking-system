@@ -11,4 +11,5 @@ public interface FloorService {
     List<FloorResponseDTO> getAllFloors();
     void deleteFloor(Long floorId) throws ResourceNotFoundException;
     FloorResponseDTO getFloorById(Long floorId) throws ResourceNotFoundException;
+    List<FloorResponseDTO> getFloorsByHubId(Long hubId);
 }

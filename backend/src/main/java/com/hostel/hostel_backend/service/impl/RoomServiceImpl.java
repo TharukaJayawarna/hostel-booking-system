@@ -3,10 +3,7 @@ package com.hostel.hostel_backend.service.impl;
 import com.hostel.hostel_backend.controller.request.CreateRoomRequestDTO;
 import com.hostel.hostel_backend.controller.response.RoomResponseDTO;
 import com.hostel.hostel_backend.exception.ResourceNotFoundException;
-import com.hostel.hostel_backend.model.Floor;
-import com.hostel.hostel_backend.model.ReservationPeriod;
-import com.hostel.hostel_backend.model.ReservedFor;
-import com.hostel.hostel_backend.model.Room;
+import com.hostel.hostel_backend.model.*;
 import com.hostel.hostel_backend.repository.FloorRepository;
 import com.hostel.hostel_backend.repository.RoomRepository;
 import com.hostel.hostel_backend.service.RoomService;
@@ -14,7 +11,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -144,6 +143,19 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public List<RoomResponseDTO> getRoomsByReservedFor(ReservedFor reservedFor) {
         return roomRepository.findByReservedFor(reservedFor).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<RoomResponseDTO> getAvailableRooms(Long hubId, LocalDate checkIn, LocalDate checkOut) {
+
+        List<ReservationStatus> activeStatuses = Arrays.asList(
+                ReservationStatus.COMPLETED,
+                ReservationStatus.PENDING
+        );
+
+        return roomRepository.findAvailableRooms(hubId, checkIn, checkOut, activeStatuses).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }

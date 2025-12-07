@@ -10,4 +10,5 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
     // Bed එක Free ද? සහ Bed එක තියෙන Room එකේ Price එක සමානද?
     // Spring Data JPA වලට මේ වගේ දිග method names තේරෙනවා (Property Traversal)
     List<Bed> findByIsBookedFalseAndRoomPrice(Double price);
+    List<Bed> findByRoomId(Long roomId);
 }

@@ -30,7 +30,7 @@ public class Reservation {
     private Gender studentGender;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private ReservationStatus reservationStatus;
 
     // Scheduler එකට වෙලාව බලන්න ඕන නිසා

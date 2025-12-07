@@ -9,4 +9,7 @@ public class AvailableBedDTO {
     private Long id;
     private String bedNumber;
     private Double price;
+    private String roomNumber;
+    private String floorNumber;
+    private String hubNumber;
 }

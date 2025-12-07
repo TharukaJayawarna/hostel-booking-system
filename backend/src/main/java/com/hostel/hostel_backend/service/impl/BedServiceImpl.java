@@ -81,4 +81,10 @@ public class BedServiceImpl implements BedService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<BedsResponseDTO> getBedsByRoomId(Long roomId) {
+        return bedRepository.findByRoomId(roomId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
 }

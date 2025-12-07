@@ -39,4 +39,8 @@ public class FloorController {
         return ResponseEntity.ok(ApiResponse.success("Floor fetched with id" + floorId, floorService.getFloorById(floorId)));
     }
 
+    @GetMapping(value = "/hubs/{hub-id}/floors", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<List<FloorResponseDTO>>> getFloorsByHub(@PathVariable("hub-id") Long hubId) {
+        return ResponseEntity.ok(ApiResponse.success("Floors fetched", floorService.getFloorsByHubId(hubId)));
+    }
 }

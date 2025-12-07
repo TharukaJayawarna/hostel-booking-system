@@ -272,7 +272,10 @@ public class ReservationServiceImpl implements ReservationService {
                 .map(bed -> AvailableBedDTO.builder()
                         .id(bed.getId())
                         .bedNumber(bed.getBedNumber())
-                        .price(bed.getRoom().getPrice()) // Price from Room
+                        .price(bed.getRoom().getPrice())
+                        .floorNumber(bed.getRoom().getFloor().getFloorNumber())
+                        .hubNumber(bed.getRoom().getFloor().getHub().getHubNumber())
+                        .roomNumber(bed.getRoom().getRoomNumber())
                         .build())
                 .collect(Collectors.toList());
     }
