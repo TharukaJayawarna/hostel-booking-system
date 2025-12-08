@@ -51,7 +51,7 @@ public class ReservationServiceImpl implements ReservationService {
     public PayHereInitResponseDTO initiateReservation(CreateReservationRequestDTO dto) {
 
        try {
-           // 1. Bed Availability Check
+           // Bed Availability Check
            Bed bed = bedRepository.findById(dto.getBedId())
                    .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id: " + dto.getBedId()));
 
@@ -61,10 +61,10 @@ public class ReservationServiceImpl implements ReservationService {
 
            Double calculatedAmount = calculateTotalAmount(dto.getBedId(), dto.getFromDate(), dto.getToDate());
 
-           // 2. Generate Order ID
+           //Generate Order ID
            String orderId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-           // 3. Create Payment Record (PENDING)
+           // Create Payment Record (PENDING)
            Payment payment = new Payment();
            payment.setPaymentId(orderId);
            payment.setPaymentDate(LocalDate.now());
@@ -72,7 +72,7 @@ public class ReservationServiceImpl implements ReservationService {
            payment.setPaymentStatus(PaymentStatus.PENDING);
            payment.setPaymentAmount(calculatedAmount);
 
-           // 4. Create Reservation Record (PENDING)
+           // Create Reservation Record (PENDING)
            Reservation reservation = new Reservation();
            reservation.setReservationNumber(orderId);
            reservation.setStudentName(dto.getStudentName());
@@ -126,26 +126,37 @@ public class ReservationServiceImpl implements ReservationService {
 
     // Email Notification Method
     public void sendSuccessEmail(Reservation res) {
-        String subject = "Reservation Confirmed: " + res.getReservationNumber();
-        String body = "Dear " + res.getStudentName() + ",\n\n" +
-                "Your payment was successful and bed reservation is confirmed.\n" +
-                "Bed No: " + res.getBed().getBedNumber() + "\n\n" +
-                "Thank You!";
+        String subject = "Booking Confirmed - " + res.getReservationNumber();
+
+        String content = "<p>Dear <strong>" + res.getStudentName() + "</strong>,</p>" +
+                "<p>We are pleased to inform you that your payment was successful and your bed reservation has been <span style='color: #059669; font-weight: bold;'>CONFIRMED</span>.</p>" +
+                "<div style='background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0; border-radius: 4px;'>" +
+                "  <p style='margin: 5px 0;'><strong>Reservation ID:</strong> " + res.getReservationNumber() + "</p>" +
+                "  <p style='margin: 5px 0;'><strong>Bed Number:</strong> " + res.getBed().getBedNumber() + "</p>" +
+                "  <p style='margin: 5px 0;'><strong>Dates:</strong> " + res.getFromDate() + " to " + res.getToDate() + "</p>" +
+                "</div>" +
+                "<p>Thank you for choosing our hostel!</p>";
+
+        String body = generateCommonEmailTemplate("Reservation Confirmed ✅", content);
         emailProducer.sendEmail(res.getStudentEmail(), subject, body);
     }
 
     public void sendFailureEmail(Reservation res) {
-        String subject = "Reservation Failed: " + res.getReservationNumber();
-        String body = "Dear " + res.getStudentName() + ",\n\n" +
-                "We regret to inform you that your payment was unsuccessful (Declined/Failed).\n" +
-                "Consequently, your reservation for Bed No: " + res.getBed().getBedNumber() + " has been CANCELLED.\n\n" +
-                "Please try again with a valid payment method.\n\n" +
-                "Thank You!";
+        String subject = "Reservation Failed - " + res.getReservationNumber();
 
+        String content = "<p>Dear " + res.getStudentName() + ",</p>" +
+                "<p>We regret to inform you that your payment was <span style='color: #dc2626; font-weight: bold;'>UNSUCCESSFUL</span>.</p>" +
+                "<p>As a result, your reservation for <strong>Bed " + res.getBed().getBedNumber() + "</strong> has been cancelled.</p>" +
+                "<div style='background-color: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; color: #b91c1c;'>" +
+                "  Please try again with a valid payment method." +
+                "</div>";
+
+        String body = generateCommonEmailTemplate("Reservation Failed ❌", content);
         emailProducer.sendEmail(res.getStudentEmail(), subject, body);
     }
 
-    // 1. තිබුණු ඇඳම නැවත ලබා දීම (Reactivate)
+
+    // Reactivate
     @Transactional
     public void reactivateReservation(Long reservationId) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -168,22 +179,25 @@ public class ReservationServiceImpl implements ReservationService {
         bedRepository.save(bed);
 
         // Reservation එක Active කරනවා
-        reservation.setReservationStatus(ReservationStatus.COMPLETED);
+        reservation.setReservationStatus(ReservationStatus.APPROVED);
         reservationRepository.save(reservation);
 
-        // Student ට Email යැවීම (RabbitMQ)
+        // --- EMAIL කොටස වෙනස් කරන්න ---
         String subject = "Booking Reactivated - " + reservation.getReservationNumber();
-        String body = "Dear " + reservation.getStudentName() + ",\n\n" +
-                "Your booking has been manually reactivated by the administration.\n" +
-                "Bed No: " + bed.getBedNumber() + "\n" +
-                "Room No: " +bed.getRoom().getRoomNumber() + "\n" +
-                "Status: CONFIRMED\n\n" +
-                "Thank you!";
+        String content = "<p>Dear <strong>" + reservation.getStudentName() + "</strong>,</p>" +
+                "<p>Your booking has been manually <span style='color: #059669; font-weight: bold;'>REACTIVATED</span> by the administration.</p>" +
+                "<div style='background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0; border-radius: 4px;'>" +
+                "  <p style='margin: 5px 0;'><strong>Bed No:</strong> " + bed.getBedNumber() + "</p>" +
+                "  <p style='margin: 5px 0;'><strong>Room No:</strong> " + bed.getRoom().getRoomNumber() + "</p>" +
+                "  <p style='margin: 5px 0;'><strong>Status:</strong> <span style='color: #16a34a; font-weight:bold;'>CONFIRMED</span></p>" +
+                "</div>" +
+                "<p>Thank you!</p>";
 
+        String body = generateCommonEmailTemplate("Booking Reactivated 🔄", content);
         emailProducer.sendEmail(reservation.getStudentEmail(), subject, body);
     }
 
-    // 2. අලුත් ඇඳක් ලබා දීම (Assign New Bed)
+    // Assign New Bed
     @Transactional
     public void assignNewBed(Long reservationId, Long newBedId) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -199,19 +213,23 @@ public class ReservationServiceImpl implements ReservationService {
 
         // Reservation එකට අලුත් ඇඳ සම්බන්ධ කරනවා
         reservation.setBed(newBed);
-        reservation.setReservationStatus(ReservationStatus.COMPLETED);
+        reservation.setReservationStatus(ReservationStatus.APPROVED);
         reservationRepository.save(reservation);
 
-        // Student ට Email යැවීම (RabbitMQ)
+        //Email
         String subject = "New Bed Assigned - " + reservation.getReservationNumber();
-        String body = "Dear " + reservation.getStudentName() + ",\n\n" +
-                "Since your original bed was unavailable (booked by another student due to late payment), " +
-                "we have assigned you a new bed.\n" +
-                "New Bed No: " + newBed.getBedNumber() + "\n" +
-                "Room Number: "+newBed.getRoom().getRoomNumber()+"\n" +
-                "Status: CONFIRMED\n\n" +
-                "Thank you!";
 
+        String content = "<p>Dear <strong>" + reservation.getStudentName() + "</strong>,</p>" +
+                "<p>Since your original bed was unavailable (booked by another student due to late payment), we have assigned you a <span style='color: #4f46e5; font-weight: bold;'>NEW BED</span>.</p>" +
+                "<div style='background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px;'>" +
+                "  <p style='margin: 5px 0;'><strong>New Bed No:</strong> " + newBed.getBedNumber() + "</p>" +
+                "  <p style='margin: 5px 0;'><strong>Room Number:</strong> " + newBed.getRoom().getRoomNumber() + "</p>" +
+                "  <p style='margin: 5px 0;'><strong>Status:</strong> <span style='color: #059669; font-weight:bold;'>CONFIRMED</span></p>" +
+                "</div>" +
+                "<p>We apologize for any inconvenience caused.</p>" +
+                "<p>Thank you!</p>";
+
+        String body = generateCommonEmailTemplate("New Bed Assigned 🛏️", content);
         emailProducer.sendEmail(reservation.getStudentEmail(), subject, body);
     }
 
@@ -301,12 +319,17 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setReservationStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
 
-        // 3. Email යැවීම (No Refund ගැන මතක් කිරීම)
+        // --- EMAIL කොටස වෙනස් කරන්න ---
         String subject = "Reservation Cancelled - " + reservation.getReservationNumber();
-        String body = "Dear " + reservation.getStudentName() + ",\n\n" +
-                "Your reservation has been cancelled as per your request.\n" +
-                "Please note: According to our policy, NO REFUNDS are issued for cancellations.\n\n" +
-                "Thank you.";
+        String content = "<p>Dear <strong>" + reservation.getStudentName() + "</strong>,</p>" +
+                "<p>Your reservation has been <span style='color: #dc2626; font-weight: bold;'>CANCELLED</span> as per your request.</p>" +
+                "<div style='background-color: #fff1f2; border-left: 4px solid #e11d48; padding: 15px; margin: 20px 0; border-radius: 4px;'>" +
+                "  <p style='margin: 0; color: #be123c;'><strong>Please Note:</strong> According to our policy, <strong>NO REFUNDS</strong> are issued for cancellations.</p>" +
+                "</div>" +
+                "<p>If you have any questions, please contact the administration.</p>" +
+                "<p>Thank you.</p>";
+
+        String body = generateCommonEmailTemplate("Reservation Cancelled 🚫", content);
         emailProducer.sendEmail(reservation.getStudentEmail(), subject, body);
     }
 
@@ -332,13 +355,17 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setToDate(dto.getNewCheckOutDate());
         reservationRepository.save(reservation);
 
-        // E. Email යැවීම
+        // --- EMAIL කොටස වෙනස් කරන්න ---
         String subject = "Reservation Dates Updated - " + reservation.getReservationNumber();
-        String body = "Dear " + reservation.getStudentName() + ",\n\n" +
-                "Your reservation dates have been successfully updated.\n" +
-                "New Check-in: " + dto.getNewCheckInDate() + "\n" +
-                "New Check-out: " + dto.getNewCheckOutDate() + "\n\n" +
-                "Thank you.";
+        String content = "<p>Dear <strong>" + reservation.getStudentName() + "</strong>,</p>" +
+                "<p>Your reservation dates have been successfully <span style='color: #2563eb; font-weight: bold;'>UPDATED</span>.</p>" +
+                "<div style='background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;'>" +
+                "  <p style='margin: 5px 0;'><strong>New Check-in:</strong> " + dto.getNewCheckInDate() + "</p>" +
+                "  <p style='margin: 5px 0;'><strong>New Check-out:</strong> " + dto.getNewCheckOutDate() + "</p>" +
+                "</div>" +
+                "<p>Thank you.</p>";
+
+        String body = generateCommonEmailTemplate("Dates Updated 📅", content);
         emailProducer.sendEmail(reservation.getStudentEmail(), subject, body);
     }
 
@@ -393,5 +420,27 @@ public class ReservationServiceImpl implements ReservationService {
     // Frontend එකට ගාණ පෙන්නන්න API එකට දෙන Method එක
     public Double getEstimatedPrice(Long bedId, LocalDate checkIn, LocalDate checkOut) throws ResourceNotFoundException {
         return calculateTotalAmount(bedId, checkIn, checkOut);
+    }
+
+    // --- EMAIL TEMPLATE GENERATOR ---
+    private String generateCommonEmailTemplate(String title, String content) {
+        return "<html>" +
+                "<body style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 0;'>" +
+                "  <div style='max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>" +
+                "    <div style='background-color: #4f46e5; padding: 30px; text-align: center;'>" +
+                "      <h1 style='color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;'>Hostel PMS</h1>" +
+                "      <p style='color: #e0e7ff; margin: 5px 0 0; font-size: 14px;'>Student Accommodation System</p>" +
+                "    </div>" +
+                "    <div style='padding: 30px; color: #374151; line-height: 1.6;'>" +
+                "      <h2 style='color: #1f2937; margin-top: 0; font-size: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px;'>" + title + "</h2>" +
+                "      <div style='font-size: 16px;'>" + content + "</div>" +
+                "    </div>" +
+                "    <div style='background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;'>" +
+                "      <p style='margin: 0; color: #6b7280; font-size: 12px;'>&copy; 2025 Hostel Management System. All rights reserved.</p>" +
+                "      <p style='margin: 5px 0 0; color: #9ca3af; font-size: 11px;'>This is an automated email. Please do not reply.</p>" +
+                "    </div>" +
+                "  </div>" +
+                "</body>" +
+                "</html>";
     }
 }

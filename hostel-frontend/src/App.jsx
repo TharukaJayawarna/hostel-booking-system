@@ -16,6 +16,9 @@ import BedSelection from './pages/student/BedSelection';
 import Reservation from './pages/student/Reservation'; 
 import PaymentSuccess from './pages/student/PaymentSuccess';
 import PaymentCancel from './pages/student/PaymentCancel';
+import Contact from './pages/student/Contact';
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
 
 // Admin Pages (Comment these out for now)
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -26,6 +29,7 @@ import ManageFloors from './pages/admin/ManageFloors';
 import ManageBeds from './pages/admin/ManageBeds';
 import BookingSuccess from './pages/student/BookingSuccess';
 import IssueForm from './pages/student/IssueForm';
+import ReservationCalendar from './pages/admin/ReservationCalendar';
 
 function App() {
   return (
@@ -33,7 +37,8 @@ function App() {
       <ToastContainer position="top-right" autoClose={3000} />
       
       <Routes>
-        
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         {/* === STUDENT SIDE === */}
         <Route path="/" element={<StudentLayout />}>
           <Route index element={<Home />} />
@@ -44,6 +49,7 @@ function App() {
           <Route path="payment-success" element={<PaymentSuccess />} />
           <Route path="payment-cancel" element={<PaymentCancel />} />
           <Route path="issue" element={<IssueForm />} />
+          <Route path="contact" element={<Contact />} />
         </Route>
 
         
@@ -56,6 +62,7 @@ function App() {
           <Route path="floors" element={<ManageFloors />} />
           <Route path="rooms" element={<ManageRooms />} />
           <Route path="beds" element={<ManageBeds />} />
+          <Route path="calendar" element={<ReservationCalendar />} />
         </Route> 
        
 

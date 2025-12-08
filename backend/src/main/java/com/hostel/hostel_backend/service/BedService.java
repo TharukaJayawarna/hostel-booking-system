@@ -13,4 +13,5 @@ public interface BedService {
     void deleteBedById(Long bedId) throws ResourceNotFoundException;
     List<BedsResponseDTO> getBedsByBookingStatus(Boolean isBooked);
     List<BedsResponseDTO> getBedsByRoomId(Long roomId);
+    void toggleMaintenance(Long bedId, Boolean status) throws ResourceNotFoundException;
 }

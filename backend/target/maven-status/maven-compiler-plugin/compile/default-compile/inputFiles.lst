@@ -1,5 +1,9 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/HostelBackendApplication.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/config/CloudinaryConfig.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/config/RabbitMQConfig.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/config/SecurityConfig.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/config/WebConfig.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/AuthController.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/BedController.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/FloorController.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/HubController.java
@@ -16,6 +20,7 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateReservationRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/CreateRoomRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/DateChangeRequestDTO.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/request/LoginRequestDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/response/ApiResponse.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/response/BedsResponseDTO.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/controller/response/ErrorResponse.java
@@ -39,12 +44,15 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/ReservationStatus.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/ReservedFor.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/Room.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/RoomType.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/model/User.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/BedRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/FloorRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/HubRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/PaymentRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/ReservationRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/RoomRepository.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/repository/UserRepository.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/scheduler/ReservationCleanupScheduler.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/scheduler/TrashCleanupScheduler.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/BedService.java
@@ -57,6 +65,7 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/PaymentService.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/ReservationService.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/RoomService.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/UserService.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/BedServiceImpl.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/EmailServiceImpl.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/FloorServiceImpl.java
@@ -65,4 +74,5 @@
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/PaymentServiceImpl.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/ReservationServiceImpl.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/RoomServiceImpl.java
+/Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/service/impl/UserServiceImpl.java
 /Users/tharukajayawarna/Documents/hostel-booking-system/backend/src/main/java/com/hostel/hostel_backend/util/PayHereUtil.java

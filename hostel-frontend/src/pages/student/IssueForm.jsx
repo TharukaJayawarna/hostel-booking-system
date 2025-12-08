@@ -2,6 +2,20 @@ import React, { useState } from 'react';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  CreditCard, 
+  Calendar, 
+  FileText, 
+  Send, 
+  ArrowLeft, 
+  AlertCircle, 
+  Building2, 
+  Hash,
+  Loader2
+} from 'lucide-react';
 
 const IssueForm = () => {
   const navigate = useNavigate();
@@ -11,12 +25,12 @@ const IssueForm = () => {
     studentId: '',
     studentEmail: '',
     studentPhone: '',
-    duration: 'ONE_MONTH',
+    duration: '',
     checkinDate: '',
     checkoutDate: '',
     bank: '',
     paymentDoneDate: '',
-    paymentReferenceLast4: '',
+    cardLastFour: '',
     comment: ''
   });
 
@@ -39,245 +53,264 @@ const IssueForm = () => {
     }
   };
 
-  // --- Improved Styles (Aesthetic & Balanced) ---
+  // --- STYLES ---
   const s = {
     pageContainer: {
-      width: '100%',
       minHeight: '100vh',
-      padding: '50px 20px',
-      backgroundColor: '#dbdce0ff', // Global Background Color
+      backgroundColor: '#f8fafc',
+      fontFamily: "'Inter', sans-serif",
+      padding: '60px 20px',
       display: 'flex',
       justifyContent: 'center',
-      alignItems: 'flex-start', // Starts from top with padding
-      fontFamily: "'Inter', 'Segoe UI', sans-serif",
-      boxSizing: 'border-box'
+      alignItems: 'flex-start'
     },
-    card: {
-      backgroundColor: '#ffffff',
-      padding: '45px',
-      borderRadius: '20px',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
-      border: '1px solid #e5e7eb',
-      maxWidth: '750px',
+    innerWrapper: {
+      maxWidth: '850px',
       width: '100%'
     },
-    header: {
-      textAlign: 'center',
-      marginBottom: '40px'
+    
+    // Header
+    header: { marginBottom: '5px', textAlign: 'center', position: 'relative' },
+    backBtn: {
+      position: 'absolute', left: 0, top: '10px',
+      display: 'inline-flex', alignItems: 'center', gap: '6px',
+      background: 'white', border: '1px solid #e2e8f0',
+      color: '#64748b', fontSize: '13px', fontWeight: '600',
+      cursor: 'pointer', padding: '8px 16px', borderRadius: '20px',
+      transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
     },
-    title: {
-      fontSize: '32px',
-      fontWeight: '800',
-      color: '#1f2937',
-      marginBottom: '10px',
-      letterSpacing: '-0.5px'
+    titleBox: { display: 'inline-block' },
+    title: { fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px', letterSpacing: '-0.5px' },
+    subTitle: { fontSize: '15px', color: '#64748b' },
+
+    // Card
+    card: {
+      backgroundColor: 'white',
+      borderRadius: '24px',
+      padding: '40px 50px',
+      boxShadow: '0 10px 30px -5px rgba(0,0,0,0.05)',
+      border: '1px solid #e2e8f0'
     },
-    subtitle: {
-      color: '#6b7280',
-      fontSize: '16px',
-      lineHeight: '1.5'
-    },
+
+    // Sections
     sectionTitle: {
-      fontSize: '14px',
-      fontWeight: '700',
-      color: '#2b5c9e',
-      textTransform: 'uppercase',
-      letterSpacing: '1px',
-      borderBottom: '2px solid #f3f4f6',
-      paddingBottom: '10px',
-      marginBottom: '20px',
-      marginTop: '10px'
+      fontSize: '16px', fontWeight: '700', color: '#0f172a',
+      marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px',
+      paddingBottom: '10px', borderBottom: '1px solid #f1f5f9'
     },
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', // Responsive Grid
-      gap: '25px'
-    },
-    fullWidth: {
-      gridColumn: '1 / -1'
-    },
-    inputGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px'
-    },
-    label: {
-      fontSize: '13px',
-      fontWeight: '600',
-      color: '#4b5563'
-    },
+    sectionIcon: { color: '#4f46e5' },
+
+    // Form Grid
+    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '30px' },
+    fullWidth: { gridColumn: '1 / -1' },
+
+    // Inputs
+    inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
+    label: { fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' },
+    inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
+    inputIcon: { position: 'absolute', left: '16px', color: '#94a3b8', pointerEvents: 'none' },
     input: {
-      width: '100%',
-      padding: '12px 16px',
-      borderRadius: '10px',
-      border: '1px solid #e5e7eb',
-      fontSize: '15px',
-      backgroundColor: '#dbdce0ff',
-      color: '#1f2937',
-      outline: 'none',
-      boxSizing: 'border-box',
-      transition: 'border-color 0.2s'
-    },
-    textarea: {
-      width: '100%',
-      padding: '12px 16px',
-      borderRadius: '10px',
-      border: '1px solid #e5e7eb',
-      fontSize: '15px',
-      backgroundColor: '#dbdce0ff',
-      color: '#1f2937',
-      outline: 'none',
-      minHeight: '120px',
-      resize: 'vertical',
-      boxSizing: 'border-box',
-      fontFamily: 'inherit'
+      width: '100%', padding: '12px 16px 12px 45px', borderRadius: '12px',
+      border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
+      outline: 'none', transition: 'all 0.2s', backgroundColor: '#d9dde2ff',
+      boxSizing: 'border-box'
     },
     select: {
-      width: '100%',
-      padding: '12px 16px',
-      borderRadius: '10px',
-      border: '1px solid #e5e7eb',
-      fontSize: '15px',
-      backgroundColor: '#dbdce0ff',
-      color: '#1f2937',
-      outline: 'none',
-      boxSizing: 'border-box',
-      cursor: 'pointer'
+      width: '100%', padding: '12px 16px 12px 16px', borderRadius: '12px',
+      border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
+      outline: 'none', backgroundColor: '#d9dde2ff', cursor: 'pointer',
+      boxSizing: 'border-box'
     },
-    btnContainer: {
-      gridColumn: '1 / -1',
-      marginTop: '20px',
-      display: 'flex',
-      justifyContent: 'flex-end',
-      gap: '15px'
+    textarea: {
+      width: '100%', padding: '16px', borderRadius: '12px',
+      border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
+      outline: 'none', backgroundColor: '#d9dde2ff', minHeight: '120px',
+      resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box'
     },
-    btn: {
-      padding: '14px 35px',
-      backgroundColor: '#2b5c9e',
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px',
-      fontSize: '16px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'transform 0.2s, background-color 0.2s',
-      boxShadow: '0 4px 12px rgba(43, 92, 158, 0.2)'
+
+    // Buttons
+    btnContainer: { display: 'flex', justifyContent: 'flex-end', gap: '15px', marginTop: '10px' },
+    submitBtn: {
+      padding: '14px 32px', background: '#4f46e5', color: 'white',
+      border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700',
+      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+      boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)', transition: 'transform 0.2s'
     },
     cancelBtn: {
-      padding: '14px 25px',
-      backgroundColor: 'transparent',
-      color: '#6b7280',
-      border: 'none',
-      fontSize: '15px',
-      fontWeight: '600',
-      cursor: 'pointer'
+      padding: '14px 24px', background: 'white', color: '#64748b',
+      border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '15px',
+      fontWeight: '600', cursor: 'pointer'
     }
   };
 
   return (
     <div style={s.pageContainer}>
-      <div style={s.card}>
+      <div style={s.innerWrapper}>
+        
+        {/* Header */}
         <div style={s.header}>
-          <h1 style={s.title}>Report an Issue</h1>
-          <p style={s.subtitle}>Have you encountered a problem with booking or payment?<br/>Please fill out the details below, and our support team will assist you.</p>
+          <button 
+            style={s.backBtn} 
+            onClick={() => navigate('/')}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+          >
+            <ArrowLeft size={16}/> Back Home
+          </button>
+          <div style={s.titleBox}>
+            <h1 style={s.title}>Report an Issue</h1>
+            <p style={s.subTitle}>Facing a problem? Let us know and we'll fix it.</p>
+          </div>
         </div>
         
-        <form onSubmit={handleSubmit} style={s.grid}>
+        <form onSubmit={handleSubmit} style={s.card}>
           
-          {/* Personal Details Section */}
-          <div style={s.fullWidth}>
-            <h4 style={s.sectionTitle}>👤 Student Information</h4>
-          </div>
-          
-          <div style={s.inputGroup}>
-            <label style={s.label}>Full Name</label>
-            <input required name="studentName" style={s.input} onChange={handleChange} placeholder="Ex: Kamal Perera" />
-          </div>
-          <div style={s.inputGroup}>
-            <label style={s.label}>Student ID</label>
-            <input required name="studentId" style={s.input} onChange={handleChange} placeholder="Ex: IT20001234" />
-          </div>
-          <div style={s.inputGroup}>
-            <label style={s.label}>Email Address</label>
-            <input required type="email" name="studentEmail" style={s.input} onChange={handleChange} placeholder="student@university.edu" />
-          </div>
-          <div style={s.inputGroup}>
-            <label style={s.label}>Phone Number</label>
-            <input required name="studentPhone" style={s.input} onChange={handleChange} placeholder="07XXXXXXXX" />
-          </div>
-
-          {/* Booking Details Section */}
-          <div style={s.fullWidth}>
-            <h4 style={s.sectionTitle}>📅 Booking & Payment Context</h4>
-          </div>
-
-          <div style={s.inputGroup}>
-            <label style={s.label}>Check-in Date</label>
-            <input type="date" name="checkinDate" style={s.input} onChange={handleChange} />
-          </div>
-          <div style={s.inputGroup}>
-            <label style={s.label}>Check-out Date</label>
-            <input type="date" name="checkoutDate" style={s.input} onChange={handleChange} />
-          </div>
-          
-          <div style={s.inputGroup}>
-            <label style={s.label}>Duration</label>
-            <select name="duration" style={s.select} onChange={handleChange}>
-              <option value="ONE_MONTH">1 Month</option>
-              <option value="TWO_MONTHS">2 Months</option>
-              <option value="UNDER_ONE_MONTH">Less than 1 Month</option>
-              <option value="UNDER_TWO_MONTHS">Less than 2 Months</option>
-            </select>
-          </div>
-
-          <div style={s.inputGroup}>
-            <label style={s.label}>Payment Method / Bank</label>
-            <input name="bank" style={s.input} onChange={handleChange} placeholder="Ex: PayHere, BOC, Peoples Bank" />
-          </div>
-
-          <div style={s.inputGroup}>
-            <label style={s.label}>Payment Date</label>
-            <input type="date" name="paymentDoneDate" style={s.input} onChange={handleChange} />
-          </div>
-
-          <div style={s.inputGroup}>
-            <label style={s.label}>Last 4 Digits of Payment Reference</label>
-            <input 
-                name="paymentReferenceLast4" 
-                style={{...s.input, fontFamily: 'monospace', letterSpacing: '2px'}} 
-                onChange={handleChange} 
-                placeholder="XXXX" 
-                maxLength={4}
-            />
-          </div>
-          
-          
-
-          {/* Issue Description */}
-          <div style={s.fullWidth}>
-            <h4 style={s.sectionTitle}>📝 Issue Description</h4>
+          {/* 1. Student Info */}
+          <div style={s.sectionTitle}><User size={20} style={s.sectionIcon}/> Student Information</div>
+          <div style={s.grid}>
             <div style={s.inputGroup}>
+              <label style={s.label}>Full Name</label>
+              <div style={s.inputWrapper}>
+                <User size={18} style={s.inputIcon}/>
+                <input 
+                    name="studentName" required onChange={handleChange} 
+                    style={s.input} placeholder="Kamal Perera"
+                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                />
+              </div>
+            </div>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Student ID / Reg No</label>
+              <div style={s.inputWrapper}>
+                <Hash size={18} style={s.inputIcon}/>
+                <input 
+                    name="studentId" required onChange={handleChange} 
+                    style={s.input} placeholder="IT20001234"
+                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                />
+              </div>
+            </div>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Email Address</label>
+              <div style={s.inputWrapper}>
+                <Mail size={18} style={s.inputIcon}/>
+                <input 
+                    type="email" name="studentEmail" required onChange={handleChange} 
+                    style={s.input} placeholder="student@university.edu"
+                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                />
+              </div>
+            </div>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Phone Number</label>
+              <div style={s.inputWrapper}>
+                <Phone size={18} style={s.inputIcon}/>
+                <input 
+                    name="studentPhone" required onChange={handleChange} 
+                    style={s.input} placeholder="077xxxxxxx"
+                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Reservation Context */}
+          <div style={s.sectionTitle}><Calendar size={20} style={s.sectionIcon}/> Booking & Payment Details</div>
+          <div style={s.grid}>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Check-in Date</label>
+              <div style={s.inputWrapper}>
+                <Calendar size={18} style={s.inputIcon}/>
+                <input type="date" name="checkinDate" style={s.input} onChange={handleChange} />
+              </div>
+            </div>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Check-out Date</label>
+              <div style={s.inputWrapper}>
+                <Calendar size={18} style={s.inputIcon}/>
+                <input type="date" name="checkoutDate" style={s.input} onChange={handleChange} />
+              </div>
+            </div>
+            
+            <div style={s.inputGroup}>
+              <label style={s.label}>Duration</label>
+              <select name="duration" style={s.select} onChange={handleChange}>
+                <option value="1 Month">1 Month</option>
+                <option value="2 Months">2 Months</option>
+                <option value="3 Months"> 3 Months</option>
+                <option value="Less than 1 Month">Less than 1 Month</option>
+                <option value="Less than 2 Months">Less than 2 Months</option>
+                <option value="Less than 3 Month">Less than 3 Months</option>
+                
+              </select>
+            </div>
+
+            <div style={s.inputGroup}>
+              <label style={s.label}>Bank / Payment Method</label>
+              <div style={s.inputWrapper}>
+                <Building2 size={18} style={s.inputIcon}/>
+                <input name="bank" style={s.input} onChange={handleChange} placeholder="e.g. PayHere, BOC" />
+              </div>
+            </div>
+
+            <div style={s.inputGroup}>
+              <label style={s.label}>Payment Date</label>
+              <div style={s.inputWrapper}>
+                <Calendar size={18} style={s.inputIcon}/>
+                <input type="date" name="paymentDoneDate" style={s.input} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div style={s.inputGroup}>
+              <label style={s.label}>Last 4 Digits (Reference)</label>
+              <div style={s.inputWrapper}>
+                <CreditCard size={18} style={s.inputIcon}/>
+                <input 
+                    name="cardLastFour" 
+                    style={{...s.input, fontFamily: 'monospace', letterSpacing: '1px'}} 
+                    onChange={handleChange} 
+                    placeholder="XXXX" 
+                    maxLength={4}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Issue Description */}
+          <div style={s.sectionTitle}><AlertCircle size={20} style={{...s.sectionIcon, color:'#ef4444'}}/> Describe Your Issue</div>
+          <div style={{marginBottom:'30px'}}>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Detailed Description</label>
               <textarea 
                 required 
                 name="comment" 
                 style={s.textarea} 
                 onChange={handleChange} 
-                placeholder="Please describe your issue in detail here. Include error messages if any." 
+                placeholder="Please explain the issue clearly. Include error messages or reservation numbers if applicable." 
+                onFocus={e => e.target.style.borderColor = '#4f46e5'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
               />
             </div>
           </div>
 
           {/* Buttons */}
           <div style={s.btnContainer}>
-            <button type="button" style={s.cancelBtn} onClick={() => navigate('/')}>Cancel</button>
+            <button type="button" style={s.cancelBtn} onClick={() => navigate('/')}>
+                Cancel
+            </button>
             <button 
               type="submit" 
-              style={s.btn} 
+              style={{...s.submitBtn, opacity: loading ? 0.7 : 1}} 
               disabled={loading}
-              onMouseOver={(e) => !loading && (e.currentTarget.style.transform = 'translateY(-2px)')}
-              onMouseOut={(e) => !loading && (e.currentTarget.style.transform = 'translateY(0)')}
+              onMouseEnter={e => !loading && (e.currentTarget.style.transform = 'translateY(-2px)')}
+              onMouseLeave={e => !loading && (e.currentTarget.style.transform = 'translateY(0)')}
             >
-              {loading ? "Submitting..." : "Submit Ticket"}
+              {loading ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>}
+              {loading ? "Sending..." : "Submit Ticket"}
             </button>
           </div>
 

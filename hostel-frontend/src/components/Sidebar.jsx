@@ -1,119 +1,193 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Building2, Layers, DoorOpen, Bed } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Calendar, 
+  Building2, 
+  Layers, 
+  DoorOpen, 
+  Bed, 
+  Home,
+  LogOut,
+  Settings,
+  ChevronRight
+} from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
   
-  const styles = {
+  // --- STYLES ---
+  const s = {
     sidebar: {
-      width: '260px',
+      width: '280px',
       height: '100vh',
-      backgroundColor: '#151529',
-      color: '#8a92a6',
+      backgroundColor: '#111827', // Modern Dark Slate
+      color: '#9ca3af',
       display: 'flex',
       flexDirection: 'column',
-      padding: '20px',
       position: 'fixed',
       left: 0,
       top: 0,
-      zIndex: 50
+      zIndex: 50,
+      borderRight: '1px solid #1f2937',
+      boxShadow: '4px 0 24px rgba(0,0,0,0.2)',
+      transition: 'all 0.3s ease'
     },
-    logo: {
-      fontSize: '24px', 
-      fontWeight: '800', 
-      color: '#fff', 
-      marginBottom: '40px',
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: '10px', 
-      paddingLeft: '10px'
+    
+    // Logo Section
+    logoContainer: {
+      padding: '30px 25px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      borderBottom: '1px solid #1f2937',
+      marginBottom: '20px'
     },
-    logoIcon: { 
-      background: '#6c5dd3', 
-      width: '35px', 
-      height: '35px', 
-      borderRadius: '8px', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center' 
+    logoIconBox: {
+      width: '40px', height: '40px',
+      background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+      borderRadius: '10px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: 'white',
+      boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)'
+    },
+    logoText: {
+      fontSize: '18px',
+      fontWeight: '800',
+      color: '#f9fafb',
+      letterSpacing: '0.5px',
+      lineHeight: '1.2'
+    },
+    logoSub: { fontSize: '11px', color: '#6b7280', fontWeight: '500' },
+
+    // Navigation Section
+    navScroll: {
+      flex: 1,
+      overflowY: 'auto',
+      padding: '0 15px'
     },
     sectionLabel: { 
       fontSize: '11px', 
       textTransform: 'uppercase', 
-      color: '#5b5f75', 
+      color: '#4b5563', 
       fontWeight: '700', 
-      marginTop: '20px', 
+      letterSpacing: '1px',
+      marginTop: '25px', 
       marginBottom: '10px', 
-      paddingLeft: '15px' 
+      paddingLeft: '12px' 
     },
-    link: {
-      textDecoration: 'none', 
-      padding: '12px 15px', 
-      marginBottom: '5px', 
-      borderRadius: '12px',
-      fontSize: '14px', 
-      fontWeight: '500', 
-      color: '#8a92a6', 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: '12px',
-      transition: 'all 0.2s',
-      cursor: 'pointer'
+    
+    // Links
+    link: (active) => ({
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '12px 16px', marginBottom: '4px', borderRadius: '12px',
+      textDecoration: 'none', fontSize: '14px', fontWeight: '500',
+      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      cursor: 'pointer',
+      backgroundColor: active ? '#4f46e5' : 'transparent',
+      color: active ? '#ffffff' : '#9ca3af',
+      boxShadow: active ? '0 4px 12px rgba(79, 70, 229, 0.25)' : 'none',
+      border: active ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent'
+    }),
+    
+    iconGroup: { display: 'flex', alignItems: 'center', gap: '12px' },
+    activeIndicator: { width: '6px', height: '6px', borderRadius: '50%', background: 'white' },
+
+    // Footer (User Profile)
+    footer: {
+      padding: '20px',
+      borderTop: '1px solid #1f2937',
+      marginTop: 'auto'
     },
-    activeLink: { 
-      backgroundColor: '#6c5dd3', 
-      color: 'white', 
-      fontWeight: '600', 
-      boxShadow: '0 5px 15px rgba(108, 93, 211, 0.4)' 
+    userCard: {
+      display: 'flex', alignItems: 'center', gap: '12px',
+      padding: '12px', borderRadius: '12px',
+      background: '#1f2937', color: 'white',
+      cursor: 'pointer', transition: 'background 0.2s'
     },
-    iconWrapper: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }
+    userAvatar: {
+      width: '36px', height: '36px', borderRadius: '50%',
+      background: '#374151', color: '#9ca3af',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: '14px', fontWeight: '700'
+    },
+    userInfo: { display: 'flex', flexDirection: 'column' },
+    userName: { fontSize: '13px', fontWeight: '600', color: '#f3f4f6' },
+    userRole: { fontSize: '11px', color: '#9ca3af' }
   };
 
   const NavItem = ({ to, icon: Icon, label }) => {
     const isActive = location.pathname.includes(to);
-    const [isHovered, setIsHovered] = React.useState(false);
-    
-    const linkStyle = {
-      ...styles.link,
-      ...(isActive ? styles.activeLink : {}),
-      ...(isHovered && !isActive ? { backgroundColor: 'rgba(255,255,255,0.05)', color: '#fff' } : {})
-    };
+    const [hover, setHover] = useState(false);
 
     return (
       <Link 
         to={to} 
-        style={linkStyle}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        style={{
+            ...s.link(isActive),
+            ...(hover && !isActive ? { backgroundColor: 'rgba(255,255,255,0.03)', color: '#e5e7eb' } : {})
+        }}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
       >
-        <span style={styles.iconWrapper}>
-          <Icon size={18} />
-        </span>
-        {label}
+        <div style={s.iconGroup}>
+          <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+          {label}
+        </div>
+        {isActive && <div style={s.activeIndicator}></div>}
       </Link>
     );
   };
 
   return (
-    <div style={styles.sidebar}>
-      <div style={styles.logo}>
-        <div style={styles.logoIcon}>🏠</div> Hostel Management System
+    <div style={s.sidebar}>
+      
+      {/* 1. LOGO */}
+      <div style={s.logoContainer}>
+        <div style={s.logoIconBox}>
+          <Home size={22} fill="white" />
+        </div>
+        <div>
+          <div style={s.logoText}>Hostel PMS</div>
+          <div style={s.logoSub}>Admin Dashboard</div>
+        </div>
       </div>
 
-      <div style={styles.sectionLabel}>Main Menu</div>
-      <NavItem to="/admin/dashboard" icon={LayoutDashboard} label="Dashboard" />
-      <NavItem to="/admin/reservations" icon={Calendar} label="Reservations" />
+      {/* 2. NAVIGATION LINKS */}
+      <div style={s.navScroll}>
+        <div style={s.sectionLabel}>Overview</div>
+        <NavItem to="/admin/dashboard" icon={LayoutDashboard} label="Dashboard" />
+        <NavItem to="/admin/reservations" icon={Calendar} label="Reservations" />
+        <NavItem to="/admin/calendar" icon={Calendar} label="Booking Calendar" />
 
-      <div style={styles.sectionLabel}>Property Management</div>
-      <NavItem to="/admin/hubs" icon={Building2} label="Hubs" />
-      <NavItem to="/admin/floors" icon={Layers} label="Floors" />
-      <NavItem to="/admin/rooms" icon={DoorOpen} label="Rooms" />
-      <NavItem to="/admin/beds" icon={Bed} label="Beds" />
+        <div style={s.sectionLabel}>Property Management</div>
+        <NavItem to="/admin/hubs" icon={Building2} label="Hubs" />
+        <NavItem to="/admin/floors" icon={Layers} label="Floors" />
+        <NavItem to="/admin/rooms" icon={DoorOpen} label="Rooms" />
+        <NavItem to="/admin/beds" icon={Bed} label="Beds" />
+
+        <div style={s.sectionLabel}>Settings</div>
+        <NavItem to="/admin/settings" icon={Settings} label="System Settings" />
+      </div>
+
+      {/* 3. FOOTER (USER) */}
+      <div style={s.footer}>
+        <div 
+            style={s.userCard}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f2937'}
+        >
+            <div style={s.userAvatar}>AD</div>
+            <div style={s.userInfo}>
+                <span style={s.userName}>Admin User</span>
+                <span style={s.userRole}>Super Administrator</span>
+            </div>
+            <div style={{marginLeft:'auto', color:'#ef4444'}}>
+                <LogOut size={16}/>
+            </div>
+        </div>
+      </div>
+
     </div>
   );
 };

@@ -10,4 +10,5 @@ public class BedsResponseDTO {
     private String bedNumber;
     private Boolean isBooked;
     private String roomNumber;
+    private Boolean underMaintenance;
 }

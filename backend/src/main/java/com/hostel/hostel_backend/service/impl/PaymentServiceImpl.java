@@ -79,34 +79,37 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setPaymentStatus(PaymentStatus.APPROVED);
             paymentRepository.save(payment);
 
-            // Admin email
+            // Admin Email (Late Payment)
             String adminSubject = "URGENT: Late Payment Received - " + orderId;
-            String adminBody = "A payment was received AFTER cancellation.\n\n" +
-                    "Order ID: " + orderId + "\n" +
-                    "Amount: " + payhereAmount + "\n" +
-                    "Student Name: " + reservation.getStudentName() + "\n" +
-                    "Reg Number: " + reservation.getStudentRegistrationNumber() + "\n\n" +
-                    "ACTION: Please REFUND this manually.";
+            String adminContent = "<p>A payment was received <strong>AFTER</strong> the reservation was cancelled.</p>" +
+                    "<ul>" +
+                    "<li><strong>Order ID:</strong> " + orderId + "</li>" +
+                    "<li><strong>Amount:</strong> " + payhereAmount + "</li>" +
+                    "<li><strong>Student:</strong> " + reservation.getStudentName() + " (" + reservation.getStudentRegistrationNumber() + ")</li>" +
+                    "</ul>" +
+                    "<p style='color: red; font-weight: bold;'>ACTION REQUIRED: Please process a manual REFUND.</p>";
+
+            String adminBody = generateCommonEmailTemplate("Late Payment Alert 🚨", adminContent);
             emailProducer.sendEmail(ADMIN_EMAIL, adminSubject, adminBody);
 
-            // Student email
+            // Student Email
             String studentSubject = "Payment Received - Booking Cancellation Alert";
-            String studentBody = "Dear " + reservation.getStudentName() + ",\n\n" +
-                    "We received your payment of LKR " + payhereAmount + ".\n" +
-                    "However, your reservation time had expired before the payment was completed.\n\n" +
-                    "Don't worry! Your payment has been recorded and a REFUND will be processed shortly.\n\n" +
-                    "Reg No: " + reservation.getStudentRegistrationNumber() + "\n" +
-                    "Reservation ID: " + reservation.getReservationNumber() + "\n\n" +
-                    "Please contact support if you have questions.";
-            emailProducer.sendEmail(reservation.getStudentEmail(), studentSubject, studentBody);
+            String studentContent = "<p>Dear " + reservation.getStudentName() + ",</p>" +
+                    "<p>We received your payment of <strong>LKR " + payhereAmount + "</strong>.</p>" +
+                    "<div style='background-color: #fff7ed; border-left: 4px solid #ea580c; padding: 15px; margin: 20px 0; color: #9a3412;'>" +
+                    "  However, your reservation time had expired before the payment was completed." +
+                    "</div>" +
+                    "<p>Don't worry! Your payment has been recorded and a <strong>REFUND</strong> will be processed shortly.</p>";
 
+            String studentBody = generateCommonEmailTemplate("Payment Issue ⚠️", studentContent);
+            emailProducer.sendEmail(reservation.getStudentEmail(), studentSubject, studentBody);
             return "OK";
         }
 
         // Normal Flow
         payment.setPaymentStatus(PaymentStatus.APPROVED);
         if (reservation != null) {
-            reservation.setReservationStatus(ReservationStatus.COMPLETED);
+            reservation.setReservationStatus(ReservationStatus.APPROVED);
             reservationRepository.save(reservation);
             reservationService.sendSuccessEmail(reservation);
         }
@@ -129,5 +132,26 @@ public class PaymentServiceImpl implements PaymentService {
         }
         paymentRepository.save(payment);
         return "OK";
+    }
+
+    private String generateCommonEmailTemplate(String title, String content) {
+        return "<html>" +
+                "<body style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 0;'>" +
+                "  <div style='max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>" +
+                "    <div style='background-color: #4f46e5; padding: 30px; text-align: center;'>" +
+                "      <h1 style='color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;'>Hostel PMS</h1>" +
+                "      <p style='color: #e0e7ff; margin: 5px 0 0; font-size: 14px;'>Student Accommodation System</p>" +
+                "    </div>" +
+                "    <div style='padding: 30px; color: #374151; line-height: 1.6;'>" +
+                "      <h2 style='color: #1f2937; margin-top: 0; font-size: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px;'>" + title + "</h2>" +
+                "      <div style='font-size: 16px;'>" + content + "</div>" +
+                "    </div>" +
+                "    <div style='background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;'>" +
+                "      <p style='margin: 0; color: #6b7280; font-size: 12px;'>&copy; 2025 Hostel Management System. All rights reserved.</p>" +
+                "      <p style='margin: 5px 0 0; color: #9ca3af; font-size: 11px;'>This is an automated email. Please do not reply.</p>" +
+                "    </div>" +
+                "  </div>" +
+                "</body>" +
+                "</html>";
     }
 }

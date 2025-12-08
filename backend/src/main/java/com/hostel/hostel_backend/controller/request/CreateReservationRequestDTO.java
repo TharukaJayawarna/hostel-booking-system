@@ -12,10 +12,8 @@ public class CreateReservationRequestDTO {
     private String contactNumber;
     private String address;
     private Gender gender;
-
     private Long bedId;
     private LocalDate fromDate;
     private LocalDate toDate;
-
     private Double amount;
 }

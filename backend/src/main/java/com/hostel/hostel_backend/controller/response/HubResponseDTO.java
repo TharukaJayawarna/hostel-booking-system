@@ -10,4 +10,6 @@ public class HubResponseDTO {
     private String hubNumber;
     private int noOfFloors;
     private int noOfRooms;
+    private String image;
+    private String description;
 }

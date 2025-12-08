@@ -2,97 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
+import { 
+  BedDouble, 
+  CheckCircle2, 
+  XCircle, 
+  CalendarDays, 
+  DoorOpen,
+  ArrowLeft
+} from 'lucide-react';
 
 const BedSelection = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // FloorSelection එකෙන් එවපු Dates මෙතනින් ගන්නවා
-  const { checkIn, checkOut } = location.state || {}; 
-
+  // Extract reservedFor from location state
+  const { checkIn, checkOut, reservedFor } = location.state || {}; 
   const [beds, setBeds] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Styles Object (Inline CSS)
-  const styles = {
-    pageContainer: {
-      width: '100vw',
-      minHeight: '100vh',
-      margin: '0',
-      padding: '40px 20px',
-      textAlign: 'center',
-      fontFamily: "'Segoe UI', sans-serif",
-      boxSizing: 'border-box',
-      backgroundColor: '#dbdce0ff' 
-    },
-    innerContainer: {
-      maxWidth: '1400px',
-      margin: '0 auto',
-      width: '100%'
-    },
-    title: {
-      fontSize: '28px',
-      color: '#2b5c9e',
-      marginBottom: '10px',
-      fontWeight: '800'
-    },
-    subtitle: {
-      fontSize: '16px',
-      color: '#666',
-      marginBottom: '40px'
-    },
-    grid: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '20px',
-      justifyContent: 'center'
-    },
-    bedCard: {
-      width: '160px',
-      padding: '25px',
-      borderRadius: '15px',
-      cursor: 'pointer',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      boxShadow: '0 4px 10px rgba(0,0,0,0.08)',
-      transition: 'transform 0.2s, box-shadow 0.2s',
-      border: '2px solid transparent',
-      backgroundColor: 'white'
-    },
-    // Available Bed Style
-    available: {
-      borderColor: '#28a745',
-      color: '#155724',
-      backgroundColor: '#f0fff4'
-    },
-    // Booked Bed Style
-    booked: {
-      borderColor: '#dee2e6',
-      color: '#adb5bd',
-      backgroundColor: '#f8f9fa',
-      cursor: 'not-allowed',
-      opacity: 0.8
-    },
-    icon: {
-      fontSize: '36px',
-      marginBottom: '12px'
-    },
-    bedName: {
-      fontSize: '18px',
-      fontWeight: 'bold',
-      marginBottom: '5px'
-    },
-    status: {
-      fontSize: '12px',
-      fontWeight: '600',
-      textTransform: 'uppercase'
-    }
-  };
-
   useEffect(() => {
-    // Dates නැත්නම් ආපහු මුලට යවන්න (Safety Check)
     if (!checkIn || !checkOut) {
       toast.error("Please select dates first.");
       navigate('/'); 
@@ -103,6 +31,7 @@ const BedSelection = () => {
 
   const fetchBeds = async () => {
     try {
+      setLoading(true);
       const response = await api.get(`/rooms/${roomId}/beds`);
       if (response.data.status === 'SUCCESS') {
         setBeds(response.data.data);
@@ -116,52 +45,182 @@ const BedSelection = () => {
   };
 
   const handleBedSelect = (bed) => {
-    if (bed.isBooked) return; // Booked නම් Click කරන්න බෑ
+    if (bed.isBooked) return; // Cannot select booked beds
 
-    // Reservation පිටුවට අවශ්‍ය සියලුම දත්ත යවනවා
+    // Pass all reservation details including reservedFor to the reservation page
     navigate('/reserve', { 
       state: { 
         bedId: bed.id, 
         bedNumber: bed.bedNumber,
-        roomNumber: bed.roomNumber, // Backend එකේ DTO එකේ මේක තියෙන්න ඕන
-        checkIn: checkIn,   // FloorSelection එකෙන් ආපු දින
-        checkOut: checkOut  // FloorSelection එකෙන් ආපු දින
+        roomNumber: bed.roomNumber, 
+        checkIn: checkIn,   
+        checkOut: checkOut,
+        reservedFor: reservedFor // <--- Added: Pass room gender restriction
       } 
     });
   };
 
-  if (loading) return <div style={{textAlign: 'center', marginTop: '50px'}}>Loading Beds...</div>;
+  // --- STYLES ---
+  const s = {
+    pageContainer: {
+      minHeight: '100vh',
+      backgroundColor: '#f3f4f6',
+      fontFamily: "'Inter', sans-serif",
+      padding: '45px 20px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center'
+    },
+    innerContainer: { width: '100%', maxWidth: '1000px' },
+    
+    // Header
+    headerSection: { 
+      textAlign: 'center', 
+      marginBottom: '50px',
+      position: 'relative'
+    },
+    backBtn: {
+      position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+      display: 'flex', alignItems: 'center', gap: '6px',
+      color: '#64748b', fontSize: '14px', fontWeight: '600',
+      background: 'transparent', border: 'none', cursor: 'pointer',
+      padding: '8px 12px', borderRadius: '8px', transition: 'background 0.2s',
+      ':hover': { background: '#f1f5f9' }
+    },
+    title: { fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' },
+    subtitle: { 
+      fontSize: '16px', color: '#64748b', 
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' 
+    },
+    dateBadge: {
+      background: '#e0e7ff', color: '#4338ca', padding: '4px 12px',
+      borderRadius: '20px', fontSize: '14px', fontWeight: '600'
+    },
+
+    // Grid
+    grid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+      gap: '25px',
+      paddingBottom: '40px'
+    },
+
+    // Bed Card
+    card: (isBooked) => ({
+      backgroundColor: 'white',
+      borderRadius: '20px',
+      border: '1px solid #e2e8f0',
+      padding: '25px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      cursor: isBooked ? 'not-allowed' : 'pointer',
+      transition: 'all 0.2s ease',
+      opacity: isBooked ? 0.6 : 1,
+      boxShadow: isBooked ? 'none' : '0 4px 6px -1px rgba(0,0,0,0.05)',
+      position: 'relative',
+      overflow: 'hidden'
+    }),
+    cardHover: {
+      transform: 'translateY(-5px)',
+      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+      borderColor: '#4f46e5'
+    },
+
+    iconBox: (isBooked) => ({
+      width: '60px', height: '60px', borderRadius: '50%',
+      background: isBooked ? '#f1f5f9' : '#ecfdf5',
+      color: isBooked ? '#94a3b8' : '#10b981',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      marginBottom: '15px',
+      fontSize: '24px'
+    }),
+
+    bedTitle: { fontSize: '18px', fontWeight: '700', color: '#1e293b', marginBottom: '5px' },
+    roomLabel: { fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' },
+    
+    statusBadge: (isBooked) => ({
+      marginTop: '15px',
+      padding: '6px 14px', borderRadius: '20px',
+      fontSize: '12px', fontWeight: '700', textTransform: 'uppercase',
+      letterSpacing: '0.5px',
+      backgroundColor: isBooked ? '#fef2f2' : '#f0fdf4',
+      color: isBooked ? '#ef4444' : '#15803d',
+      display: 'flex', alignItems: 'center', gap: '6px'
+    }),
+
+    // Empty/Loading
+    centerMessage: { textAlign: 'center', color: '#94a3b8', marginTop: '60px' }
+  };
+
+  if (loading) return (
+    <div style={{height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color:'#64748b', fontFamily:"'Inter', sans-serif"}}>
+      <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'15px'}}>
+        <div style={{width:'40px', height:'40px', border:'3px solid #e2e8f0', borderTop:'3px solid #4f46e5', borderRadius:'50%', animation:'spin 1s linear infinite'}}></div>
+        <span>Loading Beds...</span>
+      </div>
+      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
   return (
-    <div style={styles.pageContainer}>
-      <div style={styles.innerContainer}>
-        <h2 style={styles.title}>Select Your Bed</h2>
-        <p style={styles.subtitle}>
-          Dates: <strong>{checkIn}</strong> to <strong>{checkOut}</strong>
-        </p>
-
-        <div style={styles.grid}>
-          {beds.length === 0 ? <p>No beds found in this room.</p> : beds.map(bed => (
-            <div 
-              key={bed.id} 
-              style={{
-                ...styles.bedCard, 
-                ...(bed.isBooked ? styles.booked : styles.available)
-              }}
-              onClick={() => handleBedSelect(bed)}
-              onMouseOver={(e) => !bed.isBooked && (e.currentTarget.style.transform = 'translateY(-5px)')}
-              onMouseOut={(e) => !bed.isBooked && (e.currentTarget.style.transform = 'translateY(0)')}
-            >
-              <span style={styles.icon}>
-                {bed.isBooked ? '🛏️' : '🛌'}
-              </span>
-              <span style={styles.bedName}>{bed.bedNumber}</span>
-              <span style={styles.status}>
-                {bed.isBooked ? 'Booked' : 'Available'}
-              </span>
-            </div>
-          ))}
+    <div style={s.pageContainer}>
+      <div style={s.innerContainer}>
+        
+        {/* Header */}
+        <div style={s.headerSection}>
+          <button 
+            style={s.backBtn} 
+            onClick={() => navigate(-1)}
+            onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <ArrowLeft size={18}/> Back
+          </button>
+          
+          <h1 style={s.title}>Choose Your Bed</h1>
+          <div style={s.subtitle}>
+            <CalendarDays size={16}/>
+            Booking for <span style={s.dateBadge}>{checkIn}</span> to <span style={s.dateBadge}>{checkOut}</span>
+          </div>
         </div>
+
+        {/* Beds Grid */}
+        <div style={s.grid}>
+          {beds.length === 0 ? (
+            <div style={{gridColumn: '1 / -1', ...s.centerMessage}}>
+              <BedDouble size={48} style={{opacity: 0.3, marginBottom:'15px', margin: '0 auto'}}/>
+              <h3>No beds found in this room.</h3>
+              <p>Please try selecting a different room.</p>
+            </div>
+          ) : (
+            beds.map(bed => (
+              <div 
+                key={bed.id} 
+                style={s.card(bed.isBooked)}
+                onClick={() => handleBedSelect(bed)}
+                onMouseEnter={(e) => !bed.isBooked && Object.assign(e.currentTarget.style, s.cardHover)}
+                onMouseLeave={(e) => !bed.isBooked && Object.assign(e.currentTarget.style, s.card(false))}
+              >
+                {/* Icon */}
+                <div style={s.iconBox(bed.isBooked)}>
+                  <BedDouble size={28} strokeWidth={1.5} />
+                </div>
+
+                {/* Info */}
+                <div style={s.bedTitle}>{bed.bedNumber}</div>
+                <div style={s.roomLabel}>
+                    <DoorOpen size={12}/> {bed.roomNumber || "Room"}
+                </div>
+
+                {/* Status */}
+                <div style={s.statusBadge(bed.isBooked)}>
+                  {bed.isBooked ? <XCircle size={14}/> : <CheckCircle2 size={14}/>}
+                  {bed.isBooked ? 'Occupied' : 'Available'}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
       </div>
     </div>
   );

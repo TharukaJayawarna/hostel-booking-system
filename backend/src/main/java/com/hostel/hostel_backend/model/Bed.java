@@ -19,6 +19,7 @@ public class Bed {
     private Long id;
     private String bedNumber;
     private Boolean isBooked;
+    private Boolean underMaintenance = false;
 
     @Version
     private Long version;

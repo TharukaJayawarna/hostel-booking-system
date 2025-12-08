@@ -1,22 +1,44 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
+import { 
+  BedDouble, 
+  Wrench, 
+  Trash2, 
+  Plus, 
+  Search, 
+  Filter, 
+  CheckCircle2, 
+  XCircle 
+} from 'lucide-react';
 
 const ManageBeds = () => {
   const [beds, setBeds] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Filters & Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRoom, setFilterRoom] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
+
+  // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [hoveredRow, setHoveredRow] = useState(null);
   const [formData, setFormData] = useState({ roomId: '', bedNumber: '' });
 
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     try {
+      setLoading(true);
       const [b, r] = await Promise.all([api.get('/beds'), api.get('/rooms')]);
       if(b.data.status === 'SUCCESS') setBeds(b.data.data);
       if(r.data.status === 'SUCCESS') setRooms(r.data.data);
-    } catch (e) { toast.error("Failed to load data"); }
+    } catch (e) { 
+      toast.error("Failed to load data"); 
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreate = async (e) => {
@@ -40,219 +62,334 @@ const ManageBeds = () => {
     catch (e) { toast.error("Failed to delete"); }
   };
 
+  const toggleMaintenance = async (bed) => {
+    // 1. කලින් තිබුණු අගය (Previous Status)
+    const previousStatus = bed.underMaintenance;
+    // 2. අලුත් අගය (New Status)
+    const newStatus = !previousStatus;
+
+    try {
+        // Optimistic Update: API එකට කලින් UI එක වෙනස් කරනවා (User ට වේගවත් බවක් දැනෙන්න)
+        const updatedBeds = beds.map(b => 
+            b.id === bed.id ? { ...b, underMaintenance: newStatus } : b
+        );
+        setBeds(updatedBeds);
+
+        // API Call එක යවනවා
+        await api.patch(`/beds/${bed.id}/maintenance?status=${newStatus}`);
+        toast.success(`Maintenance Mode: ${newStatus ? 'ON' : 'OFF'}`);
+        
+        // සාමාන්‍යයෙන් fetchAll() අවශ්‍ය නෑ optimistic update එක නිසා. 
+        // නමුත් ෂුවර් කරගන්න ඕන නම් විතරක් තියන්න.
+        // fetchAll(); 
+
+    } catch (e) {
+        // Error එකක් ආවොත් පරණ තත්ත්වයටම පත් කරනවා (Rollback)
+        const revertedBeds = beds.map(b => 
+            b.id === bed.id ? { ...b, underMaintenance: previousStatus } : b
+        );
+        setBeds(revertedBeds);
+        toast.error("Failed to update status");
+    }
+  };
+
+  // --- FILTER LOGIC (FIXED) ---
+  const filteredBeds = beds.filter(bed => {
+    // Fix: bedNumber null නම් හිස් string එකක් ගන්න
+    const bedNo = bed.bedNumber ? bed.bedNumber.toString() : "";
+    const matchesSearch = bedNo.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRoom = filterRoom === 'ALL' || bed.roomNumber === filterRoom;
+    
+    let matchesStatus = true;
+    if (filterStatus === 'BOOKED') matchesStatus = bed.isBooked;
+    if (filterStatus === 'AVAILABLE') matchesStatus = !bed.isBooked && !bed.underMaintenance;
+    if (filterStatus === 'MAINTENANCE') matchesStatus = bed.underMaintenance;
+
+    return matchesSearch && matchesRoom && matchesStatus;
+  });
+
+  // --- STATS CALCULATION ---
+  const stats = {
+    total: beds.length,
+    available: beds.filter(b => !b.isBooked && !b.underMaintenance).length,
+    booked: beds.filter(b => b.isBooked).length,
+    maintenance: beds.filter(b => b.underMaintenance).length
+  };
+
   // --- STYLES ---
   const s = {
-    container: { fontFamily: "'Inter', sans-serif", color: '#111827', paddingBottom: '40px' },
-
+    container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px' },
+    
     // Header
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
-    titleGroup: { display: 'flex', flexDirection: 'column' },
-    title: { fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0 },
-    subTitle: { fontSize: '14px', color: '#6b7280', marginTop: '5px' },
+    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' },
+    title: { fontSize: '26px', fontWeight: '800', color: '#111827', display: 'flex', alignItems: 'center', gap: '10px' },
+    
+    // Stats Cards
+    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
+    statCard: () => ({
+      background: 'white', padding: '20px', borderRadius: '16px',
+      border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+      display: 'flex', alignItems: 'center', gap: '15px', position: 'relative', overflow: 'hidden'
+    }),
+    statIconBox: (bg, col) => ({
+      width: '50px', height: '50px', borderRadius: '12px', background: bg, color: col,
+      display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }),
+    statValue: { fontSize: '24px', fontWeight: '800', color: '#111827', lineHeight: '1' },
+    statLabel: { fontSize: '13px', color: '#6b7280', fontWeight: '600', marginTop: '4px' },
 
+    // Toolbar (Search & Filter)
+    toolbar: { 
+      background: 'white', padding: '15px 20px', borderRadius: '16px', 
+      border: '1px solid #e5e7eb', marginBottom: '20px',
+      display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+    },
+    searchBox: {
+      display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb',
+      padding: '8px 15px', borderRadius: '10px', border: '1px solid #e5e7eb', flex: 1
+    },
+    input: { border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px' },
+    select: {
+      padding: '8px 12px', borderRadius: '10px', border: '1px solid #e5e7eb',
+      background: 'white', fontSize: '14px', color: '#374151', cursor: 'pointer', outline: 'none'
+    },
     addBtn: { 
       background: '#4f46e5', color: 'white', padding: '10px 20px', 
-      borderRadius: '8px', border: 'none', cursor: 'pointer', 
+      borderRadius: '10px', border: 'none', cursor: 'pointer', 
       fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px',
-      boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
+      boxShadow: '0 4px 10px rgba(79, 70, 229, 0.2)', transition: '0.2s'
     },
 
     // Table
     tableContainer: { 
-      background: 'white', borderRadius: '16px', 
-      border: '1px solid #e5e7eb',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', overflow: 'hidden' 
+      background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', 
+      overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' 
     },
-    table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
-    thead: { backgroundColor: '#b3b6b9ff', borderBottom: '1px solid #e5e7eb' },
-    th: { padding: '16px 24px', fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' },
-    tr: (id) => ({ 
-      borderBottom: '1px solid #f3f4f6', 
-      transition: 'background-color 0.2s',
-      backgroundColor: hoveredRow === id ? '#f9fafb' : 'white'
-    }),
-    td: { padding: '16px 24px', fontSize: '14px', color: '#374151', verticalAlign: 'middle' },
+    table: { width: '100%', borderCollapse: 'collapse' },
+    thead: { background: '#f8fafc', borderBottom: '1px solid #e5e7eb' },
+    th: { padding: '15px 20px', fontSize: '12px', fontWeight: '700', color: '#64748b', textAlign: 'left', textTransform: 'uppercase' },
+    tr: { borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' },
+    td: { padding: '15px 20px', fontSize: '14px', color: '#334155' },
 
-    // Status Badge
-    statusBadge: (isBooked) => ({
-      display: 'inline-flex', alignItems: 'center', gap: '6px',
-      padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase',
-      backgroundColor: isBooked ? '#fef2f2' : '#f0fdf4',
-      color: isBooked ? '#dc2626' : '#16a34a',
-      border: `1px solid ${isBooked ? '#fecaca' : '#bbf7d0'}`
+    // Toggle Switch
+    toggleContainer: (isActive) => ({
+      width: '44px', height: '24px', 
+      background: isActive ? '#f59e0b' : '#e2e8f0', 
+      borderRadius: '99px', position: 'relative', cursor: 'pointer',
+      transition: 'background 0.3s ease', display: 'flex', alignItems: 'center',
+      border: isActive ? '1px solid #d97706' : '1px solid #cbd5e1'
+    }),
+    toggleCircle: (isActive) => ({
+      width: '18px', height: '18px', background: 'white', borderRadius: '50%',
+      position: 'absolute', left: isActive ? '22px' : '3px',
+      transition: 'left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
     }),
 
-    // Delete Button
-    delBtn: { 
-      background: '#fff', border: '1px solid #fee2e2', 
-      color: '#ef4444', padding: '8px', borderRadius: '8px', 
-      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'all 0.2s'
+    // Status Badges
+    badge: (type) => {
+      let bg='#f1f5f9', col='#475569', border='#e2e8f0', icon=<CheckCircle2 size={12}/>;
+      if(type === 'BOOKED') { bg='#fee2e2'; col='#ef4444'; border='#fecaca'; icon=<XCircle size={12}/>; }
+      if(type === 'MAINTENANCE') { bg='#fef3c7'; col='#d97706'; border='#fde68a'; icon=<Wrench size={12}/>; }
+      if(type === 'AVAILABLE') { bg='#dcfce7'; col='#16a34a'; border='#bbf7d0'; icon=<CheckCircle2 size={12}/>; }
+      return {
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700',
+        background: bg, color: col, border: `1px solid ${border}`
+      };
     },
 
     // Modal
-    overlay: { 
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-      background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 
-    },
-    modal: { 
-      background: 'white', padding: '0', borderRadius: '16px', 
-      width: '420px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-      overflow: 'hidden'
-    },
-    modalHeader: { padding: '20px 24px', borderBottom: '1px solid #f3f4f6', background: '#fff' },
-    modalBody: { padding: '24px' },
-    modalFooter: { padding: '16px 24px', background: '#f9fafb', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'flex-end', gap: '12px' },
-    
-    inputLabel: { display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: '#374151' },
-    input: { 
-      width: '100%', padding: '10px 12px', borderRadius: '8px', 
-      border: '1px solid #d1d5db', fontSize: '14px', outline: 'none',
-      marginBottom: '16px', boxSizing: 'border-box'
-    },
-    select: {
-      width: '100%', padding: '10px 12px', borderRadius: '8px', 
-      border: '1px solid #d1d5db', fontSize: '14px', outline: 'none',
-      marginBottom: '16px', boxSizing: 'border-box', backgroundColor: 'white',
-      cursor: 'pointer'
-    }
+    overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
+    modal: { background: 'white', padding: '30px', borderRadius: '20px', width: '400px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }
   };
 
   return (
     <div style={s.container}>
-      {/* HEADER */}
+      
+      {/* 1. Header */}
       <div style={s.header}>
-        <div style={s.titleGroup}>
-          <h2 style={s.title}>Manage Beds</h2>
-          <p style={s.subTitle}>Add or remove beds from rooms.</p>
+        <div style={s.title}>
+          <div style={{background:'#e0e7ff', padding:'8px', borderRadius:'10px', color:'#4338ca'}}><BedDouble size={28}/></div>
+          <div>Manage Beds <div style={{fontSize:'14px', color:'#6b7280', fontWeight:'500'}}>Inventory & Maintenance</div></div>
         </div>
+        {/* Manual Add Button (Optional if using auto-generation) */}
         <button style={s.addBtn} onClick={() => setIsModalOpen(true)}>
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add New Bed
+          <Plus size={18} /> Add Bed
         </button>
       </div>
 
-      {/* TABLE */}
+      {/* 2. Stats Cards */}
+      <div style={s.statsGrid}>
+        <div style={s.statCard()}>
+          <div style={s.statIconBox('#eff6ff', '#2563eb')}><BedDouble size={24}/></div>
+          <div><div style={s.statValue}>{stats.total}</div><div style={s.statLabel}>Total Beds</div></div>
+        </div>
+        <div style={s.statCard()}>
+          <div style={s.statIconBox('#f0fdf4', '#16a34a')}><CheckCircle2 size={24}/></div>
+          <div><div style={s.statValue}>{stats.available}</div><div style={s.statLabel}>Available</div></div>
+        </div>
+        <div style={s.statCard()}>
+          <div style={s.statIconBox('#fef2f2', '#dc2626')}><XCircle size={24}/></div>
+          <div><div style={s.statValue}>{stats.booked}</div><div style={s.statLabel}>Occupied</div></div>
+        </div>
+        <div style={s.statCard()}>
+          <div style={s.statIconBox('#fffbeb', '#d97706')}><Wrench size={24}/></div>
+          <div><div style={s.statValue}>{stats.maintenance}</div><div style={s.statLabel}>Maintenance</div></div>
+        </div>
+      </div>
+
+      {/* 3. Toolbar */}
+      <div style={s.toolbar}>
+        <div style={s.searchBox}>
+          <Search size={18} color="#9ca3af"/>
+          <input 
+            style={s.input} 
+            placeholder="Search by Bed Number..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+          <Filter size={18} color="#6b7280"/>
+          <select style={s.select} value={filterRoom} onChange={e => setFilterRoom(e.target.value)}>
+            <option value="ALL">All Rooms</option>
+            {[...new Set(beds.map(b => b.roomNumber))].map(r => (
+                <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+
+          <select style={s.select} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+            <option value="ALL">All Status</option>
+            <option value="AVAILABLE">Available</option>
+            <option value="BOOKED">Booked</option>
+            <option value="MAINTENANCE">Maintenance</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 4. Table */}
       <div style={s.tableContainer}>
         <table style={s.table}>
           <thead style={s.thead}>
             <tr>
-              <th style={s.th}>Bed Number</th>
-              <th style={s.th}>Assigned Room</th>
-              <th style={s.th}>Availability</th>
+              <th style={s.th}>Bed Info</th>
+              <th style={s.th}>Room</th>
+              <th style={s.th}>Current Status</th>
+              <th style={s.th}>Maintenance Mode</th>
               <th style={{...s.th, textAlign:'right'}}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {beds.length === 0 ? (
-               <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>No beds found.</td></tr>
-            ) : (
-                beds.map(b => (
-                <tr 
-                    key={b.id} 
-                    style={s.tr(b.id)}
-                    onMouseEnter={() => setHoveredRow(b.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                >
-                    {/* Bed Info */}
+            {loading ? 
+              <tr><td colSpan="5" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>Loading...</td></tr> 
+            : filteredBeds.length === 0 ?
+              <tr><td colSpan="5" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>No beds found matching filters.</td></tr>
+            : filteredBeds.map(bed => {
+                // Determine display status
+                let statusType = 'AVAILABLE';
+                let statusText = 'Available';
+                if (bed.underMaintenance) { statusType = 'MAINTENANCE'; statusText = 'Maintenance'; }
+                else if (bed.isBooked) { statusType = 'BOOKED'; statusText = 'Booked'; }
+
+                return (
+                  <tr key={bed.id} style={s.tr} onMouseOver={e => e.currentTarget.style.background='#f8fafc'} onMouseOut={e => e.currentTarget.style.background='white'}>
+                    
                     <td style={s.td}>
-                        <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                            <div style={{width:'36px', height:'36px', borderRadius:'8px', background:'#e0f2fe', color:'#0284c7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'}}>
-                                🛏️
-                            </div>
-                            <span style={{fontWeight:'700', color:'#111827', fontSize:'15px'}}>{b.bedNumber}</span>
-                        </div>
+                      <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                        <div style={{padding:'8px', background:'#f1f5f9', borderRadius:'8px', color:'#475569'}}><BedDouble size={18}/></div>
+                        <span style={{fontWeight:'700', color:'#1e293b'}}>{bed.bedNumber}</span>
+                      </div>
                     </td>
 
-                    {/* Room Info */}
+                    <td style={s.td}><span style={{fontWeight:'600', color:'#475569'}}>{bed.roomNumber}</span></td>
+
                     <td style={s.td}>
-                        <div style={{display:'flex', alignItems:'center', gap:'6px', color:'#4b5563', fontWeight:'500'}}>
-                            <span>🚪</span>
-                            {b.roomNumber || 'Unknown Room'}
-                        </div>
+                      <span style={s.badge(statusType)}>
+                        {statusType === 'MAINTENANCE' && <Wrench size={12}/>}
+                        {statusType === 'BOOKED' && <XCircle size={12}/>}
+                        {statusType === 'AVAILABLE' && <CheckCircle2 size={12}/>}
+                        {statusText}
+                      </span>
                     </td>
 
-                    {/* Status Badge */}
+                    {/* Maintenance Toggle Column */}
                     <td style={s.td}>
-                        <span style={s.statusBadge(b.isBooked)}>
-                            {b.isBooked ? (
-                                <>🔴 Booked</>
-                            ) : (
-                                <>🟢 Available</>
-                            )}
+                      <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+                        <div 
+                            style={s.toggleContainer(bed.underMaintenance)} 
+                            onClick={() => toggleMaintenance(bed)}
+                            title="Toggle Maintenance Mode"
+                        >
+                            <div style={s.toggleCircle(bed.underMaintenance)}></div>
+                        </div>
+                        <span style={{fontSize:'12px', fontWeight:'600', color: bed.underMaintenance ? '#d97706' : '#94a3b8'}}>
+                            {bed.underMaintenance ? 'Active' : 'Off'}
                         </span>
+                      </div>
                     </td>
 
-                    {/* Actions */}
                     <td style={s.td}>
-                        <div style={{display:'flex', justifyContent:'flex-end'}}>
-                            <button 
-                                style={s.delBtn} 
-                                onClick={() => handleDelete(b.id)}
-                                title="Delete Bed"
-                                onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
-                            >
-                                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                        </div>
+                      <div style={{display:'flex', justifyContent:'flex-end'}}>
+                        <button 
+                            onClick={() => handleDelete(bed.id)}
+                            style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}}
+                            title="Delete Bed"
+                        >
+                            <Trash2 size={16}/>
+                        </button>
+                      </div>
                     </td>
-                </tr>
-                ))
-            )}
+
+                  </tr>
+                );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* MODAL */}
+      {/* Add Bed Modal */}
       {isModalOpen && (
         <div style={s.overlay} onClick={() => setIsModalOpen(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
-            <div style={s.modalHeader}>
-                <h3 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>Add New Bed</h3>
-                <p style={{margin: '5px 0 0', fontSize: '13px', color: '#6b7280'}}>Assign a new bed to a room.</p>
-            </div>
+            <h3 style={{fontSize:'20px', fontWeight:'700', marginBottom:'5px', color:'#111827'}}>Add New Bed</h3>
+            <p style={{fontSize:'13px', color:'#6b7280', marginBottom:'20px'}}>Manually add a bed to a room.</p>
             
             <form onSubmit={handleCreate}>
-                <div style={s.modalBody}>
-                    <label style={s.inputLabel}>Select Room</label>
+                <div style={{marginBottom:'15px'}}>
+                    <label style={{display:'block', fontSize:'13px', fontWeight:'600', color:'#374151', marginBottom:'5px'}}>Select Room</label>
                     <select 
-                        style={s.select} 
+                        style={{...s.select, width:'100%'}} 
                         value={formData.roomId} 
-                        onChange={e => setFormData({...formData, roomId: e.target.value})} 
+                        onChange={e => setFormData({...formData, roomId: e.target.value})}
                         required
                     >
-                        <option value="">-- Choose a Room --</option>
-                        {rooms.map(r => (
-                            <option key={r.id} value={r.id}>
-                                {r.roomNumber} {r.floorNumber ? `(Floor ${r.floorNumber})` : ''}
-                            </option>
-                        ))}
+                        <option value="">-- Select --</option>
+                        {rooms.map(r => <option key={r.id} value={r.id}>{r.roomNumber}</option>)}
                     </select>
-
-                    <label style={s.inputLabel}>Bed Number / ID</label>
+                </div>
+                <div style={{marginBottom:'25px'}}>
+                    <label style={{display:'block', fontSize:'13px', fontWeight:'600', color:'#374151', marginBottom:'5px'}}>Bed Number</label>
                     <input 
-                        style={s.input} 
-                        value={formData.bedNumber} 
-                        onChange={e => setFormData({...formData, bedNumber: e.target.value})} 
-                        placeholder="e.g. Bed-01, B-101-A" 
-                        required 
+                        style={{...s.input, border:'1px solid #e5e7eb', padding:'10px', borderRadius:'10px', background:'white'}} 
+                        placeholder="e.g. B-101-1" 
+                        value={formData.bedNumber}
+                        onChange={e => setFormData({...formData, bedNumber: e.target.value})}
+                        required
                     />
                 </div>
-
-                <div style={s.modalFooter}>
-                    <button type="button" onClick={() => setIsModalOpen(false)} style={{padding:'10px 18px', border:'1px solid #d1d5db', background:'white', borderRadius:'8px', cursor:'pointer', fontWeight:'600', color:'#374151'}}>Cancel</button>
-                    <button type="submit" style={{padding:'10px 18px', border:'none', background:'#4f46e5', borderRadius:'8px', cursor:'pointer', fontWeight:'600', color:'white'}}>Save Bed</button>
+                <div style={{display:'flex', justifyContent:'flex-end', gap:'10px'}}>
+                    <button type="button" onClick={() => setIsModalOpen(false)} style={{padding:'10px 20px', borderRadius:'10px', border:'1px solid #e5e7eb', background:'white', fontWeight:'600', color:'#374151', cursor:'pointer'}}>Cancel</button>
+                    <button type="submit" style={s.addBtn}>Save Bed</button>
                 </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 };

@@ -25,4 +25,6 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             ReservationStatus status,
             LocalDateTime dateTime
     );
+
+    List<Reservation> findByReservationStatusAndToDateBefore(ReservationStatus status, LocalDate date);
 }

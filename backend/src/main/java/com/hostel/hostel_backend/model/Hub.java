@@ -17,6 +17,9 @@ public class Hub {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String hubNumber;
+    private String imagePath;
+    @Column(length = 1000)
+    private String description;
 
     @OneToMany(mappedBy = "hub" ,cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude

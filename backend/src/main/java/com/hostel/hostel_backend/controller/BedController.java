@@ -49,4 +49,11 @@ public class BedController {
     public ResponseEntity<ApiResponse<List<BedsResponseDTO>>> getBedsByRoom(@PathVariable("room-id") Long roomId) {
         return ResponseEntity.ok(ApiResponse.success("Beds fetched", bedService.getBedsByRoomId(roomId)));
     }
+
+    @PatchMapping(value = "/beds/{bed-id}/maintenance", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<Void>> toggleMaintenance(@PathVariable("bed-id") Long bedId, @RequestParam Boolean status) throws ResourceNotFoundException {
+        // BedService එකේ method එකක් හදාගන්න ඕන මේකට
+        bedService.toggleMaintenance(bedId, status);
+        return ResponseEntity.ok(ApiResponse.success("Maintenance status updated"));
+    }
 }

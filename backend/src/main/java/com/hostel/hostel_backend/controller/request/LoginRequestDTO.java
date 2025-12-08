@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateHubRequestDTO {
-    private String hubNumber;
-    private String description;
+public class LoginRequestDTO {
+    private String username;
+    private String password;
 }

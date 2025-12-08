@@ -42,6 +42,12 @@ public class Reservation {
     @ToString.Exclude
     private Bed bed;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    @ToString.Exclude
+    private User user;
+
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id")
     @JsonIgnore

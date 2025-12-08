@@ -1,40 +1,119 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
+import { 
+  DoorOpen, 
+  Trash2, 
+  Plus, 
+  Search, 
+  Users, 
+  Lock, 
+  Unlock, 
+  CalendarClock,
+  Building,
+  X,
+  Pencil // Edit icon eka add kala
+} from 'lucide-react';
 
 const ManageRooms = () => {
   const [rooms, setRooms] = useState([]);
   const [floors, setFloors] = useState([]);
+  const [hubs, setHubs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterFloor, setFilterFloor] = useState('ALL');
+  const [filterHub, setFilterHub] = useState('ALL');
+  const [filterGender, setFilterGender] = useState('ALL');
+
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [hoveredRow, setHoveredRow] = useState(null);
-  
+  const [isEditMode, setIsEditMode] = useState(false); // Edit da Create da kiyala balanna
+  const [editingRoomId, setEditingRoomId] = useState(null); // Edit karana room eke ID eka
+
   const [formData, setFormData] = useState({
-    floorId: '', roomNumber: '', price: '', isPrivate: false, reservationPeriod: 'ONE_MONTH', reservedFor: 'BOYS'
+    floorId: '', 
+    roomNumber: '', 
+    price: '', 
+    isPrivate: false, 
+    reservationPeriod: '', 
+    reservedFor: 'BOYS', 
+    roomType: 'SHARING_2'
   });
 
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     try {
-      const [r, f] = await Promise.all([api.get('/rooms'), api.get('/floors')]);
+      setLoading(true);
+      const [r, f, h] = await Promise.all([api.get('/rooms'), api.get('/floors'),api.get('/hubs')]);
       if(r.data.status === 'SUCCESS') setRooms(r.data.data);
       if(f.data.status === 'SUCCESS') setFloors(f.data.data);
-    } catch (e) { toast.error("Failed to load data"); }
+      if(h.data.status === 'SUCCESS') setHubs(h.data.data); 
+    } catch (e) { 
+      toast.error("Failed to load data"); 
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCreate = async (e) => {
+  // Form eka reset kirima
+  const resetForm = () => {
+    setFormData({ 
+        floorId: '', roomNumber: '', price: '', isPrivate: false, 
+        reservationPeriod: '', reservedFor: 'BOYS', roomType: 'SHARING_2' 
+    });
+    setIsEditMode(false);
+    setEditingRoomId(null);
+  };
+
+  // Edit Button eka click kalahama
+  const handleEdit = (room) => {
+    // Selected room data form ekata set kirima
+    setFormData({
+        floorId: room.floorId || '', // Note: Backend DTO eke floorId ewanne nathnam meka wada nokaranna puluwan. E nisa Floor eka auto-select noviya haka.
+        roomNumber: room.roomNumber,
+        price: room.price,
+        isPrivate: room.isPrivate,
+        reservationPeriod: room.reservationPeriod,
+        reservedFor: room.reservedFor,
+        roomType: room.roomType
+    });
+    setEditingRoomId(room.id);
+    setIsEditMode(true);
+    setIsModalOpen(true);
+  };
+
+  // Form Submit (Create ho Update)
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if(!formData.floorId || !formData.roomNumber || !formData.price) {
+    if(!formData.roomNumber || !formData.price) {
         toast.warning("Please fill all required fields");
         return;
     }
+
     try {
-      await api.post(`/floors/${formData.floorId}/rooms`, formData);
-      toast.success("Room Added Successfully!");
+      if (isEditMode) {
+        // UPDATE Request
+        await api.put(`/rooms/${editingRoomId}`, formData);
+        toast.success("Room Updated Successfully!");
+      } else {
+        // CREATE Request
+        if(!formData.floorId) {
+            toast.warning("Please select a floor");
+            return;
+        }
+        await api.post(`/floors/${formData.floorId}/rooms`, formData);
+        toast.success("Room Added Successfully!");
+      }
+      
       setIsModalOpen(false);
       resetForm();
       fetchAll();
-    } catch (e) { toast.error("Failed to add room"); }
+    } catch (e) { 
+      toast.error(isEditMode ? "Failed to update room" : "Failed to add room"); 
+    }
   };
 
   const handleDelete = async (id) => {
@@ -43,280 +122,370 @@ const ManageRooms = () => {
     catch (e) { toast.error("Failed to delete"); }
   };
 
-  const resetForm = () => {
-    setFormData({ floorId: '', roomNumber: '', price: '', isPrivate: false, reservationPeriod: 'ONE_MONTH', reservedFor: 'BOYS' });
+  // --- Filtering Logic ---
+  const filteredRooms = rooms.filter(room => {
+    const rNum = room.roomNumber ? room.roomNumber.toString() : "";
+    const matchesSearch = rNum.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFloor = filterFloor === 'ALL' || room.floorNumber === filterFloor;
+    const matchesGender = filterGender === 'ALL' || room.reservedFor === filterGender;
+    const matchesHub = filterHub === 'ALL' || room.hubNumber === filterHub;
+    return matchesSearch && matchesFloor && matchesGender;
+  });
+
+  const stats = {
+    total: rooms.length,
+    private: rooms.filter(r => r.isPrivate).length,
+    shared: rooms.filter(r => !r.isPrivate).length
   };
 
-  // --- STYLES ---
   const s = {
-    container: { fontFamily: "'Inter', sans-serif", color: '#111827', paddingBottom: '40px' },
-
-    // Header
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
-    titleGroup: { display: 'flex', flexDirection: 'column' },
-    title: { fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0 },
-    subTitle: { fontSize: '14px', color: '#6b7280', marginTop: '5px' },
-
-    addBtn: { 
-      background: '#4f46e5', color: 'white', padding: '10px 20px', 
-      borderRadius: '8px', border: 'none', cursor: 'pointer', 
-      fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px',
-      boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
+    container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px' },
+    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' },
+    title: { fontSize: '26px', fontWeight: '800', color: '#111827', display: 'flex', alignItems: 'center', gap: '10px' },
+    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
+    statCard: { background: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '15px' },
+    statIconBox: (bg, col) => ({ width: '50px', height: '50px', borderRadius: '12px', background: bg, color: col, display: 'flex', alignItems: 'center', justifyContent: 'center' }),
+    statValue: { fontSize: '24px', fontWeight: '800', color: '#111827', lineHeight: '1' },
+    statLabel: { fontSize: '13px', color: '#6b7280', fontWeight: '600', marginTop: '4px' },
+    toolbar: { background: 'white', padding: '15px 20px', borderRadius: '16px', border: '1px solid #e5e7eb', marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' },
+    searchBox: { display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb', padding: '8px 15px', borderRadius: '10px', border: '1px solid #e5e7eb', flex: 1 },
+    searchInput: { border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px' },
+    filterSelect: { padding: '8px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', background: 'white', fontSize: '14px', color: '#374151', cursor: 'pointer', outline: 'none' },
+    addBtn: { background: '#4f46e5', color: 'white', padding: '10px 20px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(79, 70, 229, 0.2)', transition: '0.2s' },
+    tableContainer: { background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' },
+    table: { width: '100%', borderCollapse: 'collapse' },
+    thead: { background: '#f8fafc', borderBottom: '1px solid #e5e7eb' },
+    th: { padding: '15px 20px', fontSize: '12px', fontWeight: '700', color: '#64748b', textAlign: 'left', textTransform: 'uppercase' },
+    tr: { borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' },
+    td: { padding: '15px 20px', fontSize: '14px', color: '#334155' },
+    typeBadge: (type) => ({ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd' }),
+    accessBadge: (gender, isPrivate) => {
+        const isBoy = gender === 'BOYS';
+        const bg = isBoy ? (isPrivate ? '#1e3a8a' : '#eff6ff') : (isPrivate ? '#831843' : '#fdf2f8');
+        const text = isBoy ? (isPrivate ? 'white' : '#1d4ed8') : (isPrivate ? 'white' : '#db2777');
+        const border = isBoy ? '#bfdbfe' : '#fbcfe8';
+        return { display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: bg, color: text, border: isPrivate ? 'none' : `1px solid ${border}`, textTransform: 'uppercase', letterSpacing: '0.5px' };
     },
-
-    // Table
-    tableContainer: { 
-      background: 'white', borderRadius: '16px', 
-      border: '1px solid #e5e7eb',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', overflow: 'hidden' 
-    },
-    table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
-    thead: { backgroundColor: '#b3b6b9ff', borderBottom: '1px solid #e5e7eb' },
-    th: { padding: '16px 24px', fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' },
-    tr: (id) => ({ 
-      borderBottom: '1px solid #f3f4f6', 
-      transition: 'background-color 0.2s',
-      backgroundColor: hoveredRow === id ? '#f9fafb' : 'white'
-    }),
-    td: { padding: '16px 24px', fontSize: '14px', color: '#374151', verticalAlign: 'middle' },
-
-    // Badges
-    badge: (type) => {
-      let bg = '#f3f4f6', col = '#374151', border = '#e5e7eb';
-      if (type === 'BOYS') { bg = '#eff6ff'; col = '#1d4ed8'; border = '#bfdbfe'; }
-      else if (type === 'GIRLS') { bg = '#fdf2f8'; col = '#db2777'; border = '#fbcfe8'; }
-      else if (type === 'PVT') { bg = '#f5f3ff'; col = '#7c3aed'; border = '#ddd6fe'; } // Private
-      else if (type === 'SHR') { bg = '#ecfdf5'; col = '#059669'; border = '#a7f3d0'; } // Shared
-      
-      return {
-        display: 'inline-flex', alignItems: 'center', gap: '4px',
-        padding: '2px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: '700',
-        backgroundColor: bg, color: col, border: `1px solid ${border}`, textTransform: 'uppercase'
-      };
-    },
-
-    priceTag: { fontFamily: 'monospace', fontWeight: '700', fontSize: '14px', color: '#111827' },
-
-    delBtn: { 
-      background: '#fff', border: '1px solid #fee2e2', color: '#ef4444', 
-      padding: '8px', borderRadius: '8px', cursor: 'pointer', 
-      display: 'flex', alignItems: 'center', justifyContent: 'center' 
-    },
-
-    // Modal
-    overlay: { 
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-      background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 
-    },
-    modal: { 
-      background: 'white', borderRadius: '16px', width: '600px', // Wider modal for grid
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden'
-    },
-    modalHeader: { padding: '20px 24px', borderBottom: '1px solid #f3f4f6', background: '#fff' },
-    modalBody: { padding: '24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
-    modalFooter: { padding: '20px 24px', background: '#f9fafb', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'flex-end', gap: '12px' },
-    
-    label: { display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#374151' },
-    input: { 
-      width: '100%', padding: '10px 12px', borderRadius: '8px', 
-      border: '1px solid #d1d5db', fontSize: '14px', outline: 'none',
-      boxSizing: 'border-box', transition: 'border-color 0.2s'
-    },
-    select: {
-      width: '100%', padding: '10px 12px', borderRadius: '8px', 
-      border: '1px solid #d1d5db', fontSize: '14px', outline: 'none',
-      backgroundColor: 'white', cursor: 'pointer'
-    },
-    
-    // Checkbox container styled as a row
-    checkboxContainer: {
-        gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '10px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb'
-    }
+    // Modal Styles
+    overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
+    modal: { background: 'white', borderRadius: '24px', width: '600px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden', border: '1px solid #f1f5f9', animation: 'fadeIn 0.2s ease-out' },
+    modalHeader: { padding: '24px 32px', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+    modalTitle: { fontSize: '20px', fontWeight: '800', color: '#0f172a' },
+    modalSub: { fontSize: '14px', color: '#64748b', marginTop: '2px' },
+    modalBody: { padding: '32px', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '24px' },
+    sectionLabel: { fontSize: '12px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' },
+    inputGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
+    inputGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
+    label: { fontSize: '13px', fontWeight: '600', color: '#475569' },
+    input: { width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b', background: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' },
+    select: { width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b', background: 'white', outline: 'none', cursor: 'pointer' },
+    toggleCard: (isActive) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: isActive ? '#f0f9ff' : 'white', borderRadius: '16px', border: isActive ? '1px solid #bae6fd' : '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s' }),
+    toggleContainer: (isActive) => ({ width: '48px', height: '26px', background: isActive ? '#0284c7' : '#cbd5e1', borderRadius: '99px', position: 'relative', transition: '0.3s' }),
+    toggleCircle: (isActive) => ({ width: '20px', height: '20px', background: 'white', borderRadius: '50%', position: 'absolute', top: '3px', left: isActive ? '25px' : '3px', transition: '0.3s cubic-bezier(0.4, 0.0, 0.2, 1)', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }),
+    modalFooter: { padding: '24px 32px', background: 'white', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '12px' },
+    cancelBtn: { padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: '600', cursor: 'pointer' },
+    saveBtn: { padding: '12px 24px', borderRadius: '12px', border: 'none', background: '#4f46e5', color: 'white', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)' }
   };
 
   return (
     <div style={s.container}>
-      {/* HEADER */}
+      {/* Header */}
       <div style={s.header}>
-        <div style={s.titleGroup}>
-          <h2 style={s.title}>Manage Rooms</h2>
-          <p style={s.subTitle}>Create and manage accommodation rooms.</p>
+        <div style={s.title}>
+          <div style={{background:'#e0e7ff', padding:'10px', borderRadius:'12px', color:'#4338ca'}}><DoorOpen size={28}/></div>
+          <div>Manage Rooms <div style={{fontSize:'14px', color:'#6b7280', fontWeight:'500'}}>Space & Pricing</div></div>
         </div>
-        <button style={s.addBtn} onClick={() => setIsModalOpen(true)}>
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add New Room
+        <button style={s.addBtn} onClick={() => { resetForm(); setIsModalOpen(true); }}>
+          <Plus size={18} /> Add Room
         </button>
       </div>
 
-      {/* TABLE */}
+      {/* Stats */}
+      <div style={s.statsGrid}>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#eff6ff', '#2563eb')}><Building size={24}/></div>
+          <div><div style={s.statValue}>{stats.total}</div><div style={s.statLabel}>Total Rooms</div></div>
+        </div>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#f0fdf4', '#16a34a')}><Unlock size={24}/></div>
+          <div><div style={s.statValue}>{stats.shared}</div><div style={s.statLabel}>Shared Rooms</div></div>
+        </div>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#fef2f2', '#dc2626')}><Lock size={24}/></div>
+          <div><div style={s.statValue}>{stats.private}</div><div style={s.statLabel}>Private Rooms</div></div>
+        </div>
+      </div>
+
+      {/* 3. Toolbar */}
+      <div style={s.toolbar}>
+        <div style={s.searchBox}>
+          <Search size={18} color="#9ca3af"/>
+          <input 
+            style={s.searchInput} 
+            placeholder="Search by Room Number..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div style={{display:'flex', gap:'10px'}}>
+          
+          {/* HUB Filter Dropdown */}
+          <select style={s.filterSelect} value={filterHub} onChange={e => setFilterHub(e.target.value)}>
+            <option value="ALL">All Hubs</option>
+            {hubs.map(h => (
+                <option key={h.id} value={h.hubNumber}>{h.hubNumber}</option>
+            ))}
+          </select>
+
+          {/* Floor Filter Dropdown */}
+          <select style={s.filterSelect} value={filterFloor} onChange={e => setFilterFloor(e.target.value)}>
+            <option value="ALL">All Floors</option>
+            {/* Filter Floors based on selected Hub if needed, currently showing all or matching filters */}
+            {floors
+                .filter(f => filterHub === 'ALL' || f.hubNumber === filterHub) // Show floors relevant to selected hub
+                .map(f => (
+                    <option key={f.id} value={f.floorNumber}>{f.floorNumber}</option>
+                ))
+            }
+          </select>
+
+          <select style={s.filterSelect} value={filterGender} onChange={e => setFilterGender(e.target.value)}>
+            <option value="ALL">All Genders</option>
+            <option value="BOYS">Boys</option>
+            <option value="GIRLS">Girls</option>
+          </select>
+        </div>
+      </div>
+      {/* Table */}
       <div style={s.tableContainer}>
         <table style={s.table}>
           <thead style={s.thead}>
             <tr>
-              <th style={s.th}>Room Details</th>
+              <th style={s.th}>Room</th>
               <th style={s.th}>Location</th>
-              <th style={s.th}>Price (Monthly)</th>
-              <th style={s.th}>Type & Gender</th>
-              <th style={s.th}>Duration</th>
+              <th style={s.th}>Type / Capacity</th>
+              <th style={s.th}>Access & Gender</th>
+              <th style={s.th}>Monthly Price</th>
+              <th style={s.th}>Period</th>
               <th style={{...s.th, textAlign:'right'}}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {rooms.length === 0 ? (
-                <tr><td colSpan="6" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>No rooms available.</td></tr>
-            ) : (
-                rooms.map(r => (
-                <tr 
-                    key={r.id} 
-                    style={s.tr(r.id)}
-                    onMouseEnter={() => setHoveredRow(r.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                >
-                    {/* Room Number */}
-                    <td style={s.td}>
-                        <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                            <div style={{width:'40px', height:'40px', borderRadius:'10px', background:'#fff7ed', color:'#ea580c', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px'}}>
-                                🚪
-                            </div>
-                            <span style={{fontWeight:'700', color:'#111827', fontSize:'15px'}}>{r.roomNumber}</span>
-                        </div>
-                    </td>
+            {loading ? 
+              <tr><td colSpan="7" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>Loading...</td></tr> 
+            : filteredRooms.length === 0 ?
+              <tr><td colSpan="7" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>No rooms found.</td></tr>
+            : filteredRooms.map(r => (
+              <tr key={r.id} style={s.tr} onMouseOver={e => e.currentTarget.style.background='#f8fafc'} onMouseOut={e => e.currentTarget.style.background='white'}>
+                
+                <td style={s.td}>
+                  <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+                    <div style={{padding:'8px', background:'#fff7ed', borderRadius:'10px', color:'#ea580c'}}><DoorOpen size={20}/></div>
+                    <span style={{fontWeight:'700', color:'#1e293b', fontSize:'15px'}}>{r.roomNumber}</span>
+                  </div>
+                </td>
+
+                <td style={s.td}>
+                    <div style={{fontSize:'13px', fontWeight:'600'}}>{r.floorNumber}</div>
+                    <div style={{fontSize:'11px', color:'#64748b'}}>{r.hubNumber || 'Hub Info'}</div>
+                </td>
+
+                <td style={s.td}>
+                    <span style={s.typeBadge(r.roomType || 'SHARING_2')}>
+                        <Users size={14}/>
+                        {r.roomType ? r.roomType.replace('SHARING_', '') : '2'} Person
+                    </span>
+                </td>
+
+                <td style={s.td}>
+                    <span style={s.accessBadge(r.reservedFor, r.isPrivate)}>
+                        {r.isPrivate ? <Lock size={12}/> : <Unlock size={12}/>}
+                        {r.reservedFor === 'BOYS' ? 'Male' : 'Female'}
+                        <span style={{opacity:0.6, margin:'0 4px'}}>|</span>
+                        {r.isPrivate ? 'Private' : 'Shared'}
+                    </span>
+                </td>
+
+                <td style={s.td}>
+                    <div style={{display:'flex', alignItems:'center', gap:'4px', fontFamily:'monospace', fontWeight:'700', color:'#0f172a', fontSize:'15px'}}>
+                        LKR {parseFloat(r.price).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                    </div>
+                </td>
+
+                <td style={s.td}>
+                    <div style={{display:'flex', alignItems:'center', gap:'6px', color:'#475569', fontSize:'13px'}}>
+                        <CalendarClock size={14}/>
+                        {r.reservationPeriod.replace('_', ' ')}
+                    </div>
+                </td>
+
+                <td style={s.td}>
+                  <div style={{display:'flex', justifyContent:'flex-end', gap:'8px'}}>
                     
-                    {/* Location */}
-                    <td style={s.td}>
-                        <div style={{fontWeight:'600', fontSize:'13px'}}>{r.floorNumber}</div>
-                        <div style={{fontSize:'12px', color:'#6b7280'}}>
-                             {/* Trying to find Hub name if available in floors list, or just generic text */}
-                             {floors.find(f => f.floorNumber === r.floorNumber)?.hubNumber || 'Hub Info'}
-                        </div>
-                    </td>
+                    {/* EDIT BUTTON */}
+                    <button 
+                        onClick={() => handleEdit(r)}
+                        style={{padding:'8px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'white', color:'#2563eb', cursor:'pointer'}}
+                        title="Edit Room"
+                    >
+                        <Pencil size={16}/>
+                    </button>
 
-                    {/* Price */}
-                    <td style={s.td}>
-                        <span style={s.priceTag}>
-                           LKR {parseFloat(r.price).toLocaleString('en-US', {minimumFractionDigits: 2})}
-                        </span>
-                    </td>
+                    {/* DELETE BUTTON */}
+                    <button 
+                        onClick={() => handleDelete(r.id)}
+                        style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}}
+                        title="Delete Room"
+                    >
+                        <Trash2 size={16}/>
+                    </button>
+                  </div>
+                </td>
 
-                    {/* Type & Gender */}
-                    <td style={s.td}>
-                        <div style={{display:'flex', flexDirection:'column', gap:'5px', alignItems:'flex-start'}}>
-                            <span style={s.badge(r.isPrivate ? 'PVT' : 'SHR')}>
-                                {r.isPrivate ? "🔒 Private" : "👥 Shared"}
-                            </span>
-                            <span style={s.badge(r.reservedFor)}>
-                                {r.reservedFor === 'BOYS' ? "👨 Boys" : "👩 Girls"}
-                            </span>
-                        </div>
-                    </td>
-
-                    {/* Period */}
-                    <td style={s.td}>
-                        <span style={{fontSize:'13px', color:'#4b5563', fontWeight:'500'}}>
-                            {r.reservationPeriod.replace('_', ' ')}
-                        </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td style={s.td}>
-                        <div style={{display:'flex', justifyContent:'flex-end'}}>
-                            <button style={s.delBtn} onClick={() => handleDelete(r.id)} title="Delete Room">
-                                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                ))
-            )}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* MODAL */}
+      {/* MODAL (Handle both Create & Edit) */}
       {isModalOpen && (
         <div style={s.overlay} onClick={() => setIsModalOpen(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
+            
             <div style={s.modalHeader}>
-                <h3 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>Add New Room</h3>
-                <p style={{margin: '5px 0 0', fontSize: '13px', color: '#6b7280'}}>Enter details to create a new room.</p>
+                <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
+                    <div style={{background:'#f0f9ff', padding:'10px', borderRadius:'12px', border:'1px solid #e0f2fe'}}>
+                        <Plus size={24} color="#0284c7"/>
+                    </div>
+                    <div>
+                        <div style={s.modalTitle}>{isEditMode ? "Edit Room Details" : "Create New Room"}</div>
+                        <div style={s.modalSub}>{isEditMode ? "Update existing room information" : "Add a new accommodation unit"}</div>
+                    </div>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'#94a3b8'}}><X size={24}/></button>
             </div>
-
-            <form onSubmit={handleCreate}>
+            
+            <form onSubmit={handleSubmit}>
                 <div style={s.modalBody}>
-                    {/* Floor Selection (Full Width) */}
-                    <div style={{gridColumn: '1 / -1'}}>
-                        <label style={s.label}>Select Floor</label>
-                        <select style={s.select} value={formData.floorId} onChange={e => setFormData({...formData, floorId: e.target.value})} required>
-                            <option value="">-- Choose a Floor --</option>
-                            {floors.map(f => (
-                                <option key={f.id} value={f.id}>
-                                    {f.hubNumber ? `${f.hubNumber} - ` : ''}{f.floorNumber}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Room Number */}
+                    
+                    {/* Section 1: Location */}
                     <div>
-                        <label style={s.label}>Room Number</label>
-                        <input style={s.input} placeholder="Ex: R-101" value={formData.roomNumber} onChange={e => setFormData({...formData, roomNumber: e.target.value})} required />
+                        <div style={s.sectionLabel}>1. Location Details</div>
+                        <div style={s.inputGrid}>
+                            <div style={s.inputGroup}>
+                                <label style={s.label}>Floor Location</label>
+                                <select 
+                                    style={s.select} 
+                                    value={formData.floorId} 
+                                    onChange={e => setFormData({...formData, floorId: e.target.value})} 
+                                    required={!isEditMode} // Edit karaddi Floor maru karanna denne nathi nam meka optional kala haka
+                                    disabled={isEditMode} // Edit karaddi Floor maru karanna bari wena vidihata disable kala haka
+                                >
+                                    <option value="">-- Select Floor --</option>
+                                    {floors.map(f => (
+                                        <option key={f.id} value={f.id}>{f.hubNumber ? `${f.hubNumber} - ` : ''}{f.floorNumber}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={s.inputGroup}>
+                                <label style={s.label}>Room Number</label>
+                                <input 
+                                    style={s.input} 
+                                    placeholder="Ex: R-101" 
+                                    value={formData.roomNumber}
+                                    onChange={e => setFormData({...formData, roomNumber: e.target.value})}
+                                    required
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Price */}
+                    {/* Section 2: Configuration */}
                     <div>
-                        <label style={s.label}>Price (LKR)</label>
-                        <input type="number" style={s.input} placeholder="0.00" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
+                        <div style={s.sectionLabel}>2. Configuration & Capacity</div>
+                        <div style={s.inputGrid}>
+                            <div style={s.inputGroup}>
+                                <label style={s.label}>Capacity (Type)</label>
+                                <select style={s.select} value={formData.roomType} onChange={e => setFormData({...formData, roomType: e.target.value})}>
+                                    <option value="SHARING_2">2 Person Sharing</option>
+                                    <option value="SHARING_4">4 Person Sharing</option>
+                                    <option value="SHARING_6">6 Person Sharing</option>
+                                </select>
+                            </div>
+                            <div style={s.inputGroup}>
+                                <label style={s.label}>Reserved For</label>
+                                <select style={s.select} value={formData.reservedFor} onChange={e => setFormData({...formData, reservedFor: e.target.value})}>
+                                    <option value="BOYS">👨 Boys</option>
+                                    <option value="GIRLS">👩 Girls</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Gender */}
+                    {/* Section 3: Pricing & Privacy */}
                     <div>
-                        <label style={s.label}>Gender Allocation</label>
-                        <select style={s.select} value={formData.reservedFor} onChange={e => setFormData({...formData, reservedFor: e.target.value})}>
-                            <option value="BOYS">👨 Boys</option>
-                            <option value="GIRLS">👩 Girls</option>
-                        </select>
+                        <div style={s.sectionLabel}>3. Pricing & Access</div>
+                        <div style={s.inputGrid}>
+                            <div style={s.inputGroup}>
+                                <label style={s.label}>Monthly Price (LKR)</label>
+                                <input 
+                                    type="number"
+                                    style={s.input} 
+                                    placeholder="0.00" 
+                                    value={formData.price}
+                                    onChange={e => setFormData({...formData, price: e.target.value})}
+                                    required
+                                />
+                            </div>
+                            <div style={s.inputGroup}>
+                                <label style={s.label}>Duration</label>
+                                <select style={s.select} value={formData.reservationPeriod} onChange={e => setFormData({...formData, reservationPeriod: e.target.value})}>
+                                    <option value="WEEKLY">Weekly</option>
+                                    <option value="MONTHLY">Monthly</option>
+                                    <option value="DAILY">Daily</option>
+                                    
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Privacy Toggle */}
+                        <div style={{marginTop:'20px'}}>
+                            <div 
+                                style={s.toggleCard(formData.isPrivate)}
+                                onClick={() => setFormData({...formData, isPrivate: !formData.isPrivate})}
+                            >
+                                <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+                                    <div style={{padding:'8px', borderRadius:'10px', background: formData.isPrivate ? '#e0f2fe' : '#f1f5f9', color: formData.isPrivate ? '#0284c7' : '#64748b'}}>
+                                        {formData.isPrivate ? <Lock size={20}/> : <Unlock size={20}/>}
+                                    </div>
+                                    <div>
+                                        <div style={{fontSize:'14px', fontWeight:'700', color:'#1e293b'}}>
+                                            {formData.isPrivate ? "Private Room" : "Shared Room"}
+                                        </div>
+                                        <div style={{fontSize:'12px', color:'#64748b'}}>
+                                            {formData.isPrivate ? "Entire room booking (Higher Cost)" : "Individual bed booking"}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={s.toggleContainer(formData.isPrivate)}>
+                                    <div style={s.toggleCircle(formData.isPrivate)}></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Duration */}
-                    <div>
-                        <label style={s.label}>Reservation Period</label>
-                        <select style={s.select} value={formData.reservationPeriod} onChange={e => setFormData({...formData, reservationPeriod: e.target.value})}>
-                            <option value="ONE_MONTH">1 Month</option>
-                            <option value="TWO_MONTHS">2 Months</option>
-                            <option value="UNDER_ONE_MONTH">Less than 1 Month</option>
-                            <option value="UNDER_TWO_MONTHS">Less than 2 Months</option>
-                        </select>
-                    </div>
-
-                    {/* Private Checkbox (Full Width) */}
-                    <div style={s.checkboxContainer}>
-                        <input 
-                            type="checkbox" 
-                            id="isPrivate" 
-                            checked={formData.isPrivate} 
-                            onChange={e => setFormData({...formData, isPrivate: e.target.checked})} 
-                            style={{width:'18px', height:'18px', cursor:'pointer'}}
-                        /> 
-                        <label htmlFor="isPrivate" style={{fontSize:'14px', fontWeight:'600', color:'#374151', cursor:'pointer'}}>
-                            Mark as Private Room 🔒
-                        </label>
-                    </div>
                 </div>
 
                 <div style={s.modalFooter}>
-                    <button type="button" onClick={() => setIsModalOpen(false)} style={{padding:'10px 18px', border:'1px solid #d1d5db', background:'white', borderRadius:'8px', cursor:'pointer', fontWeight:'600', color:'#374151'}}>Cancel</button>
-                    <button type="submit" style={{padding:'10px 18px', border:'none', background:'#4f46e5', borderRadius:'8px', cursor:'pointer', fontWeight:'600', color:'white'}}>Save Room</button>
+                    <button type="button" onClick={() => setIsModalOpen(false)} style={s.cancelBtn}>Cancel</button>
+                    <button type="submit" style={s.saveBtn}>{isEditMode ? "Update Changes" : "Save Room"}</button>
                 </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 };

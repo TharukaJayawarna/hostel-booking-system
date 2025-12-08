@@ -29,6 +29,10 @@ public class Room {
     @Column(nullable = false)
     private ReservedFor reservedFor;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RoomType roomType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "floor_id")
     @JsonIgnore

@@ -22,6 +22,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             "JOIN r.floor f " +
             "JOIN r.beds b " +
             "WHERE f.hub.id = :hubId " +
+            "AND b.underMaintenance = false " +
             "AND b.id NOT IN (" +
             "    SELECT res.bed.id FROM Reservation res " +
             "    WHERE res.reservationStatus IN :statuses " +

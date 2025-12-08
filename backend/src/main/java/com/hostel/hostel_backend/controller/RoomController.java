@@ -102,4 +102,12 @@ public class RoomController {
                 roomService.getAvailableRooms(hubId, checkIn, checkOut)
         ));
     }
+
+    // class eka athulata me PUT endpoint eka add karanna
+
+    @PutMapping(value = "/rooms/{room-id}", headers = "X-Api-Version=v1")
+    public ResponseEntity<ApiResponse<Void>> updateRoom(@PathVariable("room-id") Long roomId, @RequestBody CreateRoomRequestDTO dto) throws ResourceNotFoundException {
+        roomService.updateRoom(roomId, dto);
+        return ResponseEntity.ok(ApiResponse.success("Room updated successfully"));
+    }
 }

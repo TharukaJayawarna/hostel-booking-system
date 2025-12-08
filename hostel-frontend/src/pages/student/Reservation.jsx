@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../../api/axiosConfig'; // ඔබේ axios config එක
+import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
+import { 
+  User, Mail, Phone, MapPin, CreditCard, Calendar, 
+  BedDouble, ShieldCheck, ArrowLeft, Loader2, Building2, CheckCircle2, AlertTriangle
+} from 'lucide-react';
 
 const Reservation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // කලින් පිටුවෙන් එන data ලබා ගැනීම
-  const { bedId, bedNumber, roomNumber, checkIn, checkOut } = location.state || {};
+  // 1. මෙතන reservedFor (Room Gender) එක ලබා ගන්නවා
+  const { bedId, bedNumber, roomNumber, checkIn, checkOut, reservedFor } = location.state || {};
 
   const [formData, setFormData] = useState({
     studentName: '',
@@ -21,237 +25,33 @@ const Reservation = () => {
 
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-
-  // --- Styles Object ---
-  const styles = {
-    pageContainer: {
-      width: '100%',
-      minHeight: '100vh',
-      margin: '0',
-      padding: '40px 20px',
-      fontFamily: "'Inter', 'Segoe UI', sans-serif",
-      boxSizing: 'border-box',
-      backgroundColor: '#f8f9fa', 
-      display: 'flex',
-      justifyContent: 'center'
-    },
-    innerContainer: {
-      maxWidth: '1200px',
-      width: '100%',
-    },
-    headerSection: {
-      marginBottom: '30px',
-      textAlign: 'left'
-    },
-    pageTitle: {
-      fontSize: '28px',
-      color: '#1a1a1a',
-      marginBottom: '8px',
-      fontWeight: '800',
-      letterSpacing: '-0.5px'
-    },
-    subTitle: {
-      color: '#666',
-      fontSize: '15px'
-    },
-    contentWrapper: {
-      display: 'flex',
-      gap: '30px',
-      flexWrap: 'wrap',
-      alignItems: 'flex-start' 
-    },
-    formCard: {
-      flex: '2',
-      minWidth: '350px',
-      backgroundColor: '#ffffff',
-      padding: '35px',
-      borderRadius: '16px',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.04)', 
-      border: '1px solid #f0f0f0'
-    },
-    sectionHeader: {
-      fontSize: '18px',
-      fontWeight: '700',
-      color: '#2b5c9e',
-      marginBottom: '25px',
-      paddingBottom: '15px',
-      borderBottom: '2px solid #f0f2f5'
-    },
-    formGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-      gap: '20px'
-    },
-    formGroup: {
-      marginBottom: '5px' 
-    },
-    fullWidthGroup: {
-      gridColumn: '1 / -1', 
-      marginTop: '5px'
-    },
-    label: {
-      display: 'block',
-      marginBottom: '8px',
-      fontWeight: '600',
-      color: '#4b5563',
-      fontSize: '13px',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
-    },
-    input: {
-      width: '100%',
-      padding: '12px 15px',
-      border: '1px solid #e5e7eb',
-      borderRadius: '8px',
-      fontSize: '15px',
-      boxSizing: 'border-box',
-      outline: 'none',
-      transition: 'all 0.2s ease',
-      backgroundColor: '#f9fafb'
-    },
-    select: {
-      width: '100%',
-      padding: '12px 15px',
-      border: '1px solid #e5e7eb',
-      borderRadius: '8px',
-      fontSize: '15px',
-      boxSizing: 'border-box',
-      backgroundColor: '#f9fafb',
-      cursor: 'pointer'
-    },
-    summarySection: {
-      flex: '1',
-      minWidth: '320px',
-      position: 'sticky', 
-      top: '20px'
-    },
-    summaryCard: {
-      backgroundColor: '#ffffff',
-      borderRadius: '16px',
-      padding: '30px',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-      border: '1px solid #e5e7eb'
-    },
-    summaryTitle: {
-      fontSize: '18px',
-      fontWeight: '700',
-      color: '#111',
-      marginBottom: '20px'
-    },
-    summaryRow: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      marginBottom: '15px',
-      fontSize: '14px',
-      color: '#555'
-    },
-    summaryLabel: {
-      color: '#6b7280',
-      fontWeight: '500'
-    },
-    summaryValue: {
-      color: '#111',
-      fontWeight: '600',
-      textAlign: 'right'
-    },
-    highlightBox: {
-      backgroundColor: '#f0f9ff',
-      padding: '15px',
-      borderRadius: '10px',
-      marginTop: '15px',
-      border: '1px solid #e0f2fe'
-    },
-    roomInfo: {
-      fontSize: '13px',
-      color: '#0369a1',
-      marginBottom: '5px',
-      display: 'flex',
-      justifyContent: 'space-between'
-    },
-    divider: {
-      border: '0',
-      borderTop: '1px dashed #e5e7eb',
-      margin: '25px 0'
-    },
-    totalRow: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '25px'
-    },
-    totalLabel: {
-      fontSize: '16px',
-      fontWeight: '700',
-      color: '#374151'
-    },
-    totalAmount: {
-      fontSize: '24px',
-      fontWeight: '800',
-      color: '#2b5c9e'
-    },
-    payBtn: {
-      width: '100%',
-      padding: '16px',
-      backgroundColor: isHovered ? '#1e40af' : '#2b5c9e', 
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px',
-      fontSize: '16px',
-      fontWeight: '700',
-      cursor: loading ? 'not-allowed' : 'pointer',
-      opacity: loading ? 0.7 : 1,
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 12px rgba(43, 92, 158, 0.3)'
-    },
-    cancelBtn: {
-      width: '100%',
-      padding: '12px',
-      background: 'transparent',
-      border: 'none',
-      color: '#ef4444',
-      fontWeight: '600',
-      marginTop: '12px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      transition: 'color 0.2s'
-    }
-  };
+  const [priceLoading, setPriceLoading] = useState(true);
 
   useEffect(() => {
     if (!bedId || !checkIn || !checkOut) {
-      toast.error("Invalid booking details. Please start again.");
+      toast.error("Invalid booking details.");
       navigate('/');
       return;
     }
     fetchPrice();
   }, [bedId, checkIn, checkOut]);
 
-  // --- FIXED fetchPrice Function ---
   const fetchPrice = async () => {
+    setPriceLoading(true);
     try {
       const response = await api.get(`/reservations/calculate`, {
         params: { bedId, fromDate: checkIn, toDate: checkOut },
         headers: { 'X-Api-Version': 'v1' }
       });
 
-      console.log("Calculate Response:", response.data);
-
-      // Backend returns a Double directly (e.g., 5000.0)
       if (response.status === 200) {
-        if (typeof response.data === 'number') {
-          setTotalAmount(response.data);
-        } else if (response.data && typeof response.data.data === 'number') {
-           // In case it's wrapped in an ApiResponse object
-           setTotalAmount(response.data.data);
-        } else {
-           // Fallback to prevent object injection
-           setTotalAmount(Number(response.data) || 0);
-        }
+        setTotalAmount(typeof response.data === 'number' ? response.data : (response.data.data || 0));
       }
     } catch (error) {
       console.error(error);
       toast.error("Error calculating price.");
+    } finally {
+      setPriceLoading(false);
     }
   };
 
@@ -259,47 +59,44 @@ const Reservation = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // --- FIXED handlePayment Function ---
   const handlePayment = async (e) => {
     e.preventDefault();
+
+    // --- GENDER VALIDATION LOGIC START ---
+    if (reservedFor) {
+        const studentGender = formData.gender; // "MALE" or "FEMALE"
+        // reservedFor values: "BOYS" or "GIRLS"
+
+        if (reservedFor === 'BOYS' && studentGender === 'FEMALE') {
+            toast.error("Gender Mismatch! This room is reserved for BOYS only.");
+            return; // Stop execution
+        }
+        
+        if (reservedFor === 'GIRLS' && studentGender === 'MALE') {
+            toast.error("Gender Mismatch! This room is reserved for GIRLS only.");
+            return; // Stop execution
+        }
+    }
+    // --- GENDER VALIDATION LOGIC END ---
+
     setLoading(true);
 
-    // FIX: Ensure 'amount' is strictly a Number to prevent JSON parse error
-    let finalAmount = totalAmount;
-    if (typeof totalAmount === 'object') {
-        finalAmount = totalAmount.data || 0;
-    }
-    finalAmount = Number(finalAmount);
-
     const bookingPayload = {
-      studentName: formData.studentName,
-      registrationNumber: formData.registrationNumber,
-      email: formData.email,
-      contactNumber: formData.phone, // Backend expects 'contactNumber'
-      address: formData.address,
-      gender: formData.gender,
-      bedId: bedId,
-      fromDate: checkIn,
-      toDate: checkOut,
-      amount: finalAmount // Must be a Number (e.g., 5000.0)
+      ...formData,
+      bedId, fromDate: checkIn, toDate: checkOut,
+      amount: Number(totalAmount)
     };
-
-    console.log("Sending Payload:", bookingPayload);
 
     try {
       const response = await api.post('/reservations/initiate', bookingPayload, {
         headers: { 'X-Api-Version': 'v1' }
       });
 
-      // ReservationController returns PayHereInitResponseDTO directly
       if (response.status === 200) {
-        const payData = response.data.data; // Direct object
-        openPayHerePopup(payData);
+        openPayHerePopup(response.data.data);
       }
     } catch (error) {
-      console.error(error);
-      const errorMsg = error.response?.data?.message || "Payment initiation failed.";
-      toast.error(errorMsg);
+      toast.error(error.response?.data?.message || "Payment initiation failed.");
       setLoading(false);
     }
   };
@@ -314,8 +111,8 @@ const Reservation = () => {
     const paymentObject = {
       "sandbox": true,
       "merchant_id": data.merchantId,
-      "return_url": "https://ursula-brainy-jessi.ngrok-free.dev/payment-success",
-      "cancel_url": "https://ursula-brainy-jessi.ngrok-free.dev/payment-cancel",
+      "return_url": "http://localhost:5173/payment-success",
+      "cancel_url": "http://localhost:5173/payment-cancel",
       "notify_url": "https://ursula-brainy-jessi.ngrok-free.dev/payments/notify", 
       "order_id": data.orderId,
       "items": data.items,
@@ -333,19 +130,8 @@ const Reservation = () => {
 
     window.payhere.onCompleted = function onCompleted(orderId) {
       setLoading(false);
-      toast.success("Payment Successful! Booking Confirmed.");
-      navigate('/booking-success', { 
-        state: {
-          orderId: orderId,
-          studentName: formData.studentName,
-          studentId: formData.registrationNumber,
-          bedNumber: bedNumber,
-          roomNumber: roomNumber,
-          checkIn: checkIn,
-          checkOut: checkOut,
-          amount: totalAmount
-        }
-      });
+      toast.success("Booking Confirmed!");
+      navigate('/booking-success', { state: { ...formData, orderId, bedNumber, roomNumber, checkIn, checkOut, amount: totalAmount } });
     };
 
     window.payhere.onDismissed = function onDismissed() {
@@ -355,134 +141,289 @@ const Reservation = () => {
 
     window.payhere.onError = function onError(error) {
       setLoading(false);
-      console.error("PayHere Error:", error);
       toast.error("Payment Error: " + error);
     };
 
     window.payhere.startPayment(paymentObject);
   };
 
+  // --- STYLES ---
+  const s = {
+    // Main Layout (Full Screen, No Scroll)
+    container: {
+      height: '100vh',
+      width: '100vw',
+      display: 'flex',
+      backgroundColor: '#f3f4f6',
+      overflow: 'hidden', // Prevents page scrolling
+      fontFamily: "'Inter', sans-serif"
+    },
+    
+    // Left Side (Form)
+    leftPanel: {
+      flex: '1.2',
+      padding: '40px 60px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      backgroundColor: '#ffffff',
+      boxShadow: '4px 0 24px rgba(0,0,0,0.05)',
+      zIndex: 10,
+      overflowY: 'auto' // Only form scrolls if screen is very small
+    },
+    header: { marginBottom: '30px' },
+    backBtn: {
+      display: 'inline-flex', alignItems: 'center', gap: '8px',
+      background: 'transparent', border: 'none',
+      color: '#64748b', fontSize: '14px', fontWeight: '600',
+      cursor: 'pointer', marginBottom: '15px',
+      transition: 'color 0.2s',
+      ':hover': { color: '#1e293b' }
+    },
+    title: { fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '5px', letterSpacing: '-0.5px' },
+    subTitle: { fontSize: '15px', color: '#64748b' },
+
+    // Form
+    formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
+    inputGroup: { marginBottom: '15px' },
+    label: { display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', marginBottom: '6px' },
+    inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
+    inputIcon: { position: 'absolute', left: '16px', color: '#94a3b8' },
+    input: {
+      width: '100%', padding: '14px 16px 14px 45px', borderRadius: '12px',
+      border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
+      outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s',
+      backgroundColor: '#f8fafc', boxSizing: 'border-box'
+    },
+    select: {
+      width: '100%', padding: '14px 16px', borderRadius: '12px',
+      border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
+      outline: 'none', backgroundColor: '#f8fafc', cursor: 'pointer',
+      boxSizing: 'border-box'
+    },
+
+    // Right Side (Summary Card)
+    rightPanel: {
+      flex: '0.8',
+      background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', // Dark Indigo Gradient
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '40px',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    // Background Decoration
+    bgCircle1: { position: 'absolute', top: '-10%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', zIndex: 0 },
+    bgCircle2: { position: 'absolute', bottom: '-10%', left: '-10%', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)', zIndex: 0 },
+
+    ticketCard: {
+      width: '100%', maxWidth: '420px',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)', // Glass Effect
+      backdropFilter: 'blur(20px)',
+      borderRadius: '24px',
+      padding: '35px',
+      color: 'white',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      zIndex: 1,
+      position: 'relative'
+    },
+    ticketHeader: { borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '20px', marginBottom: '20px' },
+    ticketTitle: { fontSize: '18px', fontWeight: '700', letterSpacing: '0.5px', marginBottom: '5px' },
+    ticketSub: { fontSize: '13px', opacity: 0.7 },
+
+    // Room Details in Ticket
+    roomBox: { 
+      background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '15px', 
+      display: 'flex', justifyContent: 'space-between', marginBottom: '25px',
+      border: '1px solid rgba(255,255,255,0.05)'
+    },
+    roomItem: { display: 'flex', flexDirection: 'column', gap: '4px' },
+    roomLabel: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.6, fontWeight: '700' },
+    roomValue: { fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' },
+
+    // Date Lines
+    dateLine: { display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '12px', opacity: 0.9 },
+    
+    // Total
+    totalSection: {
+      marginTop: '30px', paddingTop: '20px', borderTop: '1px dashed rgba(255,255,255,0.3)',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+    },
+    totalLabel: { fontSize: '15px', fontWeight: '600', opacity: 0.9 },
+    totalValue: { fontSize: '28px', fontWeight: '800', color: '#4ade80' }, // Green text for price
+
+    payBtn: {
+      width: '100%', padding: '16px', marginTop: '25px',
+      background: 'white', color: '#1e1b4b', border: 'none', borderRadius: '14px',
+      fontSize: '16px', fontWeight: '800', cursor: 'pointer',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.2)', transition: 'transform 0.2s'
+    },
+    footerNote: { textAlign: 'center', fontSize: '11px', opacity: 0.5, marginTop: '15px', display: 'flex', justifyContent: 'center', gap: '5px' }
+  };
+
   return (
-    <div style={styles.pageContainer}>
-      <div style={styles.innerContainer}>
-        
-        <div style={styles.headerSection}>
-          <h1 style={styles.pageTitle}>Complete Your Reservation</h1>
-          <p style={styles.subTitle}>Please fill in your details to finalize the booking for <strong>{roomNumber}</strong>.</p>
+    <div style={s.container}>
+      
+      {/* --- Left Side: Input Form --- */}
+      <div style={s.leftPanel}>
+        <div style={s.header}>
+          <button style={s.backBtn} onClick={() => navigate(-1)}>
+            <ArrowLeft size={18}/> Back to Beds
+          </button>
+          <h1 style={s.title}>Student Details</h1>
+          <p style={s.subTitle}>Please complete your registration to secure your spot.</p>
         </div>
-        
-        <div style={styles.contentWrapper}>
-          
-          {/* Left Side: Form Card */}
-          <div style={styles.formCard}>
-            <h3 style={styles.sectionHeader}>Student Information</h3>
-            
-            <form id="bookingForm" onSubmit={handlePayment} style={styles.formGrid}>
-              
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Full Name</label>
-                <input type="text" name="studentName" required onChange={handleInputChange} style={styles.input} placeholder="Ex: Kamal Perera" />
+
+        {/* 2. Warning message if Gender doesn't match room type (Visual Cue) */}
+        {reservedFor && (
+            <div style={{marginBottom:'20px', padding:'10px 15px', background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:'10px', color:'#b45309', fontSize:'13px', display:'flex', alignItems:'center', gap:'8px'}}>
+                <AlertTriangle size={16}/>
+                This room is reserved for <strong>{reservedFor}</strong> students only.
+            </div>
+        )}
+
+        <form onSubmit={handlePayment}>
+          <div style={s.formGrid}>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Full Name</label>
+              <div style={s.inputWrapper}>
+                <User size={18} style={s.inputIcon}/>
+                <input 
+                    name="studentName" required onChange={handleInputChange} 
+                    style={s.input} placeholder="John Doe" 
+                    onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                />
               </div>
-              
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Registration No (ID)</label>
-                <input type="text" name="registrationNumber" required onChange={handleInputChange} style={styles.input} placeholder="Ex: IT20001234" />
+            </div>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Student ID</label>
+              <div style={s.inputWrapper}>
+                <CreditCard size={18} style={s.inputIcon}/>
+                <input 
+                    name="registrationNumber" required onChange={handleInputChange} 
+                    style={s.input} placeholder="ITxxxxxx" 
+                    onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                />
               </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Email Address</label>
-                <input type="email" name="email" required onChange={handleInputChange} style={styles.input} placeholder="student@university.edu" />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Phone Number</label>
-                <input type="text" name="phone" required onChange={handleInputChange} style={styles.input} placeholder="0771234567" />
-              </div>
-
-              {/* Address takes full width */}
-              <div style={styles.fullWidthGroup}>
-                <label style={styles.label}>Residential Address</label>
-                <input type="text" name="address" required onChange={handleInputChange} style={styles.input} placeholder="City, District" />
-              </div>
-
-              <div style={styles.fullWidthGroup}>
-                <label style={styles.label}>Gender</label>
-                <select name="gender" onChange={handleInputChange} value={formData.gender} style={styles.select}>
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
-                </select>
-              </div>
-            </form>
-          </div>
-
-          {/* Right Side: Summary Card */}
-          <div style={styles.summarySection}>
-            <div style={styles.summaryCard}>
-              <h3 style={styles.summaryTitle}>Booking Summary</h3>
-
-              <div style={styles.highlightBox}>
-                <div style={styles.roomInfo}>
-                  <span>Room</span>
-                  <strong>{roomNumber || "Selected Room"}</strong>
-                </div>
-                <div style={styles.roomInfo}>
-                  <span>Bed</span>
-                  <strong>{bedNumber}</strong>
-                </div>
-              </div>
-
-              <div style={{marginTop: '20px'}}>
-                <div style={styles.summaryRow}>
-                  <span style={styles.summaryLabel}>Check-in</span>
-                  <span style={styles.summaryValue}>{checkIn}</span>
-                </div>
-                <div style={styles.summaryRow}>
-                  <span style={styles.summaryLabel}>Check-out</span>
-                  <span style={styles.summaryValue}>{checkOut}</span>
-                </div>
-                <div style={styles.summaryRow}>
-                  <span style={styles.summaryLabel}>Duration</span>
-                  <span style={styles.summaryValue}>
-                    {checkIn && checkOut 
-                      ? Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)) 
-                      : 0} Nights
-                  </span>
-                </div>
-              </div>
-
-              <hr style={styles.divider} />
-
-              <div style={styles.totalRow}>
-                <span style={styles.totalLabel}>Total Payable</span>
-                <span style={styles.totalAmount}>
-                    {/* Handle display if totalAmount is somehow still an object or invalid */}
-                    LKR {typeof totalAmount === 'number' ? totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2}) : '0.00'}
-                </span>
-              </div>
-
-              <button 
-                type="submit" 
-                form="bookingForm" 
-                style={styles.payBtn} 
-                disabled={loading}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-              >
-                {loading ? "Processing..." : "Pay Securely"}
-              </button>
-
-              <button type="button" style={styles.cancelBtn} onClick={() => navigate(-1)}>
-                Cancel Transaction
-              </button>
-              
-              <p style={{textAlign:'center', fontSize:'11px', color:'#aaa', marginTop:'15px'}}>
-                Secured by PayHere
-              </p>
             </div>
           </div>
 
+          <div style={s.formGrid}>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Email Address</label>
+              <div style={s.inputWrapper}>
+                <Mail size={18} style={s.inputIcon}/>
+                <input 
+                    type="email" name="email" required onChange={handleInputChange} 
+                    style={s.input} placeholder="student@email.com" 
+                    onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                />
+              </div>
+            </div>
+            <div style={s.inputGroup}>
+              <label style={s.label}>Phone Number</label>
+              <div style={s.inputWrapper}>
+                <Phone size={18} style={s.inputIcon}/>
+                <input 
+                    name="phone" required onChange={handleInputChange} 
+                    style={s.input} placeholder="07xxxxxxxx" 
+                    onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
+                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div style={s.inputGroup}>
+            <label style={s.label}>Residential Address</label>
+            <div style={s.inputWrapper}>
+              <MapPin size={18} style={s.inputIcon}/>
+              <input 
+                name="address" required onChange={handleInputChange} 
+                style={s.input} placeholder="Your home address" 
+                onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
+                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              />
+            </div>
+          </div>
+
+          <div style={s.inputGroup}>
+            <label style={s.label}>Gender</label>
+            <select name="gender" onChange={handleInputChange} value={formData.gender} style={s.select}>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+            </select>
+          </div>
+        </form>
+      </div>
+
+      {/* --- Right Side: Ticket Summary --- */}
+      <div style={s.rightPanel}>
+        <div style={s.bgCircle1}></div>
+        <div style={s.bgCircle2}></div>
+
+        <div style={s.ticketCard}>
+          <div style={s.ticketHeader}>
+            <div style={s.ticketTitle}>Booking Summary</div>
+            <div style={s.ticketSub}>Review your booking details before payment.</div>
+          </div>
+
+          <div style={s.roomBox}>
+            <div style={s.roomItem}>
+              <span style={s.roomLabel}>Room</span>
+              <span style={s.roomValue}><Building2 size={16}/> {roomNumber}</span>
+            </div>
+            <div style={{width:'1px', background:'rgba(255,255,255,0.1)'}}></div>
+            <div style={s.roomItem}>
+              <span style={s.roomLabel}>Bed No</span>
+              <span style={s.roomValue}><BedDouble size={16}/> {bedNumber}</span>
+            </div>
+          </div>
+
+          <div style={s.dateLine}>
+            <span style={{display:'flex', alignItems:'center', gap:'8px'}}><Calendar size={15} opacity={0.7}/> Check-in</span>
+            <span style={{fontWeight:'600'}}>{checkIn}</span>
+          </div>
+          <div style={s.dateLine}>
+            <span style={{display:'flex', alignItems:'center', gap:'8px'}}><CheckCircle2 size={15} opacity={0.7}/> Check-out</span>
+            <span style={{fontWeight:'600'}}>{checkOut}</span>
+          </div>
+
+          {reservedFor && (
+             <div style={{margin:'15px 0', fontSize:'12px', textAlign:'center', color:'#fcd34d', fontWeight:'600'}}>
+               ROOM RESERVED FOR: {reservedFor}
+             </div>
+          )}
+
+          <div style={s.totalSection}>
+            <span style={s.totalLabel}>Total Payable</span>
+            <span style={s.totalValue}>
+                {priceLoading ? <Loader2 size={24} className="animate-spin"/> : `LKR ${typeof totalAmount === 'number' ? totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2}) : '0.00'}`}
+            </span>
+          </div>
+
+          <button 
+            onClick={handlePayment} 
+            style={{...s.payBtn, opacity: loading ? 0.8 : 1}} 
+            disabled={loading}
+            onMouseOver={(e) => !loading && (e.currentTarget.style.transform = 'scale(1.02)')}
+            onMouseOut={(e) => !loading && (e.currentTarget.style.transform = 'scale(1)')}
+          >
+            {loading ? <Loader2 size={20} className="animate-spin"/> : <>Pay Securely <CreditCard size={18}/></>}
+          </button>
+
+          <div style={s.footerNote}>
+            <ShieldCheck size={12}/> Secured by PayHere Payment Gateway
+          </div>
         </div>
       </div>
+
     </div>
   );
 };

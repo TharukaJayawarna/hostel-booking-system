@@ -1,20 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
+import { 
+  Building2, 
+  Layers, 
+  DoorOpen, 
+  Plus, 
+  Trash2, 
+  X, 
+  Search, 
+  LayoutGrid 
+} from 'lucide-react';
 
 const ManageHubs = () => {
   const [hubs, setHubs] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hubName, setHubName] = useState('');
-  const [hoveredRow, setHoveredRow] = useState(null); 
+  const [imageFile, setImageFile] = useState(null);
+  const [description, setDescription] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { fetchHubs(); }, []);
 
   const fetchHubs = async () => {
     try {
+      setLoading(true);
       const res = await api.get('/hubs');
       if (res.data.status === 'SUCCESS') setHubs(res.data.data);
-    } catch (e) { toast.error("Error loading hubs"); }
+    } catch (e) { 
+      toast.error("Error loading hubs"); 
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreate = async (e) => {
@@ -22,159 +40,266 @@ const ManageHubs = () => {
     if(!hubName.trim()) return toast.warning("Hub name is required");
     
     try {
-      await api.post('/hubs', { hubNumber: hubName });
+      // JSON wenuwata FormData use karanna one file upload karaddi
+      const formData = new FormData();
+      formData.append('hubNumber', hubName);
+      formData.append('description', description);
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
+      // Axios walata FormData dunnahama auto headers set wenawa
+      await api.post('/hubs', formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
       toast.success("Hub Created Successfully!");
       setHubName('');
+      setDescription('');
+      setImageFile(null); 
       setIsModalOpen(false);
       fetchHubs();
-    } catch (e) { toast.error("Failed to create hub"); }
+    } catch (e) { 
+      console.error(e);
+      toast.error("Failed to create hub"); 
+    }
   };
 
   const handleDelete = async (id) => {
     if(!window.confirm("Are you sure you want to delete this Hub?")) return;
-    try { await api.delete(`/hubs/${id}`); toast.success("Hub Deleted"); fetchHubs(); } catch (e) { toast.error("Failed to delete"); }
+    try { await api.delete(`/hubs/${id}`); toast.success("Hub Deleted"); fetchHubs(); } 
+    catch (e) { toast.error("Failed to delete"); }
+  };
+
+  // Filtering Logic
+  const filteredHubs = hubs.filter(hub => 
+    hub.hubNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Stats Calculation
+  const stats = {
+    totalHubs: hubs.length,
+    totalFloors: hubs.reduce((acc, hub) => acc + (hub.noOfFloors || 0), 0),
+    totalRooms: hubs.reduce((acc, hub) => acc + (hub.noOfRooms || 0), 0)
   };
 
   // --- STYLES ---
   const s = {
-    container: { fontFamily: "'Inter', sans-serif", color: '#111827', paddingBottom: '40px' },
+    container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px' },
     
-    // Header Section
+    // Header
     header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
     titleGroup: { display: 'flex', flexDirection: 'column' },
-    title: { fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0 },
+    title: { fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' },
     subTitle: { fontSize: '14px', color: '#6b7280', marginTop: '5px' },
 
+    // Add Button
     addBtn: { 
-      background: '#4f46e5', color: 'white', padding: '10px 20px', 
-      borderRadius: '8px', border: 'none', cursor: 'pointer', 
+      background: '#4f46e5', color: 'white', padding: '12px 24px', 
+      borderRadius: '12px', border: 'none', cursor: 'pointer', 
       fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px',
-      boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
+      boxShadow: '0 4px 10px rgba(79, 70, 229, 0.2)', transition: 'transform 0.2s',
+      fontSize: '14px'
     },
 
-    // Table Section
+    // Stats Grid
+    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
+    statCard: {
+      background: 'white', padding: '20px', borderRadius: '16px',
+      border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+      display: 'flex', alignItems: 'center', gap: '15px'
+    },
+    statIconBox: (bg, col) => ({
+      width: '50px', height: '50px', borderRadius: '12px', background: bg, color: col,
+      display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }),
+    statValue: { fontSize: '24px', fontWeight: '800', color: '#111827', lineHeight: '1' },
+    statLabel: { fontSize: '13px', color: '#6b7280', fontWeight: '600', marginTop: '4px' },
+
+    // Toolbar
+    toolbar: { 
+      background: 'white', padding: '15px 20px', borderRadius: '16px', 
+      border: '1px solid #e5e7eb', marginBottom: '20px',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+    },
+    searchBox: {
+      display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb',
+      padding: '10px 15px', borderRadius: '10px', border: '1px solid #e5e7eb', width: '300px'
+    },
+    searchInput: { border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px', color: '#374151' },
+
+    // Table
     tableContainer: { 
       background: 'white', borderRadius: '16px', 
       border: '1px solid #e5e7eb',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', overflow: 'hidden' 
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', overflow: 'hidden' 
     },
     table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
-    thead: { backgroundColor: '#b3b6b9ff', borderBottom: '1px solid #e5e7eb' },
-    th: { padding: '16px 24px', fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' },
-    tr: (id) => ({ 
-      borderBottom: '1px solid #f3f4f6', 
-      transition: 'background-color 0.2s',
-      backgroundColor: hoveredRow === id ? '#f9fafb' : 'white'
-    }),
-    td: { padding: '16px 24px', fontSize: '14px', color: '#374151', verticalAlign: 'middle' },
+    thead: { backgroundColor: '#f8fafc', borderBottom: '1px solid #e5e7eb' },
+    th: { padding: '16px 24px', fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' },
+    tr: { borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s' },
+    td: { padding: '16px 24px', fontSize: '14px', color: '#334155', verticalAlign: 'middle' },
 
-    // Badges for Floors/Rooms
-    statBadge: (color) => ({
+    // Badges
+    badge: (type) => ({
       display: 'inline-flex', alignItems: 'center', gap: '6px',
-      padding: '4px 12px', borderRadius: '9999px', fontSize: '12px', fontWeight: '600',
-      backgroundColor: color === 'blue' ? '#eff6ff' : '#f5f3ff',
-      color: color === 'blue' ? '#2563eb' : '#7c3aed',
-      border: `1px solid ${color === 'blue' ? '#bfdbfe' : '#ddd6fe'}`
+      padding: '6px 12px', borderRadius: '9999px', fontSize: '12px', fontWeight: '600',
+      backgroundColor: type === 'floors' ? '#eff6ff' : '#f0fdf4',
+      color: type === 'floors' ? '#2563eb' : '#16a34a',
+      border: `1px solid ${type === 'floors' ? '#bfdbfe' : '#bbf7d0'}`
     }),
 
-    // Delete Button
-    delBtn: { 
-      background: '#fff', border: '1px solid #fee2e2', 
+    // Action Button
+    actionBtn: { 
+      background: 'white', border: '1px solid #e2e8f0', 
       color: '#ef4444', padding: '8px', borderRadius: '8px', 
       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'all 0.2s'
+      transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
     },
 
     // Modal
     overlay: { 
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-      background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)',
+      background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 
     },
     modal: { 
-      background: 'white', padding: '0', borderRadius: '16px', 
-      width: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-      overflow: 'hidden'
+      background: 'white', padding: '0', borderRadius: '24px', 
+      width: '450px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      overflow: 'hidden', animation: 'fadeIn 0.2s ease-out'
     },
-    modalHeader: { padding: '20px 24px', borderBottom: '1px solid #f3f4f6', background: '#fff' },
-    modalBody: { padding: '24px' },
-    modalFooter: { padding: '16px 24px', background: '#f9fafb', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'flex-end', gap: '12px' },
-    
-    inputLabel: { display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: '#374151' },
+    modalHeader: { 
+      padding: '24px 32px', borderBottom: '1px solid #f1f5f9', background: 'white',
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+    },
+    modalTitle: { fontSize: '20px', fontWeight: '800', color: '#0f172a' },
+    modalBody: { padding: '32px', background: '#f8fafc' },
+    modalFooter: { 
+      padding: '20px 32px', background: 'white', borderTop: '1px solid #f1f5f9', 
+      display: 'flex', justifyContent: 'flex-end', gap: '12px' 
+    },
+    inputLabel: { display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: '#475569' },
     input: { 
-      width: '100%', padding: '10px 12px', borderRadius: '8px', 
-      border: '1px solid #d1d5db', fontSize: '14px', outline: 'none',
-      transition: 'border-color 0.15s', boxSizing: 'border-box'
+      width: '100%', padding: '12px 16px', borderRadius: '12px', 
+      border: '1px solid #e2e8f0', fontSize: '14px', outline: 'none',
+      boxSizing: 'border-box', transition: 'border-color 0.2s, box-shadow 0.2s',
+      backgroundColor: 'white', color: '#1e293b'
+    },
+    cancelBtn: {
+      padding: '10px 20px', borderRadius: '10px', border: '1px solid #e2e8f0',
+      background: 'white', color: '#64748b', fontWeight: '600', cursor: 'pointer'
+    },
+    saveBtn: {
+      padding: '10px 20px', borderRadius: '10px', border: 'none',
+      background: '#4f46e5', color: 'white', fontWeight: '600', cursor: 'pointer',
+      boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)'
     }
   };
 
   return (
     <div style={s.container}>
-      {/* HEADER */}
+      
+      {/* 1. HEADER */}
       <div style={s.header}>
         <div style={s.titleGroup}>
-          <h2 style={s.title}>Manage Hubs</h2>
-          <p style={s.subTitle}>Create and manage accommodation hubs.</p>
+          <div style={s.title}>
+            <div style={{background:'#e0e7ff', padding:'10px', borderRadius:'12px', color:'#4338ca'}}>
+              <Building2 size={28}/>
+            </div>
+            Manage Hubs
+          </div>
+          <p style={s.subTitle}>Create and manage student accommodation hubs.</p>
         </div>
-        <button style={s.addBtn} onClick={() => setIsModalOpen(true)}>
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add New Hub
+        
+        {/* ADD BUTTON (Top Right) */}
+        <button 
+            style={s.addBtn} 
+            onClick={() => setIsModalOpen(true)}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          <Plus size={18} /> Add New Hub
         </button>
       </div>
 
-      {/* TABLE */}
+      {/* 2. STATS GRID */}
+      <div style={s.statsGrid}>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#eff6ff', '#2563eb')}><Building2 size={24}/></div>
+          <div><div style={s.statValue}>{stats.totalHubs}</div><div style={s.statLabel}>Total Hubs</div></div>
+        </div>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#f0fdf4', '#16a34a')}><Layers size={24}/></div>
+          <div><div style={s.statValue}>{stats.totalFloors}</div><div style={s.statLabel}>Total Floors</div></div>
+        </div>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#fef2f2', '#dc2626')}><LayoutGrid size={24}/></div>
+          <div><div style={s.statValue}>{stats.totalRooms}</div><div style={s.statLabel}>Total Rooms</div></div>
+        </div>
+      </div>
+
+      {/* 3. TOOLBAR */}
+      <div style={s.toolbar}>
+        <div style={s.searchBox}>
+          <Search size={18} color="#9ca3af"/>
+          <input 
+            style={s.searchInput} 
+            placeholder="Search hubs by name..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* 4. TABLE */}
       <div style={s.tableContainer}>
         <table style={s.table}>
           <thead style={s.thead}>
             <tr>
               <th style={s.th}>Hub Name</th>
-              <th style={s.th}>Details</th>
-              <th style={s.th}>Total Capacity</th>
+              <th style={s.th}>Floor Capacity</th>
+              <th style={s.th}>Room Capacity</th>
               <th style={{...s.th, textAlign: 'right'}}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {hubs.length === 0 ? (
+            {loading ? (
+               <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>Loading data...</td></tr>
+            ) : filteredHubs.length === 0 ? (
                <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>No hubs found. Add one to get started.</td></tr>
             ) : (
-                hubs.map(hub => (
+                filteredHubs.map(hub => (
                 <tr 
                     key={hub.id} 
-                    style={s.tr(hub.id)}
-                    onMouseEnter={() => setHoveredRow(hub.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
+                    style={s.tr}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'white'}
                 >
-                    {/* Hub Name Column */}
+                    {/* Hub Name */}
                     <td style={s.td}>
                         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                            <div style={{width:'40px', height:'40px', borderRadius:'10px', background:'#e0e7ff', color:'#4338ca', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'}}>
-                                🏢
+                            <div style={{width:'40px', height:'40px', borderRadius:'10px', background:'#f1f5f9', color:'#475569', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                                <Building2 size={20}/>
                             </div>
                             <div>
                                 <div style={{fontWeight: '700', color: '#111827'}}>{hub.hubNumber}</div>
-                                <div style={{fontSize: '12px', color: '#6b7280'}}>ID: #{hub.id}</div>
+                                <div style={{fontSize: '12px', color: '#94a3b8'}}>ID: #{hub.id}</div>
                             </div>
                         </div>
                     </td>
 
-                    {/* Floors / Rooms Column */}
+                    {/* Floors Column */}
                     <td style={s.td}>
-                        <div style={{display: 'flex', gap: '8px'}}>
-                            <span style={s.statBadge('blue')}>
-                                📶 {hub.noOfFloors} Floors
-                            </span>
-                            <span style={s.statBadge('purple')}>
-                                🚪 {hub.noOfRooms} Rooms
-                            </span>
-                        </div>
+                        <span style={s.badge('floors')}>
+                            <Layers size={14}/> {hub.noOfFloors} Floors
+                        </span>
                     </td>
 
-                    {/* Capacity Column (Placeholder logic - assuming 2 beds per room roughly or just hiding if not needed) */}
+                    {/* Rooms Column */}
                     <td style={s.td}>
-                         <span style={{color: '#6b7280', fontSize: '13px'}}>
-                            ~ {hub.noOfRooms * 2} Beds (Est.)
+                         <span style={s.badge('rooms')}>
+                            <DoorOpen size={14}/> {hub.noOfRooms} Rooms
                          </span>
                     </td>
 
@@ -182,15 +307,13 @@ const ManageHubs = () => {
                     <td style={s.td}>
                         <div style={{display:'flex', justifyContent:'flex-end'}}>
                             <button 
-                                style={s.delBtn} 
+                                style={s.actionBtn} 
                                 onClick={() => handleDelete(hub.id)}
                                 title="Delete Hub"
-                                onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+                                onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
                             >
-                                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
+                                <Trash2 size={16}/>
                             </button>
                         </div>
                     </td>
@@ -201,49 +324,60 @@ const ManageHubs = () => {
         </table>
       </div>
 
-      {/* MODAL */}
+      {/* 5. MODAL */}
       {isModalOpen && (
         <div style={s.overlay} onClick={() => setIsModalOpen(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
+            
             {/* Modal Header */}
             <div style={s.modalHeader}>
-                <h3 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>Add New Hub</h3>
-                <p style={{margin: '5px 0 0', fontSize: '13px', color: '#6b7280'}}>Enter the details to create a new hub.</p>
+                <div>
+                    <h3 style={s.modalTitle}>Add New Hub</h3>
+                    <p style={{margin: '2px 0 0', fontSize: '13px', color: '#64748b'}}>Create a new building or accommodation block.</p>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'#94a3b8'}}>
+                    <X size={24}/>
+                </button>
             </div>
             
             <form onSubmit={handleCreate}>
-                {/* Modal Body */}
-                <div style={s.modalBody}>
-                    <label style={s.inputLabel}>Hub Name / Number</label>
-                    <input 
-                        style={s.input} 
-                        value={hubName} 
-                        onChange={e => setHubName(e.target.value)} 
-                        placeholder="e.g. HUB-A01" 
-                        autoFocus
-                        onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
-                        onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-                    />
-                    <p style={{fontSize:'12px', color:'#9ca3af', marginTop:'8px'}}>
-                        * Floors and rooms can be added inside the hub later.
-                    </p>
-                </div>
+        <div style={s.modalBody}>
+            <label style={s.inputLabel}>Hub Name / Number</label>
+            <input 
+                style={s.input} 
+                value={hubName} 
+                onChange={e => setHubName(e.target.value)} 
+                placeholder="e.g. HUB-A01" 
+                autoFocus
+            />
+            {/* Description Input (New) */}
+                    <div style={{marginBottom: '15px'}}>
+                        <label style={s.inputLabel}>Description</label>
+                        <textarea 
+                            style={{...s.input, minHeight: '80px', fontFamily: 'inherit'}} 
+                            value={description} 
+                            onChange={e => setDescription(e.target.value)} 
+                            placeholder="Brief description about the hub facilities..." 
+                        />
+                    </div>
+            
+            <div style={{marginTop: '15px'}}>
+                <label style={s.inputLabel}>Hub Image</label>
+                <input 
+                    type="file"
+                    accept="image/*"
+                    style={{...s.input, padding: '10px'}}
+                    onChange={e => setImageFile(e.target.files[0])} 
+                />
+            </div>
+            <p style={{fontSize:'12px', color:'#9ca3af', marginTop:'10px'}}>
+                * Floors and rooms can be added to this hub later.
+            </p>
+            </div>
 
-                {/* Modal Footer */}
                 <div style={s.modalFooter}>
-                    <button 
-                        type="button" 
-                        onClick={() => setIsModalOpen(false)} 
-                        style={{padding:'10px 18px', border:'1px solid #d1d5db', background:'white', borderRadius:'8px', cursor:'pointer', fontWeight:'600', color:'#374151'}}
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        type="submit" 
-                        style={{padding:'10px 18px', border:'none', background:'#4f46e5', borderRadius:'8px', cursor:'pointer', fontWeight:'600', color:'white'}}
-                    >
-                        Create Hub
-                    </button>
+                    <button type="button" onClick={() => setIsModalOpen(false)} style={s.cancelBtn}>Cancel</button>
+                    <button type="submit" style={s.saveBtn}>Create Hub</button>
                 </div>
             </form>
           </div>

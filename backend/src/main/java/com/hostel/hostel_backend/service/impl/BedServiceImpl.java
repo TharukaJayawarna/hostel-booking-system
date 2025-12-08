@@ -53,6 +53,7 @@ public class BedServiceImpl implements BedService {
                 .bedNumber(bed.getBedNumber())
                 .isBooked(bed.getIsBooked())
                 .roomNumber(bed.getRoom().getRoomNumber())
+               .underMaintenance(bed.getUnderMaintenance())
                 .build();
 
     }
@@ -86,5 +87,15 @@ public class BedServiceImpl implements BedService {
         return bedRepository.findByRoomId(roomId).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void toggleMaintenance(Long bedId, Boolean status) throws ResourceNotFoundException {
+        Bed bed = bedRepository.findById(bedId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id: " + bedId));
+
+        bed.setUnderMaintenance(status);
+        bedRepository.save(bed);
     }
 }
