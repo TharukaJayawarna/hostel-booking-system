@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // useEffect import කරන්න
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -10,12 +10,24 @@ import {
   Home,
   LogOut,
   Settings,
-  ChevronRight
+  ChevronRight,
+  Users // Users icon එක import කරන්න
 } from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
   
+  // --- 1. User State එක මෙතනට එකතු කරන්න ---
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+  // -------------------------------------------
+
   // --- STYLES ---
   const s = {
     sidebar: {
@@ -166,6 +178,15 @@ const Sidebar = () => {
         <NavItem to="/admin/rooms" icon={DoorOpen} label="Rooms" />
         <NavItem to="/admin/beds" icon={Bed} label="Beds" />
 
+        {/* --- 2. ADMIN ONLY SECTION --- */}
+        {user && user.role === 'ADMIN' && (
+          <>
+            <div style={s.sectionLabel}>User Management</div>
+            <NavItem to="/admin/users" icon={Users} label="Manage Users" />
+          </>
+        )}
+        {/* ----------------------------- */}
+
         <div style={s.sectionLabel}>Settings</div>
         <NavItem to="/admin/settings" icon={Settings} label="System Settings" />
       </div>
@@ -177,10 +198,13 @@ const Sidebar = () => {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f2937'}
         >
-            <div style={s.userAvatar}>AD</div>
+            <div style={s.userAvatar}>
+                {/* වෙනස්කම: firstName තිබේ නම් පමණක් charAt ගන්න, නැත්නම් 'U' පෙන්වන්න */}
+                {user && user.firstName ? user.firstName.charAt(0) : 'U'}
+            </div>
             <div style={s.userInfo}>
-                <span style={s.userName}>Admin User</span>
-                <span style={s.userRole}>Super Administrator</span>
+                <span style={s.userName}>{user && user.firstName ? user.firstName : 'User'}</span>
+                <span style={s.userRole}>{user ? user.role : 'Guest'}</span>
             </div>
             <div style={{marginLeft:'auto', color:'#ef4444'}}>
                 <LogOut size={16}/>

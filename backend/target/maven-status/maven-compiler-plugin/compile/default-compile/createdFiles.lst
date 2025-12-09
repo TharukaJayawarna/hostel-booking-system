@@ -8,11 +8,13 @@ com/hostel/hostel_backend/controller/response/PayHereInitResponseDTO.class
 com/hostel/hostel_backend/service/FloorService.class
 com/hostel/hostel_backend/controller/response/ReservationListResponseDTO.class
 com/hostel/hostel_backend/controller/PaymentController.class
+com/hostel/hostel_backend/controller/response/AuthResponse$AuthResponseBuilder.class
 com/hostel/hostel_backend/model/User.class
 com/hostel/hostel_backend/service/impl/FloorServiceImpl.class
 com/hostel/hostel_backend/service/impl/EmailServiceImpl.class
 com/hostel/hostel_backend/repository/UserRepository.class
 com/hostel/hostel_backend/service/impl/IssueServiceImpl.class
+com/hostel/hostel_backend/config/ApplicationConfig.class
 com/hostel/hostel_backend/config/CloudinaryConfig.class
 com/hostel/hostel_backend/controller/response/BedsResponseDTO$BedsResponseDTOBuilder.class
 com/hostel/hostel_backend/controller/response/RoomResponseDTO.class
@@ -26,6 +28,7 @@ com/hostel/hostel_backend/controller/response/ReservationListResponseDTO$Reserva
 com/hostel/hostel_backend/controller/AuthController.class
 com/hostel/hostel_backend/controller/request/DateChangeRequestDTO.class
 com/hostel/hostel_backend/model/ReservationStatus.class
+com/hostel/hostel_backend/config/JwtAuthenticationFilter.class
 com/hostel/hostel_backend/controller/ReservationController.class
 com/hostel/hostel_backend/service/ReservationService.class
 com/hostel/hostel_backend/config/SecurityConfig.class
@@ -40,6 +43,7 @@ com/hostel/hostel_backend/exception/AppException.class
 com/hostel/hostel_backend/controller/response/BedsResponseDTO.class
 com/hostel/hostel_backend/service/impl/ReservationServiceImpl.class
 com/hostel/hostel_backend/repository/ReservationRepository.class
+com/hostel/hostel_backend/controller/UserController.class
 com/hostel/hostel_backend/exception/GlobalExceptionHandler.class
 com/hostel/hostel_backend/repository/BedRepository.class
 com/hostel/hostel_backend/model/Room.class
@@ -75,9 +79,12 @@ com/hostel/hostel_backend/service/BedService.class
 com/hostel/hostel_backend/controller/BedController.class
 com/hostel/hostel_backend/controller/FloorController.class
 com/hostel/hostel_backend/controller/IssueController.class
+com/hostel/hostel_backend/util/JwtUtils.class
 com/hostel/hostel_backend/controller/response/HubResponseDTO.class
 com/hostel/hostel_backend/exception/ResourceNotFoundException.class
+com/hostel/hostel_backend/controller/response/AuthResponse.class
 com/hostel/hostel_backend/config/WebConfig.class
+com/hostel/hostel_backend/config/DataInitializer.class
 com/hostel/hostel_backend/service/HubService.class
 com/hostel/hostel_backend/controller/response/ReservationDetailResponseDTO$ReservationDetailResponseDTOBuilder.class
 com/hostel/hostel_backend/service/EmailService.class

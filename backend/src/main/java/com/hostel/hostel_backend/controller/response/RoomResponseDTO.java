@@ -18,4 +18,5 @@ public class RoomResponseDTO {
     private ReservedFor reservedFor;
     private String floorNumber;
     private String hubNumber;
+    private String comment;
 }

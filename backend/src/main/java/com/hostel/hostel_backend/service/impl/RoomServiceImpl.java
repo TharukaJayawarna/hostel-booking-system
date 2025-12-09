@@ -37,6 +37,7 @@ public class RoomServiceImpl implements RoomService {
         room.setPrice(dto.getPrice());
         room.setReservationPeriod(dto.getReservationPeriod());
         room.setReservedFor(dto.getReservedFor());
+        room.setComment(null);
 
         // Room Type එක Set කරන්න (Default: 2 Sharing)
         RoomType type = dto.getRoomType() != null ? dto.getRoomType() : RoomType.SHARING_2;
@@ -88,6 +89,7 @@ public class RoomServiceImpl implements RoomService {
                 .reservedFor(room.getReservedFor())
                 .floorNumber(room.getFloor().getFloorNumber())
                 .hubNumber(room.getFloor().getHub().getHubNumber())
+                .comment(room.getComment())
                 .build();
     }
 
@@ -200,6 +202,9 @@ public class RoomServiceImpl implements RoomService {
         if (dto.getRoomType() != null) room.setRoomType(dto.getRoomType());
         if (dto.getReservationPeriod() != null) room.setReservationPeriod(dto.getReservationPeriod());
         if (dto.getReservedFor() != null) room.setReservedFor(dto.getReservedFor());
+        if (dto.getComment() != null) {
+            room.setComment(dto.getComment());
+        }
 
         roomRepository.save(room);
     }

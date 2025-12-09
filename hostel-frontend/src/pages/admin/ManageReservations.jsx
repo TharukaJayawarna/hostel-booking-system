@@ -1,51 +1,28 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
-import { 
-  CalendarDays, 
-  Search, 
-  Filter, 
-  MoreVertical, 
-  Eye, 
-  RefreshCcw, 
-  BedDouble, 
-  Ban, 
-  User, 
-  CreditCard,
-  Phone,
-  Mail,
-  MapPin,
-  CalendarCheck,
-  Building2,
-  Layers,
-  DoorOpen,
-  X,
-  Trash2 // Added missing import
-} from 'lucide-react';
+import { CalendarDays, Search, Filter, MoreVertical, Eye, RefreshCcw, BedDouble, Ban, User, CreditCard, Phone, Mail, MapPin, CalendarCheck, Building2, Layers, DoorOpen, X, Trash2 } from 'lucide-react';
 
 const ManageReservations = () => {
   const [reservations, setReservations] = useState([]);
   const [showTrash, setShowTrash] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-
-  // Dropdown State
   const [activeDropdownId, setActiveDropdownId] = useState(null);
   const dropdownRef = useRef(null);
-
-  // Move Bed Modal State
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
   const [matchingBeds, setMatchingBeds] = useState([]);
   const [selectedResId, setSelectedResId] = useState(null);
-
-  // View Details Modal State
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
+  // Check Role
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isWarden = user?.role === 'WARDEN';
+
   useEffect(() => { fetchReservations(); }, [showTrash]);
 
-  // Click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -53,9 +30,7 @@ const ManageReservations = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => { document.removeEventListener("mousedown", handleClickOutside); };
   }, []);
 
   const fetchReservations = async () => {
@@ -64,11 +39,8 @@ const ManageReservations = () => {
       const endpoint = showTrash ? '/reservations/trash' : '/reservations';
       const res = await api.get(endpoint);
       if(res.data.status === 'SUCCESS') setReservations(res.data.data);
-    } catch(e) {
-      toast.error("Failed to load reservations");
-    } finally {
-      setLoading(false);
-    }
+    } catch(e) { toast.error("Failed to load reservations"); } 
+    finally { setLoading(false); }
   };
 
   const toggleDropdown = (id, e) => {
@@ -86,7 +58,6 @@ const ManageReservations = () => {
     );
   });
 
-  // --- Actions ---
   const handleReactivate = async (id) => {
     if(!window.confirm("Are you sure you want to reactivate this reservation?")) return;
     try { await api.post(`/reservations/${id}/reactivate`); toast.success("Reactivated Successfully!"); fetchReservations(); setActiveDropdownId(null); } 
@@ -130,170 +101,62 @@ const ManageReservations = () => {
       if (response.data.status === 'SUCCESS') {
         setSelectedReservation(response.data.data);
       }
-    } catch (error) {
-      toast.error("Failed to load details");
-      setIsViewModalOpen(false);
-    } finally {
-      setIsLoadingDetails(false);
-    }
+    } catch (error) { toast.error("Failed to load details"); setIsViewModalOpen(false); } 
+    finally { setIsLoadingDetails(false); }
   };
 
-  // --- STYLES ---
   const s = {
     container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px' },
-    
-    // Header
     header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' },
     titleGroup: { display: 'flex', flexDirection: 'column' },
     title: { fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' },
     subTitle: { fontSize: '14px', color: '#6b7280', marginTop: '5px' },
-
-    // Toolbar
-    toolbar: { 
-      background: 'white', padding: '15px 20px', borderRadius: '16px', 
-      border: '1px solid #e5e7eb', marginBottom: '20px',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-    },
-    searchBox: {
-      display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb',
-      padding: '10px 15px', borderRadius: '10px', border: '1px solid #e5e7eb', width: '350px'
-    },
+    toolbar: { background: 'white', padding: '15px 20px', borderRadius: '16px', border: '1px solid #e5e7eb', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' },
+    searchBox: { display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb', padding: '10px 15px', borderRadius: '10px', border: '1px solid #e5e7eb', width: '350px' },
     searchInput: { border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px', color: '#374151' },
-    
-    toggleBtn: (active) => ({ 
-      padding: '10px 20px', borderRadius: '10px', border: active ? '1px solid #dc2626' : '1px solid #e5e7eb', 
-      backgroundColor: active ? '#fef2f2' : 'white', 
-      color: active ? '#dc2626' : '#374151', 
-      fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-      transition: 'all 0.2s'
-    }),
-
-    // Table
-    tableContainer: { 
-      background: 'white', borderRadius: '16px', 
-      border: '1px solid #e5e7eb',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', overflow: 'visible' 
-    },
+    toggleBtn: (active) => ({ padding: '10px 20px', borderRadius: '10px', border: active ? '1px solid #dc2626' : '1px solid #e5e7eb', backgroundColor: active ? '#fef2f2' : 'white', color: active ? '#dc2626' : '#374151', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }),
+    tableContainer: { background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', overflow: 'visible' },
     table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
     thead: { backgroundColor: '#f8fafc', borderBottom: '1px solid #e5e7eb' },
     th: { padding: '16px 24px', fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' },
     tr: { borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s', position: 'relative' },
     td: { padding: '16px 24px', fontSize: '14px', color: '#334155', verticalAlign: 'middle' },
-
-    // Status Badge
     badge: (status) => {
-      const config = {
-        COMPLETED: { bg: '#ecfdf5', col: '#059669', border: '#a7f3d0' },
-        PENDING: { bg: '#fffbeb', col: '#d97706', border: '#fcd34d' },
-        REJECTED: { bg: '#fef2f2', col: '#dc2626', border: '#fecaca' },
-        REFUNDED: { bg: '#eff6ff', col: '#2563eb', border: '#bfdbfe' },
-        CANCELLED: { bg: '#f3f4f6', col: '#4b5563', border: '#e5e7eb' }
-      };
+      const config = { COMPLETED: { bg: '#ecfdf5', col: '#059669', border: '#a7f3d0' }, PENDING: { bg: '#fffbeb', col: '#d97706', border: '#fcd34d' }, REJECTED: { bg: '#fef2f2', col: '#dc2626', border: '#fecaca' }, REFUNDED: { bg: '#eff6ff', col: '#2563eb', border: '#bfdbfe' }, CANCELLED: { bg: '#f3f4f6', col: '#4b5563', border: '#e5e7eb' } };
       const style = config[status] || config.PENDING;
-      return {
-        display: 'inline-flex', alignItems: 'center', gap: '6px',
-        padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700',
-        backgroundColor: style.bg, color: style.col, border: `1px solid ${style.border}`,
-        textTransform: 'uppercase'
-      };
+      return { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: style.bg, color: style.col, border: `1px solid ${style.border}`, textTransform: 'uppercase' };
     },
-
-    // Date Badge
-    dateBadge: {
-      fontSize: '11px', fontWeight: '600', color: '#64748b', 
-      background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px',
-      display: 'inline-flex', alignItems: 'center', gap: '6px'
-    },
-
-    // Action Buttons
-    actionBtn: {
-      background: 'white', border: '1px solid #e2e8f0', 
-      color: '#374151', padding: '8px', borderRadius: '8px', 
-      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-    },
-    
-    // Dropdown
-    dropdownMenu: {
-      position: 'absolute', right: '50px', top: '40px', 
-      backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px',
-      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', zIndex: 50, width: '180px', overflow: 'hidden',
-      padding: '6px'
-    },
-    dropdownItem: (color = '#374151') => ({
-      display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', 
-      border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px',
-      fontWeight: '600', color: color, borderRadius: '8px', transition: 'background 0.1s'
-    }),
-
-    // Modals
-    overlay: { 
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-      background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 
-    },
-    modal: { 
-      background: 'white', padding: '0', borderRadius: '24px', 
-      width: '550px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      overflow: 'hidden', animation: 'fadeIn 0.2s ease-out'
-    },
-    modalHeader: { 
-      padding: '24px 32px', borderBottom: '1px solid #f1f5f9', background: 'white',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-    },
+    dateBadge: { fontSize: '11px', fontWeight: '600', color: '#64748b', background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px' },
+    actionBtn: { background: 'white', border: '1px solid #e2e8f0', color: '#374151', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
+    dropdownMenu: { position: 'absolute', right: '50px', top: '40px', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', zIndex: 50, width: '180px', overflow: 'hidden', padding: '6px' },
+    dropdownItem: (color = '#374151') => ({ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: color, borderRadius: '8px', transition: 'background 0.1s' }),
+    overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
+    modal: { background: 'white', padding: '0', borderRadius: '24px', width: '550px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden', animation: 'fadeIn 0.2s ease-out' },
+    modalHeader: { padding: '24px 32px', borderBottom: '1px solid #f1f5f9', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
     modalTitle: { fontSize: '20px', fontWeight: '800', color: '#0f172a' },
     modalBody: { padding: '32px', background: '#f8fafc', maxHeight: '60vh', overflowY: 'auto' },
-    
     detailRow: { display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #e2e8f0' },
     detailLabel: { color: '#64748b', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase' },
     detailValue: { color: '#1e293b', fontSize: '14px', fontWeight: '600', textAlign: 'right' },
-
     sectionTitle: { fontSize: '14px', fontWeight: '700', color: '#4f46e5', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' },
-    
-    closeBtn: {
-      width: '100%', padding: '12px', background: 'white', border: '1px solid #e2e8f0',
-      color: '#64748b', fontWeight: '600', borderRadius: '12px', cursor: 'pointer', marginTop: '20px'
-    }
+    closeBtn: { width: '100%', padding: '12px', background: 'white', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: '600', borderRadius: '12px', cursor: 'pointer', marginTop: '20px' }
   };
 
   return (
     <div style={s.container} onClick={() => setActiveDropdownId(null)}>
-      
-      {/* 1. HEADER */}
       <div style={s.header}>
         <div style={s.titleGroup}>
-          <div style={s.title}>
-            <div style={{background:'#e0e7ff', padding:'10px', borderRadius:'12px', color:'#4338ca'}}>
-              <CalendarDays size={28}/>
-            </div>
-            {showTrash ? "Trash / History" : "Reservations"}
-          </div>
+          <div style={s.title}><div style={{background:'#e0e7ff', padding:'10px', borderRadius:'12px', color:'#4338ca'}}><CalendarDays size={28}/></div>{showTrash ? "Trash / History" : "Reservations"}</div>
           <p style={s.subTitle}>Manage student bookings, payments, and cancellations.</p>
         </div>
       </div>
 
-      {/* 2. TOOLBAR */}
       <div style={s.toolbar}>
-        <div style={s.searchBox}>
-          <Search size={18} color="#9ca3af"/>
-          <input 
-            style={s.searchInput} 
-            placeholder="Search by Name, Reg No, or Ref ID..." 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <button 
-            style={s.toggleBtn(showTrash)} 
-            onClick={() => setShowTrash(!showTrash)}
-        >
-            {showTrash ? <Filter size={16}/> : <Trash2 size={16}/>}
-            {showTrash ? "View Active Reservations" : "View Trash / History"}
-        </button>
+        <div style={s.searchBox}><Search size={18} color="#9ca3af"/><input style={s.searchInput} placeholder="Search by Name, Reg No, or Ref ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/></div>
+        {/* Warden ට Trash බලන්න බැරි නම් මෙතනත් Check එකක් දාන්න පුළුවන් (Optional) */}
+        <button style={s.toggleBtn(showTrash)} onClick={() => setShowTrash(!showTrash)}>{showTrash ? <Filter size={16}/> : <Trash2 size={16}/>}{showTrash ? "View Active Reservations" : "View Trash / History"}</button>
       </div>
 
-      {/* 3. TABLE */}
       <div style={s.tableContainer}>
         <table style={s.table}>
           <thead style={s.thead}>
@@ -306,139 +169,59 @@ const ManageReservations = () => {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-                <tr><td colSpan="5" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>Loading reservations...</td></tr>
-            ) : filteredReservations.length === 0 ? (
-               <tr><td colSpan="5" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>No reservations found.</td></tr>
-            ) : (
-                filteredReservations.map(res => (
+            {loading ? <tr><td colSpan="5" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>Loading reservations...</td></tr> 
+            : filteredReservations.length === 0 ? <tr><td colSpan="5" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>No reservations found.</td></tr>
+            : filteredReservations.map(res => (
                 <tr key={res.id} style={s.tr}>
-                    
-                    {/* Reservation Info */}
-                    <td style={s.td}>
-                        <div style={{fontWeight:'700', color:'#111827', fontFamily:'monospace', fontSize:'15px'}}>
-                            {res.reservationNumber}
-                        </div>
-                        <div style={{display:'flex', alignItems:'center', gap:'5px', marginTop:'4px', color:'#64748b', fontSize:'12px'}}>
-                            <BedDouble size={12}/> Bed {res.bedNumber}
-                        </div>
-                    </td>
-
-                    {/* Student Info */}
-                    <td style={s.td}>
-                        <div style={{fontWeight:'600', color:'#1e293b'}}>{res.studentName}</div>
-                        <div style={{fontSize:'12px', color:'#94a3b8'}}>{res.studentRegNo}</div>
-                    </td>
-
-                    {/* Dates */}
-                    <td style={s.td}>
-                        <div style={{display:'flex', flexDirection:'column', gap:'6px'}}>
-                            <span style={s.dateBadge}><CalendarCheck size={12}/> In: {res.checkIn}</span>
-                            <span style={s.dateBadge}><CalendarCheck size={12}/> Out: {res.checkOut}</span>
-                        </div>
-                    </td>
-
-                    {/* Status */}
-                    <td style={s.td}>
-                        <span style={s.badge(res.status)}>{res.status}</span>
-                    </td>
-                    
-                    {/* Actions */}
+                    <td style={s.td}><div style={{fontWeight:'700', color:'#111827', fontFamily:'monospace', fontSize:'15px'}}>{res.reservationNumber}</div><div style={{display:'flex', alignItems:'center', gap:'5px', marginTop:'4px', color:'#64748b', fontSize:'12px'}}><BedDouble size={12}/> Bed {res.bedNumber}</div></td>
+                    <td style={s.td}><div style={{fontWeight:'600', color:'#1e293b'}}>{res.studentName}</div><div style={{fontSize:'12px', color:'#94a3b8'}}>{res.studentRegNo}</div></td>
+                    <td style={s.td}><div style={{display:'flex', flexDirection:'column', gap:'6px'}}><span style={s.dateBadge}><CalendarCheck size={12}/> In: {res.checkIn}</span><span style={s.dateBadge}><CalendarCheck size={12}/> Out: {res.checkOut}</span></div></td>
+                    <td style={s.td}><span style={s.badge(res.status)}>{res.status}</span></td>
                     <td style={s.td}>
                       <div style={{display:'flex', justifyContent:'flex-end', gap:'8px', position:'relative'}}>
                           
-                          {/* View Button */}
-                          <button 
-                            style={s.actionBtn} 
-                            onClick={() => openViewModal(res.id)}
-                            title="View Details"
-                            onMouseOver={(e) => e.currentTarget.style.borderColor = '#4f46e5'}
-                            onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
-                          >
-                            <Eye size={16}/>
-                          </button>
+                          {/* View Button (Visible for all) */}
+                          <button style={s.actionBtn} onClick={() => openViewModal(res.id)} title="View Details" onMouseOver={(e) => e.currentTarget.style.borderColor = '#4f46e5'} onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}><Eye size={16}/></button>
 
-                          {/* REJECTED: Show Dropdown Actions */}
-                          {res.status === 'REJECTED' && (
-                            <div ref={activeDropdownId === res.id ? dropdownRef : null}>
-                                <button 
-                                    style={s.actionBtn} 
-                                    onClick={(e) => toggleDropdown(res.id, e)}
-                                >
-                                  <MoreVertical size={16}/>
-                                </button>
-                                
-                                {activeDropdownId === res.id && (
-                                  <div style={s.dropdownMenu}>
-                                    <button 
-                                        style={s.dropdownItem('#059669')} 
-                                        onClick={() => handleReactivate(res.id)}
-                                        onMouseOver={(e) => e.currentTarget.style.background = '#f0fdf4'}
-                                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <RefreshCcw size={14}/> Reactivate
-                                    </button>
-                                    <button 
-                                        style={s.dropdownItem('#d97706')} 
-                                        onClick={() => openMoveModal(res.id)}
-                                        onMouseOver={(e) => e.currentTarget.style.background = '#fffbeb'}
-                                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <BedDouble size={14}/> Move Bed
-                                    </button>
-                                    <button 
-                                        style={s.dropdownItem('#dc2626')} 
-                                        onClick={() => handleRefund(res.id)}
-                                        onMouseOver={(e) => e.currentTarget.style.background = '#fef2f2'}
-                                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <Ban size={14}/> Refund
-                                    </button>
-                                  </div>
+                          {/* Warden ට Actions (3-dots, Cancel) පෙනෙන්නෙ නැත */}
+                          {!isWarden && (
+                            <>
+                                {res.status === 'REJECTED' && (
+                                    <div ref={activeDropdownId === res.id ? dropdownRef : null}>
+                                        <button style={s.actionBtn} onClick={(e) => toggleDropdown(res.id, e)}><MoreVertical size={16}/></button>
+                                        {activeDropdownId === res.id && (
+                                        <div style={s.dropdownMenu}>
+                                            <button style={s.dropdownItem('#059669')} onClick={() => handleReactivate(res.id)} onMouseOver={(e) => e.currentTarget.style.background = '#f0fdf4'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}><RefreshCcw size={14}/> Reactivate</button>
+                                            <button style={s.dropdownItem('#d97706')} onClick={() => openMoveModal(res.id)} onMouseOver={(e) => e.currentTarget.style.background = '#fffbeb'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}><BedDouble size={14}/> Move Bed</button>
+                                            <button style={s.dropdownItem('#dc2626')} onClick={() => handleRefund(res.id)} onMouseOver={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}><Ban size={14}/> Refund</button>
+                                        </div>
+                                        )}
+                                    </div>
                                 )}
-                            </div>
-                          )}
-
-                          {/* COMPLETED: Show Cancel Button */}
-                          {res.status === 'COMPLETED' && (
-                             <button 
-                                style={{...s.actionBtn, color: '#dc2626'}} 
-                                onClick={() => handleRefund(res.id)}
-                                title="Cancel Reservation"
-                                onMouseOver={(e) => e.currentTarget.style.background = '#fef2f2'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'white'}
-                             >
-                                <Ban size={16}/>
-                             </button>
+                                {res.status === 'COMPLETED' && (
+                                    <button style={{...s.actionBtn, color: '#dc2626'}} onClick={() => handleRefund(res.id)} title="Cancel Reservation" onMouseOver={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseOut={(e) => e.currentTarget.style.background = 'white'}><Ban size={16}/></button>
+                                )}
+                            </>
                           )}
                       </div>
                     </td>
-
                 </tr>
-                ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* VIEW DETAILS MODAL */}
       {isViewModalOpen && (
         <div style={s.overlay} onClick={() => setIsViewModalOpen(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
-            {isLoadingDetails ? (
-                <div style={{padding:'40px', textAlign:'center', color:'#64748b'}}>Loading Details...</div>
-            ) : selectedReservation ? (
+            {isLoadingDetails ? <div style={{padding:'40px', textAlign:'center', color:'#64748b'}}>Loading Details...</div> 
+            : selectedReservation ? (
                 <>
                     <div style={s.modalHeader}>
-                      <div>
-                        <h3 style={s.modalTitle}>Reservation Details</h3>
-                        <div style={{marginTop:'5px'}}><span style={s.badge(selectedReservation.status)}>{selectedReservation.status}</span></div>
-                      </div>
+                      <div><h3 style={s.modalTitle}>Reservation Details</h3><div style={{marginTop:'5px'}}><span style={s.badge(selectedReservation.status)}>{selectedReservation.status}</span></div></div>
                       <button onClick={() => setIsViewModalOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'#9ca3af'}}><X size={24}/></button>
                     </div>
-
                     <div style={s.modalBody}>
-                        {/* Student Section */}
                         <div style={s.sectionTitle}><User size={16}/> Student Information</div>
                         <div style={s.detailRow}><span style={s.detailLabel}>Full Name</span><span style={s.detailValue}>{selectedReservation.studentName}</span></div>
                         <div style={s.detailRow}><span style={s.detailLabel}>Registration No</span><span style={s.detailValue}>{selectedReservation.studentRegNo || selectedReservation.reservationNumber}</span></div> 
@@ -446,7 +229,6 @@ const ManageReservations = () => {
                         <div style={s.detailRow}><span style={s.detailLabel}>Email</span><span style={s.detailValue}>{selectedReservation.studentEmail}</span></div>
                         <div style={s.detailRow}><span style={s.detailLabel}>Phone</span><span style={s.detailValue}>{selectedReservation.studentContact}</span></div>
 
-                        {/* Accommodation Section */}
                         <div style={{...s.sectionTitle, marginTop:'25px'}}><Building2 size={16}/> Accommodation</div>
                         <div style={s.detailRow}><span style={s.detailLabel}>Reservation ID</span><span style={{...s.detailValue, fontFamily:'monospace'}}>{selectedReservation.reservationNumber}</span></div>
                         <div style={s.detailRow}><span style={s.detailLabel}>Room Number</span><span style={s.detailValue}>{selectedReservation.roomNumber}</span></div>
@@ -454,93 +236,37 @@ const ManageReservations = () => {
                         <div style={s.detailRow}><span style={s.detailLabel}>Check-in</span><span style={s.detailValue}>{selectedReservation.checkIn}</span></div>
                         <div style={s.detailRow}><span style={s.detailLabel}>Check-out</span><span style={s.detailValue}>{selectedReservation.checkOut}</span></div>
 
-                        {/* Payment Section */}
                         <div style={{marginTop:'25px', padding:'15px', background:'#f0fdf4', borderRadius:'12px', border:'1px solid #bbf7d0'}}>
                             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                                <span style={{display:'flex', alignItems:'center', gap:'8px', color:'#166534', fontWeight:'600'}}>
-                                    <CreditCard size={18}/> Total Amount Paid
-                                </span>
-                                <span style={{fontSize:'18px', fontWeight:'800', color:'#15803d'}}>
-                                    LKR {selectedReservation.amountPaid ? selectedReservation.amountPaid.toLocaleString('en-US', {minimumFractionDigits: 2}) : '0.00'}
-                                </span>
+                                <span style={{display:'flex', alignItems:'center', gap:'8px', color:'#166534', fontWeight:'600'}}><CreditCard size={18}/> Total Amount Paid</span>
+                                <span style={{fontSize:'18px', fontWeight:'800', color:'#15803d'}}>LKR {selectedReservation.amountPaid ? selectedReservation.amountPaid.toLocaleString('en-US', {minimumFractionDigits: 2}) : '0.00'}</span>
                             </div>
                         </div>
-
                         <button style={s.closeBtn} onClick={() => setIsViewModalOpen(false)}>Close Details</button>
                     </div>
                 </>
-            ) : (
-                <div style={{padding:'20px', textAlign:'center', color:'red'}}>Failed to load data.</div>
-            )}
+            ) : <div style={{padding:'20px', textAlign:'center', color:'red'}}>Failed to load data.</div>}
           </div>
         </div>
       )}
 
-      {/* MOVE BED MODAL */}
       {isMoveModalOpen && (
         <div style={s.overlay} onClick={() => setIsMoveModalOpen(false)}>
             <div style={{...s.modal, width:'480px'}} onClick={e => e.stopPropagation()}>
-                <div style={s.modalHeader}>
-                    <div>
-                        <h3 style={s.modalTitle}>Select New Bed</h3>
-                        <p style={{margin:'2px 0 0', fontSize:'13px', color:'#64748b'}}>Re-assign this reservation to an available bed.</p>
-                    </div>
-                    <button onClick={() => setIsMoveModalOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'#9ca3af'}}><X size={24}/></button>
-                </div>
-
+                <div style={s.modalHeader}><div><h3 style={s.modalTitle}>Select New Bed</h3><p style={{margin:'2px 0 0', fontSize:'13px', color:'#64748b'}}>Re-assign this reservation to an available bed.</p></div><button onClick={() => setIsMoveModalOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'#9ca3af'}}><X size={24}/></button></div>
                 <div style={{padding:'0', maxHeight:'350px', overflowY:'auto', background:'#f8fafc'}}>
-                    {matchingBeds.length === 0 ? (
-                        <div style={{textAlign:'center', padding:'40px', color:'#64748b'}}>
-                            <BedDouble size={32} style={{marginBottom:'10px', opacity:0.5}}/>
-                            <p>No matching available beds found.</p>
+                    {matchingBeds.length === 0 ? <div style={{textAlign:'center', padding:'40px', color:'#64748b'}}><BedDouble size={32} style={{marginBottom:'10px', opacity:0.5}}/><p>No matching available beds found.</p></div> 
+                    : matchingBeds.map((b) => (
+                        <div key={b.id} onClick={() => confirmMove(b.id)} style={{padding:'16px 24px', cursor:'pointer', borderBottom:'1px solid #f1f5f9', background:'white', display:'flex', alignItems:'center', gap:'15px', transition:'background 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.background = 'white'}>
+                            <div style={{minWidth:'40px', height:'40px', borderRadius:'10px', background:'#e0e7ff', color:'#4338ca', display:'flex', alignItems:'center', justifyContent:'center'}}><BedDouble size={20}/></div>
+                            <div style={{flex:1}}><div style={{fontWeight:'700', color:'#1e293b', fontSize:'15px'}}>Bed {b.bedNumber}</div><div style={{display:'flex', gap:'8px', marginTop:'4px'}}><span style={{fontSize:'11px', fontWeight:'600', padding:'2px 8px', borderRadius:'4px', background:'#f3f4f6', color:'#4b5563', display:'flex', alignItems:'center', gap:'4px'}}><Building2 size={10}/> {b.hubNumber || '-'}</span><span style={{fontSize:'11px', fontWeight:'600', padding:'2px 8px', borderRadius:'4px', background:'#f3f4f6', color:'#4b5563', display:'flex', alignItems:'center', gap:'4px'}}><Layers size={10}/> {b.floorNumber || '-'}</span><span style={{fontSize:'11px', fontWeight:'600', padding:'2px 8px', borderRadius:'4px', background:'#fff7ed', color:'#c2410c', border:'1px solid #fed7aa', display:'flex', alignItems:'center', gap:'4px'}}><DoorOpen size={10}/> {b.roomNumber || '-'}</span></div></div>
                         </div>
-                    ) : (
-                        matchingBeds.map((b, index) => (
-                            <div 
-                                key={b.id} 
-                                onClick={() => confirmMove(b.id)}
-                                style={{
-                                    padding:'16px 24px', cursor:'pointer',
-                                    borderBottom:'1px solid #f1f5f9', background:'white',
-                                    display:'flex', alignItems:'center', gap:'15px',
-                                    transition:'background 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                            >
-                                <div style={{
-                                    minWidth:'40px', height:'40px', borderRadius:'10px', 
-                                    background:'#e0e7ff', color:'#4338ca', display:'flex', 
-                                    alignItems:'center', justifyContent:'center'
-                                }}>
-                                    <BedDouble size={20}/>
-                                </div>
-                                <div style={{flex:1}}>
-                                    <div style={{fontWeight:'700', color:'#1e293b', fontSize:'15px'}}>Bed {b.bedNumber}</div>
-                                    <div style={{display:'flex', gap:'8px', marginTop:'4px'}}>
-                                        <span style={{fontSize:'11px', fontWeight:'600', padding:'2px 8px', borderRadius:'4px', background:'#f3f4f6', color:'#4b5563', display:'flex', alignItems:'center', gap:'4px'}}>
-                                            <Building2 size={10}/> {b.hubNumber || '-'}
-                                        </span>
-                                        <span style={{fontSize:'11px', fontWeight:'600', padding:'2px 8px', borderRadius:'4px', background:'#f3f4f6', color:'#4b5563', display:'flex', alignItems:'center', gap:'4px'}}>
-                                            <Layers size={10}/> {b.floorNumber || '-'}
-                                        </span>
-                                        <span style={{fontSize:'11px', fontWeight:'600', padding:'2px 8px', borderRadius:'4px', background:'#fff7ed', color:'#c2410c', border:'1px solid #fed7aa', display:'flex', alignItems:'center', gap:'4px'}}>
-                                            <DoorOpen size={10}/> {b.roomNumber || '-'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
+                    ))}
                 </div>
-                
-                <div style={s.modalFooter}>
-                    <button style={s.closeBtn} onClick={() => setIsMoveModalOpen(false)}>Cancel</button>
-                </div>
+                <div style={s.modalFooter}><button style={s.closeBtn} onClick={() => setIsMoveModalOpen(false)}>Cancel</button></div>
             </div>
         </div>
       )}
-
     </div>
   );
 };

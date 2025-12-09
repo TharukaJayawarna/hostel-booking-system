@@ -7,6 +7,7 @@ import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.service.BedService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,40 +20,46 @@ public class BedController {
     private BedService bedService;
 
     @PostMapping(value = "/rooms/{room-id}/beds", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> createBeds(@PathVariable("room-id") Long roomId, @RequestBody CreateBedRequestDTO dto) throws ResourceNotFoundException {
         bedService.createBeds(roomId,dto);
         return ResponseEntity.ok(ApiResponse.success("Bed created successfully"));
     }
 
     @GetMapping(value = "/beds", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN', 'STUDENT')")
     public ResponseEntity<ApiResponse<List<BedsResponseDTO>>> getAllBeds(){
         return ResponseEntity.ok(ApiResponse.success("Beds fetched successfully", bedService.getAllBeds()));
     }
 
     @GetMapping(value = "/beds/{bed-id}", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN', 'STUDENT')")
     public ResponseEntity<ApiResponse<BedsResponseDTO>> getBedById(@PathVariable("bed-id") Long bedId) throws ResourceNotFoundException {
         return ResponseEntity.ok(ApiResponse.success("Bed fetched with id "+bedId, bedService.getBedById(bedId)));
     }
 
     @DeleteMapping(value = "/beds/{bed-id}", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteBedById(@PathVariable("bed-id") Long bedId) throws ResourceNotFoundException {
         bedService.deleteBedById(bedId);
         return ResponseEntity.ok(ApiResponse.success("Bed deleted successfully"));
     }
 
     @GetMapping(value = "/beds/filterByStatus", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN', 'STUDENT')")
     public ResponseEntity<ApiResponse<List<BedsResponseDTO>>> getBedsByStatus(@RequestParam Boolean isBooked) {
         return ResponseEntity.ok(ApiResponse.success("Bed filtered successfully", bedService.getBedsByBookingStatus(isBooked)));
     }
 
     @GetMapping(value = "/rooms/{room-id}/beds", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN', 'STUDENT')")
     public ResponseEntity<ApiResponse<List<BedsResponseDTO>>> getBedsByRoom(@PathVariable("room-id") Long roomId) {
         return ResponseEntity.ok(ApiResponse.success("Beds fetched", bedService.getBedsByRoomId(roomId)));
     }
 
     @PatchMapping(value = "/beds/{bed-id}/maintenance", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> toggleMaintenance(@PathVariable("bed-id") Long bedId, @RequestParam Boolean status) throws ResourceNotFoundException {
-        // BedService එකේ method එකක් හදාගන්න ඕන මේකට
         bedService.toggleMaintenance(bedId, status);
         return ResponseEntity.ok(ApiResponse.success("Maintenance status updated"));
     }

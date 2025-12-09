@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class IssueServiceImpl implements IssueService {
@@ -18,107 +20,97 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     public void reportIssue(IssueDTO dto) {
-        // ඊමේල් මාතෘකාව (Subject)
-        String subject = "Action Required: Issue Reported by " + dto.getStudentName();
+        String subject = "New Issue Report: " + dto.getStudentId() + " - " + dto.getStudentName();
 
-        // ඊමේල් අන්තර්ගතය ගොඩනැගීම (Body Construction)
-        StringBuilder bodyContent = new StringBuilder();
+        // ඊමේල් අන්තර්ගතය (Content) ගොඩනැගීම
+        StringBuilder contentBuilder = new StringBuilder();
 
-        bodyContent.append("<p style='color: #374151; font-size: 16px; margin-bottom: 25px;'>A new issue has been submitted through the student portal. Please review the details below.</p>");
+        contentBuilder.append("<p style='font-size: 16px; margin-bottom: 20px;'>You have received a new issue report with the following details:</p>");
 
-        // --- 1. ISSUE SUMMARY (Highlighted Box) ---
-        bodyContent.append("<div style='background-color: #fff1f2; border-left: 5px solid #e11d48; padding: 20px; border-radius: 4px; margin-bottom: 35px;'>");
-        bodyContent.append("<h3 style='color: #9f1239; margin-top: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;'>Reported Issue</h3>");
-        bodyContent.append("<p style='color: #881337; font-size: 16px; font-style: italic; margin: 8px 0 0; line-height: 1.6;'>")
-                .append(dto.getComment() != null ? "\"" + dto.getComment().replace("\n", "<br/>") + "\"" : "No description provided.")
-                .append("</p>");
-        bodyContent.append("</div>");
+        // --- DETAILS TABLE START ---
+        contentBuilder.append("<table style='width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;'>");
 
-        // --- 2. DETAILS GRID ---
-        bodyContent.append("<table width='100%' cellpadding='0' cellspacing='0' style='min-width:100%; border-collapse: collapse;'>");
+        // Student Info Section
+        addSectionHeader(contentBuilder, "Student Information");
+        addRow(contentBuilder, "Student Name", dto.getStudentName());
+        addRow(contentBuilder, "Registration No", dto.getStudentId());
+        addRow(contentBuilder, "Email Address", dto.getStudentEmail());
+        addRow(contentBuilder, "Contact Number", dto.getStudentPhone());
 
-        // Student Details Section
-        bodyContent.append(getSectionHeader("Student Profile"));
-        bodyContent.append(getRow("Student Name", dto.getStudentName()));
-        bodyContent.append(getRow("Registration ID", "<span style='font-family: monospace; background: #f3f4f6; padding: 2px 6px; border-radius: 4px;'>" + dto.getStudentId() + "</span>"));
-        bodyContent.append(getRow("Email Address", "<a href='mailto:" + dto.getStudentEmail() + "' style='color:#2563eb; text-decoration:none; border-bottom: 1px dotted #2563eb;'>" + dto.getStudentEmail() + "</a>"));
-        bodyContent.append(getRow("Contact Number", dto.getStudentPhone()));
-        bodyContent.append("<tr><td colspan='2' height='25'></td></tr>"); // Spacer
-
-        // Reservation Info Section
-        bodyContent.append(getSectionHeader("Reservation Context"));
-        bodyContent.append(getRow("Booking Duration", dto.getDuration()));
-        bodyContent.append(getRow("Check-in Date", String.valueOf(dto.getCheckinDate())));
-        bodyContent.append(getRow("Check-out Date", String.valueOf(dto.getCheckoutDate())));
-        bodyContent.append("<tr><td colspan='2' height='25'></td></tr>"); // Spacer
+        // Booking Info Section
+        addSectionHeader(contentBuilder, "Booking Details");
+        addRow(contentBuilder, "Duration", dto.getDuration());
+        addRow(contentBuilder, "Check-in Date", String.valueOf(dto.getCheckinDate()));
+        addRow(contentBuilder, "Check-out Date", String.valueOf(dto.getCheckoutDate()));
 
         // Payment Info Section
-        bodyContent.append(getSectionHeader("Payment Verification"));
-        bodyContent.append(getRow("Payment Method", dto.getBank()));
-        bodyContent.append(getRow("Date of Payment", String.valueOf(dto.getPaymentDoneDate())));
-        bodyContent.append(getRow("Card Reference", "Ending in **** " + dto.getCardLastFour()));
+        addSectionHeader(contentBuilder, "Payment Information");
+        addRow(contentBuilder, "Bank / Method", dto.getBank());
+        addRow(contentBuilder, "Payment Date", String.valueOf(dto.getPaymentDoneDate()));
+        addRow(contentBuilder, "Card (Last 4 Digits)", dto.getCardLastFour());
 
-        bodyContent.append("</table>");
+        contentBuilder.append("</table>");
+        // --- DETAILS TABLE END ---
 
-        // --- 3. ACTION BUTTON ---
-        bodyContent.append("<div style='margin-top: 45px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 30px;'>");
-        bodyContent.append("<p style='margin-bottom: 20px; color: #6b7280; font-size: 14px;'>You can reply directly to the student by clicking below:</p>");
-        bodyContent.append("<a href='mailto:").append(dto.getStudentEmail()).append("?subject=Regarding your issue report (Ref: ").append(dto.getStudentId()).append(")' style='background-color: #111827; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background-color 0.2s;'>Reply to Student</a>");
-        bodyContent.append("</div>");
+        // --- COMMENT SECTION ---
+        contentBuilder.append("<div style='margin-top: 25px;'>");
+        contentBuilder.append("<h3 style='color: #be123c; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;'>⚠️ Issue Description</h3>");
+        contentBuilder.append("<div style='background-color: #fff1f2; border: 1px solid #fda4af; border-left: 4px solid #e11d48; padding: 15px; border-radius: 6px; color: #881337; font-style: italic; line-height: 1.6;'>");
+        contentBuilder.append(dto.getComment() != null ? dto.getComment().replace("\n", "<br/>") : "No description provided.");
+        contentBuilder.append("</div>");
+        contentBuilder.append("</div>");
 
-        // අවසාන HTML එක සෑදීම
-        String fullBody = generateProfessionalTemplate(bodyContent.toString());
-        emailProducer.sendEmail(adminEmail, subject, fullBody);
+        // --- ACTION BUTTON ---
+        contentBuilder.append("<div style='margin-top: 30px; text-align: center;'>");
+        contentBuilder.append("<a href='mailto:").append(dto.getStudentEmail()).append("' style='background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;'>Reply to Student</a>");
+        contentBuilder.append("</div>");
+
+        // අවසාන ඊමේල් එක සෑදීම
+        String body = generateHighQualityTemplate("New Issue Reported 🛠️", contentBuilder.toString());
+
+        emailProducer.sendEmail(adminEmail, subject, body);
     }
 
-    // --- Helper Methods for Clean Code ---
-
-    private String getRow(String label, String value) {
-        return "<tr>" +
-                "<td style='padding: 10px 0; width: 35%; color: #6b7280; font-size: 14px; font-weight: 500; vertical-align: top; border-bottom: 1px solid #f9fafb;'>" + label + "</td>" +
-                "<td style='padding: 10px 0; width: 65%; color: #1f2937; font-size: 14px; font-weight: 600; vertical-align: top; border-bottom: 1px solid #f9fafb;'>" + (value != null ? value : "-") + "</td>" +
-                "</tr>";
+    // වගුවට පේළියක් එකතු කරන Helper Method එක
+    private void addRow(StringBuilder sb, String label, String value) {
+        sb.append("<tr>");
+        sb.append("<td style='padding: 12px 15px; border-bottom: 1px solid #f3f4f6; background-color: #f9fafb; width: 35%; font-weight: 600; color: #4b5563;'>").append(label).append("</td>");
+        sb.append("<td style='padding: 12px 15px; border-bottom: 1px solid #f3f4f6; color: #1f2937;'>").append(value != null && !value.isEmpty() ? value : "<span style='color:#9ca3af'>N/A</span>").append("</td>");
+        sb.append("</tr>");
     }
 
-    private String getSectionHeader(String title) {
-        return "<tr><td colspan='2' style='padding-bottom: 10px;'><h3 style='color: #111827; font-size: 16px; font-weight: 700; margin: 0; border-bottom: 2px solid #e5e7eb; display: inline-block; padding-bottom: 5px;'>" + title + "</h3></td></tr>";
+    // වගුවට Section Header එකක් එකතු කරන Helper Method එක
+    private void addSectionHeader(StringBuilder sb, String title) {
+        sb.append("<tr>");
+        sb.append("<td colspan='2' style='padding: 10px 15px; background-color: #e0e7ff; color: #3730a3; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #c7d2fe;'>").append(title).append("</td>");
+        sb.append("</tr>");
     }
 
-    // --- PROFESSIONAL TEMPLATE WRAPPER ---
-    private String generateProfessionalTemplate(String content) {
+    // --- HIGH QUALITY EMAIL TEMPLATE ---
+    private String generateHighQualityTemplate(String title, String content) {
         return "<!DOCTYPE html>" +
                 "<html>" +
-                "<head>" +
-                "<meta charset='utf-8'>" +
-                "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
-                "</head>" +
-                "<body style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 40px 0; -webkit-font-smoothing: antialiased;'>" +
+                "<body style='font-family: \"Segoe UI\", Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 40px 0;'>" +
+                "  <div style='max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;'>" +
 
-                // Card Container
-                "  <div style='max-width: 680px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);'>" +
-
-                // 1. Professional Header (Dark Theme)
-                "    <div style='background-color: #111827; padding: 30px 40px; border-bottom: 4px solid #4f46e5;'>" +
-                "      <table width='100%'><tr>" +
-                "        <td>" +
-                "          <h1 style='color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;'>Hostel PMS</h1>" +
-                "          <p style='color: #9ca3af; margin: 5px 0 0; font-size: 12px; font-weight: 500;'>Admin Notification System</p>" +
-                "        </td>" +
-                "        <td align='right'>" +
-                "          <span style='background-color: #374151; color: #e5e7eb; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #4b5563;'>Issue Ticket</span>" +
-                "        </td>" +
-                "      </tr></table>" +
+                // Header Gradient
+                "    <div style='background: linear-gradient(135deg, #4338ca 0%, #312e81 100%); padding: 35px 30px; text-align: center;'>" +
+                "      <h1 style='color: #ffffff; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.5px;'>Hostel PMS</h1>" +
+                "      <p style='color: #a5b4fc; margin: 5px 0 0; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px;'>Admin Notification System</p>" +
                 "    </div>" +
 
-                // 2. Main Content Area
-                "    <div style='padding: 40px 40px 50px;'>" +
-                content +
+                // Main Content Area
+                "    <div style='padding: 40px 30px; color: #334155; line-height: 1.6;'>" +
+                "      <div style='border-bottom: 2px solid #f1f5f9; margin-bottom: 25px; padding-bottom: 15px; display: flex; align-items: center;'>" +
+                "        <h2 style='color: #1e293b; margin: 0; font-size: 22px; font-weight: 700;'>" + title + "</h2>" +
+                "      </div>" +
+                "      <div style='font-size: 15px;'>" + content + "</div>" +
                 "    </div>" +
 
-                // 3. Footer
-                "    <div style='background-color: #f9fafb; padding: 25px 40px; text-align: center; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px; line-height: 1.5;'>" +
-                "      <p style='margin: 0 0 10px;'>&copy; 2025 Hostel Management System. All rights reserved.</p>" +
-                "      <p style='margin: 0;'>This email was generated automatically by the system.<br>Please log in to the admin dashboard to manage this ticket.</p>" +
+                // Footer
+                "    <div style='background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e2e8f0;'>" +
+                "      <p style='margin: 0; color: #64748b; font-size: 12px; font-weight: 600;'>&copy; 2025 Hostel Management System</p>" +
+                "      <p style='margin: 5px 0 0; color: #94a3b8; font-size: 11px;'>This is an automated system email. Please perform the necessary actions in the admin dashboard.</p>" +
                 "    </div>" +
 
                 "  </div>" +

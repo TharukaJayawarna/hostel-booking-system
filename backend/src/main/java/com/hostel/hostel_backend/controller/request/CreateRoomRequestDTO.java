@@ -17,4 +17,5 @@ public class CreateRoomRequestDTO {
     private RoomType roomType;
     private ReservationPeriod reservationPeriod;
     private ReservedFor reservedFor;
+    private String comment;
 }

@@ -2,12 +2,16 @@ package com.hostel.hostel_backend.controller;
 
 import com.hostel.hostel_backend.controller.request.LoginRequestDTO;
 import com.hostel.hostel_backend.controller.response.ApiResponse;
+import com.hostel.hostel_backend.controller.response.AuthResponse;
 import com.hostel.hostel_backend.exception.AppException;
-import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.User;
+import com.hostel.hostel_backend.repository.UserRepository;
 import com.hostel.hostel_backend.service.UserService;
+import com.hostel.hostel_backend.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,6 +21,9 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
+    private final JwtUtils jwtUtils;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<String>> register(@RequestBody User user) throws AppException {
@@ -29,13 +36,33 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<User>> login(@RequestBody LoginRequestDTO loginRequest) throws AppException, ResourceNotFoundException {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody LoginRequestDTO loginRequest) {
         try {
-            User user = userService.loginUser(loginRequest.getUsername(), loginRequest.getPassword());
-            return ResponseEntity.ok(ApiResponse.success("Login successful", user));
+            // 1. Authenticate using Spring Security Manager
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()
+                    )
+            );
+
+            // 2. If Auth successful, fetch User and Generate Token
+            var user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow();
+            var jwtToken = jwtUtils.generateToken(user);
+
+            // 3. Create Response
+            AuthResponse response = AuthResponse.builder()
+                    .token(jwtToken)
+                    .username(user.getUsername())
+                    .role(user.getRole())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .build();
+
+            return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid Username or Password"));
         }
     }
-
 }

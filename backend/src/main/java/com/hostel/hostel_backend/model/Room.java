@@ -21,6 +21,9 @@ public class Room {
     private Boolean isPrivate;
     private Double price;
 
+    @Column(length = 500)
+    private String comment;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReservationPeriod reservationPeriod;

@@ -1,119 +1,78 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
-import { 
-  DoorOpen, 
-  Trash2, 
-  Plus, 
-  Search, 
-  Users, 
-  Lock, 
-  Unlock, 
-  CalendarClock,
-  Building,
-  X,
-  Pencil // Edit icon eka add kala
-} from 'lucide-react';
+import { DoorOpen, Trash2, Plus, Search, Users, Lock, Unlock, CalendarClock, Building, X, Pencil, MessageSquare, AlertCircle } from 'lucide-react';
 
 const ManageRooms = () => {
   const [rooms, setRooms] = useState([]);
   const [floors, setFloors] = useState([]);
   const [hubs, setHubs] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterFloor, setFilterFloor] = useState('ALL');
   const [filterHub, setFilterHub] = useState('ALL');
   const [filterGender, setFilterGender] = useState('ALL');
-
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false); // Edit da Create da kiyala balanna
-  const [editingRoomId, setEditingRoomId] = useState(null); // Edit karana room eke ID eka
+  const [isEditMode, setIsEditMode] = useState(false); 
+  const [editingRoomId, setEditingRoomId] = useState(null);
+  const [hoveredComment, setHoveredComment] = useState(null);
 
   const [formData, setFormData] = useState({
-    floorId: '', 
-    roomNumber: '', 
-    price: '', 
-    isPrivate: false, 
-    reservationPeriod: '', 
-    reservedFor: 'BOYS', 
-    roomType: 'SHARING_2'
+    floorId: '', roomNumber: '', price: '', isPrivate: false, 
+    reservationPeriod: 'MONTHLY', reservedFor: 'BOYS', roomType: 'SHARING_2', comment: ''
   });
+
+  // Check Role
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isWarden = user?.role === 'WARDEN';
 
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const [r, f, h] = await Promise.all([api.get('/rooms'), api.get('/floors'),api.get('/hubs')]);
+      const [r, f, h] = await Promise.all([api.get('/rooms'), api.get('/floors'), api.get('/hubs')]);
       if(r.data.status === 'SUCCESS') setRooms(r.data.data);
       if(f.data.status === 'SUCCESS') setFloors(f.data.data);
       if(h.data.status === 'SUCCESS') setHubs(h.data.data); 
-    } catch (e) { 
-      toast.error("Failed to load data"); 
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { toast.error("Failed to load data"); } 
+    finally { setLoading(false); }
   };
 
-  // Form eka reset kirima
   const resetForm = () => {
-    setFormData({ 
-        floorId: '', roomNumber: '', price: '', isPrivate: false, 
-        reservationPeriod: '', reservedFor: 'BOYS', roomType: 'SHARING_2' 
-    });
+    setFormData({ floorId: '', roomNumber: '', price: '', isPrivate: false, reservationPeriod: 'MONTHLY', reservedFor: 'BOYS', roomType: 'SHARING_2', comment: '' });
     setIsEditMode(false);
     setEditingRoomId(null);
   };
 
-  // Edit Button eka click kalahama
   const handleEdit = (room) => {
-    // Selected room data form ekata set kirima
+    const floorObj = floors.find(f => f.floorNumber === room.floorNumber);
     setFormData({
-        floorId: room.floorId || '', // Note: Backend DTO eke floorId ewanne nathnam meka wada nokaranna puluwan. E nisa Floor eka auto-select noviya haka.
-        roomNumber: room.roomNumber,
-        price: room.price,
-        isPrivate: room.isPrivate,
-        reservationPeriod: room.reservationPeriod,
-        reservedFor: room.reservedFor,
-        roomType: room.roomType
+        floorId: floorObj ? floorObj.id : '', roomNumber: room.roomNumber, price: room.price,
+        isPrivate: room.isPrivate, reservationPeriod: room.reservationPeriod, reservedFor: room.reservedFor,
+        roomType: room.roomType, comment: room.comment || '' 
     });
     setEditingRoomId(room.id);
     setIsEditMode(true);
     setIsModalOpen(true);
   };
 
-  // Form Submit (Create ho Update)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if(!formData.roomNumber || !formData.price) {
-        toast.warning("Please fill all required fields");
-        return;
-    }
-
+    if(!formData.roomNumber || !formData.price) { toast.warning("Please fill all required fields"); return; }
     try {
       if (isEditMode) {
-        // UPDATE Request
         await api.put(`/rooms/${editingRoomId}`, formData);
         toast.success("Room Updated Successfully!");
       } else {
-        // CREATE Request
-        if(!formData.floorId) {
-            toast.warning("Please select a floor");
-            return;
-        }
+        if(!formData.floorId) { toast.warning("Please select a floor"); return; }
         await api.post(`/floors/${formData.floorId}/rooms`, formData);
         toast.success("Room Added Successfully!");
       }
-      
       setIsModalOpen(false);
       resetForm();
       fetchAll();
-    } catch (e) { 
-      toast.error(isEditMode ? "Failed to update room" : "Failed to add room"); 
-    }
+    } catch (e) { toast.error(isEditMode ? "Failed to update room" : "Failed to add room"); }
   };
 
   const handleDelete = async (id) => {
@@ -122,7 +81,11 @@ const ManageRooms = () => {
     catch (e) { toast.error("Failed to delete"); }
   };
 
-  // --- Filtering Logic ---
+  const handleMouseEnter = (e, text) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredComment({ text: text, x: rect.left, y: rect.bottom + 5 });
+  };
+
   const filteredRooms = rooms.filter(room => {
     const rNum = room.roomNumber ? room.roomNumber.toString() : "";
     const matchesSearch = rNum.toLowerCase().includes(searchTerm.toLowerCase());
@@ -139,7 +102,7 @@ const ManageRooms = () => {
   };
 
   const s = {
-    container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px' },
+    container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px', position: 'relative' },
     header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' },
     title: { fontSize: '26px', fontWeight: '800', color: '#111827', display: 'flex', alignItems: 'center', gap: '10px' },
     statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
@@ -157,7 +120,7 @@ const ManageRooms = () => {
     thead: { background: '#f8fafc', borderBottom: '1px solid #e5e7eb' },
     th: { padding: '15px 20px', fontSize: '12px', fontWeight: '700', color: '#64748b', textAlign: 'left', textTransform: 'uppercase' },
     tr: { borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' },
-    td: { padding: '15px 20px', fontSize: '14px', color: '#334155' },
+    td: { padding: '15px 20px', fontSize: '14px', color: '#334155', verticalAlign: 'middle' },
     typeBadge: (type) => ({ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd' }),
     accessBadge: (gender, isPrivate) => {
         const isBoy = gender === 'BOYS';
@@ -166,13 +129,13 @@ const ManageRooms = () => {
         const border = isBoy ? '#bfdbfe' : '#fbcfe8';
         return { display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: bg, color: text, border: isPrivate ? 'none' : `1px solid ${border}`, textTransform: 'uppercase', letterSpacing: '0.5px' };
     },
-    // Modal Styles
+    tooltip: { position: 'fixed', top: hoveredComment ? hoveredComment.y : 0, left: hoveredComment ? hoveredComment.x : 0, backgroundColor: '#1f2937', color: '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', maxWidth: '300px', zIndex: 1000, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', pointerEvents: 'none', lineHeight: '1.4' },
     overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
     modal: { background: 'white', borderRadius: '24px', width: '600px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden', border: '1px solid #f1f5f9', animation: 'fadeIn 0.2s ease-out' },
     modalHeader: { padding: '24px 32px', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
     modalTitle: { fontSize: '20px', fontWeight: '800', color: '#0f172a' },
     modalSub: { fontSize: '14px', color: '#64748b', marginTop: '2px' },
-    modalBody: { padding: '32px', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '24px' },
+    modalBody: { padding: '32px', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '24px', maxHeight:'70vh', overflowY:'auto' },
     sectionLabel: { fontSize: '12px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' },
     inputGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
     inputGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
@@ -189,18 +152,22 @@ const ManageRooms = () => {
 
   return (
     <div style={s.container}>
-      {/* Header */}
+      
+      {hoveredComment && <div style={s.tooltip}>{hoveredComment.text}</div>}
+
       <div style={s.header}>
         <div style={s.title}>
           <div style={{background:'#e0e7ff', padding:'10px', borderRadius:'12px', color:'#4338ca'}}><DoorOpen size={28}/></div>
           <div>Manage Rooms <div style={{fontSize:'14px', color:'#6b7280', fontWeight:'500'}}>Space & Pricing</div></div>
         </div>
-        <button style={s.addBtn} onClick={() => { resetForm(); setIsModalOpen(true); }}>
-          <Plus size={18} /> Add Room
-        </button>
+        {/* Warden ට Add Button නැත */}
+        {!isWarden && (
+            <button style={s.addBtn} onClick={() => { resetForm(); setIsModalOpen(true); }}>
+            <Plus size={18} /> Add Room
+            </button>
+        )}
       </div>
 
-      {/* Stats */}
       <div style={s.statsGrid}>
         <div style={s.statCard}>
           <div style={s.statIconBox('#eff6ff', '#2563eb')}><Building size={24}/></div>
@@ -216,39 +183,20 @@ const ManageRooms = () => {
         </div>
       </div>
 
-      {/* 3. Toolbar */}
       <div style={s.toolbar}>
         <div style={s.searchBox}>
           <Search size={18} color="#9ca3af"/>
-          <input 
-            style={s.searchInput} 
-            placeholder="Search by Room Number..." 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <input style={s.searchInput} placeholder="Search by Room Number..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
         </div>
         <div style={{display:'flex', gap:'10px'}}>
-          
-          {/* HUB Filter Dropdown */}
           <select style={s.filterSelect} value={filterHub} onChange={e => setFilterHub(e.target.value)}>
             <option value="ALL">All Hubs</option>
-            {hubs.map(h => (
-                <option key={h.id} value={h.hubNumber}>{h.hubNumber}</option>
-            ))}
+            {hubs.map(h => <option key={h.id} value={h.hubNumber}>{h.hubNumber}</option>)}
           </select>
-
-          {/* Floor Filter Dropdown */}
           <select style={s.filterSelect} value={filterFloor} onChange={e => setFilterFloor(e.target.value)}>
             <option value="ALL">All Floors</option>
-            {/* Filter Floors based on selected Hub if needed, currently showing all or matching filters */}
-            {floors
-                .filter(f => filterHub === 'ALL' || f.hubNumber === filterHub) // Show floors relevant to selected hub
-                .map(f => (
-                    <option key={f.id} value={f.floorNumber}>{f.floorNumber}</option>
-                ))
-            }
+            {floors.filter(f => filterHub === 'ALL' || f.hubNumber === filterHub).map(f => <option key={f.id} value={f.floorNumber}>{f.floorNumber}</option>)}
           </select>
-
           <select style={s.filterSelect} value={filterGender} onChange={e => setFilterGender(e.target.value)}>
             <option value="ALL">All Genders</option>
             <option value="BOYS">Boys</option>
@@ -256,7 +204,7 @@ const ManageRooms = () => {
           </select>
         </div>
       </div>
-      {/* Table */}
+
       <div style={s.tableContainer}>
         <table style={s.table}>
           <thead style={s.thead}>
@@ -271,137 +219,78 @@ const ManageRooms = () => {
             </tr>
           </thead>
           <tbody>
-            {loading ? 
-              <tr><td colSpan="7" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>Loading...</td></tr> 
-            : filteredRooms.length === 0 ?
-              <tr><td colSpan="7" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>No rooms found.</td></tr>
+            {loading ? <tr><td colSpan="7" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>Loading...</td></tr> 
+            : filteredRooms.length === 0 ? <tr><td colSpan="7" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>No rooms found.</td></tr>
             : filteredRooms.map(r => (
               <tr key={r.id} style={s.tr} onMouseOver={e => e.currentTarget.style.background='#f8fafc'} onMouseOut={e => e.currentTarget.style.background='white'}>
-                
                 <td style={s.td}>
                   <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
                     <div style={{padding:'8px', background:'#fff7ed', borderRadius:'10px', color:'#ea580c'}}><DoorOpen size={20}/></div>
-                    <span style={{fontWeight:'700', color:'#1e293b', fontSize:'15px'}}>{r.roomNumber}</span>
+                    <div>
+                        <span style={{fontWeight:'700', color:'#1e293b', fontSize:'15px'}}>{r.roomNumber}</span>
+                        {r.comment && (
+                            <div 
+                                onMouseEnter={(e) => handleMouseEnter(e, r.comment)} 
+                                onMouseLeave={() => setHoveredComment(null)} 
+                                style={{marginTop: '6px', fontSize: '11px', color: '#b45309', backgroundColor: '#fffbeb', padding: '4px 8px', borderRadius: '6px', border: '1px solid #fcd34d', display: 'flex', alignItems: 'center', gap: '6px', maxWidth: '100px', cursor: 'pointer'}}
+                            >
+                                <MessageSquare size={12} style={{flexShrink:0}}/>
+                                <span style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block'}}>{r.comment}</span>
+                            </div>
+                        )}
+                    </div>
                   </div>
                 </td>
-
+                <td style={s.td}><div style={{fontSize:'13px', fontWeight:'600'}}>{r.floorNumber}</div><div style={{fontSize:'11px', color:'#64748b'}}>{r.hubNumber || 'Hub Info'}</div></td>
+                <td style={s.td}><span style={s.typeBadge(r.roomType || 'SHARING_2')}><Users size={14}/>{r.roomType ? r.roomType.replace('SHARING_', '') : '2'} Person</span></td>
+                <td style={s.td}><span style={s.accessBadge(r.reservedFor, r.isPrivate)}>{r.isPrivate ? <Lock size={12}/> : <Unlock size={12}/>}{r.reservedFor === 'BOYS' ? 'Male' : 'Female'}<span style={{opacity:0.6, margin:'0 4px'}}>|</span>{r.isPrivate ? 'Private' : 'Shared'}</span></td>
+                <td style={s.td}><div style={{display:'flex', alignItems:'center', gap:'4px', fontFamily:'monospace', fontWeight:'700', color:'#0f172a', fontSize:'15px'}}>LKR {parseFloat(r.price).toLocaleString('en-US', {minimumFractionDigits: 2})}</div></td>
+                <td style={s.td}><div style={{display:'flex', alignItems:'center', gap:'6px', color:'#475569', fontSize:'13px'}}><CalendarClock size={14}/>{r.reservationPeriod ? r.reservationPeriod.replace('_', ' ') : 'MONTHLY'}</div></td>
+                
                 <td style={s.td}>
-                    <div style={{fontSize:'13px', fontWeight:'600'}}>{r.floorNumber}</div>
-                    <div style={{fontSize:'11px', color:'#64748b'}}>{r.hubNumber || 'Hub Info'}</div>
+                  {/* Warden ට Edit සහ Delete බොත්තම් නැත */}
+                  {!isWarden && (
+                      <div style={{display:'flex', justifyContent:'flex-end', gap:'8px'}}>
+                        <button onClick={() => handleEdit(r)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'white', color:'#2563eb', cursor:'pointer'}} title="Edit Room"><Pencil size={16}/></button>
+                        <button onClick={() => handleDelete(r.id)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}} title="Delete Room"><Trash2 size={16}/></button>
+                      </div>
+                  )}
                 </td>
-
-                <td style={s.td}>
-                    <span style={s.typeBadge(r.roomType || 'SHARING_2')}>
-                        <Users size={14}/>
-                        {r.roomType ? r.roomType.replace('SHARING_', '') : '2'} Person
-                    </span>
-                </td>
-
-                <td style={s.td}>
-                    <span style={s.accessBadge(r.reservedFor, r.isPrivate)}>
-                        {r.isPrivate ? <Lock size={12}/> : <Unlock size={12}/>}
-                        {r.reservedFor === 'BOYS' ? 'Male' : 'Female'}
-                        <span style={{opacity:0.6, margin:'0 4px'}}>|</span>
-                        {r.isPrivate ? 'Private' : 'Shared'}
-                    </span>
-                </td>
-
-                <td style={s.td}>
-                    <div style={{display:'flex', alignItems:'center', gap:'4px', fontFamily:'monospace', fontWeight:'700', color:'#0f172a', fontSize:'15px'}}>
-                        LKR {parseFloat(r.price).toLocaleString('en-US', {minimumFractionDigits: 2})}
-                    </div>
-                </td>
-
-                <td style={s.td}>
-                    <div style={{display:'flex', alignItems:'center', gap:'6px', color:'#475569', fontSize:'13px'}}>
-                        <CalendarClock size={14}/>
-                        {r.reservationPeriod.replace('_', ' ')}
-                    </div>
-                </td>
-
-                <td style={s.td}>
-                  <div style={{display:'flex', justifyContent:'flex-end', gap:'8px'}}>
-                    
-                    {/* EDIT BUTTON */}
-                    <button 
-                        onClick={() => handleEdit(r)}
-                        style={{padding:'8px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'white', color:'#2563eb', cursor:'pointer'}}
-                        title="Edit Room"
-                    >
-                        <Pencil size={16}/>
-                    </button>
-
-                    {/* DELETE BUTTON */}
-                    <button 
-                        onClick={() => handleDelete(r.id)}
-                        style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}}
-                        title="Delete Room"
-                    >
-                        <Trash2 size={16}/>
-                    </button>
-                  </div>
-                </td>
-
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* MODAL (Handle both Create & Edit) */}
       {isModalOpen && (
         <div style={s.overlay} onClick={() => setIsModalOpen(false)}>
           <div style={s.modal} onClick={e => e.stopPropagation()}>
-            
             <div style={s.modalHeader}>
                 <div style={{display:'flex', alignItems:'center', gap:'15px'}}>
-                    <div style={{background:'#f0f9ff', padding:'10px', borderRadius:'12px', border:'1px solid #e0f2fe'}}>
-                        <Plus size={24} color="#0284c7"/>
-                    </div>
-                    <div>
-                        <div style={s.modalTitle}>{isEditMode ? "Edit Room Details" : "Create New Room"}</div>
-                        <div style={s.modalSub}>{isEditMode ? "Update existing room information" : "Add a new accommodation unit"}</div>
-                    </div>
+                    <div style={{background:'#f0f9ff', padding:'10px', borderRadius:'12px', border:'1px solid #e0f2fe'}}><Plus size={24} color="#0284c7"/></div>
+                    <div><div style={s.modalTitle}>{isEditMode ? "Edit Room Details" : "Create New Room"}</div><div style={s.modalSub}>{isEditMode ? "Update existing room information" : "Add a new accommodation unit"}</div></div>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'#94a3b8'}}><X size={24}/></button>
             </div>
-            
             <form onSubmit={handleSubmit}>
                 <div style={s.modalBody}>
-                    
-                    {/* Section 1: Location */}
                     <div>
                         <div style={s.sectionLabel}>1. Location Details</div>
                         <div style={s.inputGrid}>
                             <div style={s.inputGroup}>
                                 <label style={s.label}>Floor Location</label>
-                                <select 
-                                    style={s.select} 
-                                    value={formData.floorId} 
-                                    onChange={e => setFormData({...formData, floorId: e.target.value})} 
-                                    required={!isEditMode} // Edit karaddi Floor maru karanna denne nathi nam meka optional kala haka
-                                    disabled={isEditMode} // Edit karaddi Floor maru karanna bari wena vidihata disable kala haka
-                                >
+                                <select style={{...s.select, opacity: isEditMode ? 0.6 : 1, cursor: isEditMode ? 'not-allowed' : 'pointer'}} value={formData.floorId} onChange={e => setFormData({...formData, floorId: e.target.value})} required={!isEditMode} disabled={isEditMode}>
                                     <option value="">-- Select Floor --</option>
-                                    {floors.map(f => (
-                                        <option key={f.id} value={f.id}>{f.hubNumber ? `${f.hubNumber} - ` : ''}{f.floorNumber}</option>
-                                    ))}
+                                    {floors.map(f => <option key={f.id} value={f.id}>{f.hubNumber ? `${f.hubNumber} - ` : ''}{f.floorNumber}</option>)}
                                 </select>
                             </div>
                             <div style={s.inputGroup}>
                                 <label style={s.label}>Room Number</label>
-                                <input 
-                                    style={s.input} 
-                                    placeholder="Ex: R-101" 
-                                    value={formData.roomNumber}
-                                    onChange={e => setFormData({...formData, roomNumber: e.target.value})}
-                                    required
-                                />
+                                <input style={{...s.input, opacity: isEditMode ? 0.6 : 1, cursor: isEditMode ? 'not-allowed' : 'text'}} placeholder="Ex: R-101" value={formData.roomNumber} onChange={e => setFormData({...formData, roomNumber: e.target.value})} required disabled={isEditMode} />
                             </div>
                         </div>
+                        {isEditMode && <div style={{fontSize:'11px', color:'#ef4444', marginTop:'8px', display:'flex', alignItems:'center', gap:'4px'}}><AlertCircle size={12}/> Room Number and Location cannot be changed after creation.</div>}
                     </div>
-
-                    {/* Section 2: Configuration */}
                     <div>
                         <div style={s.sectionLabel}>2. Configuration & Capacity</div>
                         <div style={s.inputGrid}>
@@ -422,21 +311,12 @@ const ManageRooms = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Section 3: Pricing & Privacy */}
                     <div>
                         <div style={s.sectionLabel}>3. Pricing & Access</div>
                         <div style={s.inputGrid}>
                             <div style={s.inputGroup}>
                                 <label style={s.label}>Monthly Price (LKR)</label>
-                                <input 
-                                    type="number"
-                                    style={s.input} 
-                                    placeholder="0.00" 
-                                    value={formData.price}
-                                    onChange={e => setFormData({...formData, price: e.target.value})}
-                                    required
-                                />
+                                <input type="number" style={s.input} placeholder="0.00" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
                             </div>
                             <div style={s.inputGroup}>
                                 <label style={s.label}>Duration</label>
@@ -444,39 +324,29 @@ const ManageRooms = () => {
                                     <option value="WEEKLY">Weekly</option>
                                     <option value="MONTHLY">Monthly</option>
                                     <option value="DAILY">Daily</option>
-                                    
                                 </select>
                             </div>
                         </div>
-
-                        {/* Privacy Toggle */}
                         <div style={{marginTop:'20px'}}>
-                            <div 
-                                style={s.toggleCard(formData.isPrivate)}
-                                onClick={() => setFormData({...formData, isPrivate: !formData.isPrivate})}
-                            >
+                            <div style={s.toggleCard(formData.isPrivate)} onClick={() => setFormData({...formData, isPrivate: !formData.isPrivate})}>
                                 <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                                    <div style={{padding:'8px', borderRadius:'10px', background: formData.isPrivate ? '#e0f2fe' : '#f1f5f9', color: formData.isPrivate ? '#0284c7' : '#64748b'}}>
-                                        {formData.isPrivate ? <Lock size={20}/> : <Unlock size={20}/>}
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize:'14px', fontWeight:'700', color:'#1e293b'}}>
-                                            {formData.isPrivate ? "Private Room" : "Shared Room"}
-                                        </div>
-                                        <div style={{fontSize:'12px', color:'#64748b'}}>
-                                            {formData.isPrivate ? "Entire room booking (Higher Cost)" : "Individual bed booking"}
-                                        </div>
-                                    </div>
+                                    <div style={{padding:'8px', borderRadius:'10px', background: formData.isPrivate ? '#e0f2fe' : '#f1f5f9', color: formData.isPrivate ? '#0284c7' : '#64748b'}}>{formData.isPrivate ? <Lock size={20}/> : <Unlock size={20}/>}</div>
+                                    <div><div style={{fontSize:'14px', fontWeight:'700', color:'#1e293b'}}>{formData.isPrivate ? "Private Room" : "Shared Room"}</div><div style={{fontSize:'12px', color:'#64748b'}}>{formData.isPrivate ? "Entire room booking (Higher Cost)" : "Individual bed booking"}</div></div>
                                 </div>
-                                <div style={s.toggleContainer(formData.isPrivate)}>
-                                    <div style={s.toggleCircle(formData.isPrivate)}></div>
-                                </div>
+                                <div style={s.toggleContainer(formData.isPrivate)}><div style={s.toggleCircle(formData.isPrivate)}></div></div>
                             </div>
                         </div>
                     </div>
-
+                    {isEditMode && (
+                        <div style={{marginTop: '10px', borderTop:'1px dashed #e2e8f0', paddingTop:'20px'}}>
+                            <div style={s.sectionLabel}>4. Admin Notes</div>
+                            <div style={s.inputGroup}>
+                                <label style={s.label}>Room Comment / Status</label>
+                                <textarea style={{...s.input, minHeight:'80px', resize:'vertical', fontFamily:'inherit', lineHeight:'1.5'}} placeholder="Add a special note about this room (e.g. 'Under Maintenance', 'Reserved for Staff', 'AC Issue'). This will appear in the room list." value={formData.comment} onChange={e => setFormData({...formData, comment: e.target.value})} />
+                            </div>
+                        </div>
+                    )}
                 </div>
-
                 <div style={s.modalFooter}>
                     <button type="button" onClick={() => setIsModalOpen(false)} style={s.cancelBtn}>Cancel</button>
                     <button type="submit" style={s.saveBtn}>{isEditMode ? "Update Changes" : "Save Room"}</button>
@@ -485,7 +355,6 @@ const ManageRooms = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

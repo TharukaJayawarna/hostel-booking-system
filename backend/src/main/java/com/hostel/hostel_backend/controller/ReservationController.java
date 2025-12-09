@@ -11,6 +11,7 @@ import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.service.impl.ReservationServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -26,6 +27,7 @@ public class ReservationController {
 
     // 1. Initiate Reservation (Payment Start)
     @PostMapping(value = "/initiate", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAuthority('STUDENT')")
     public ResponseEntity<ApiResponse<PayHereInitResponseDTO>> initiateReservation(@RequestBody CreateReservationRequestDTO dto) {
         // Exception Handling is done automatically by GlobalExceptionHandler
         PayHereInitResponseDTO response = reservationService.initiateReservation(dto);
@@ -34,6 +36,7 @@ public class ReservationController {
 
     // 2. Reactivate Reservation (Admin Feature)
     @PostMapping(value = "/{reservation-id}/reactivate", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> reactivateReservation(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
         reservationService.reactivateReservation(reservationId);
         return ResponseEntity.ok(ApiResponse.success("Success: Reservation reactivated and email sent."));
@@ -41,6 +44,7 @@ public class ReservationController {
 
     // 3. Assign New Bed (Admin Feature)
     @PostMapping(value = "/{reservation-id}/assign/{new-bed-id}", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> assignNewBed(
             @PathVariable("reservation-id") Long reservationId,
             @PathVariable("new-bed-id") Long newBedId
@@ -51,24 +55,28 @@ public class ReservationController {
 
     // 4. Get All Active Reservations
     @GetMapping(headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN')")
     public ResponseEntity<ApiResponse<List<ReservationListResponseDTO>>> getAllActiveReservations() {
         return ResponseEntity.ok(ApiResponse.success("Active reservations fetched", reservationService.getAllActiveReservations()));
     }
 
     // 5. Get Trash Reservations
     @GetMapping(value = "/trash", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<List<ReservationListResponseDTO>>> getTrashReservations() {
         return ResponseEntity.ok(ApiResponse.success("Trash reservations fetched", reservationService.getTrashReservations()));
     }
 
     // 6. Get Single Reservation By ID
     @GetMapping(value = "/{reservation-id}", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<ReservationDetailResponseDTO>> getReservationById(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
         return ResponseEntity.ok(ApiResponse.success("Reservation details fetched", reservationService.getReservationById(reservationId)));
     }
 
     // 7. Cancel Reservation (Student Feature)
     @PatchMapping(value = "/{reservation-id}/cancel", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> cancelReservation(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
         reservationService.cancelReservation(reservationId);
         return ResponseEntity.ok(ApiResponse.success("Reservation cancelled successfully. (No Refund policy applied)"));
@@ -76,6 +84,7 @@ public class ReservationController {
 
     // 8. Update Reservation Dates (Student Feature)
     @PatchMapping(value = "/{reservation-id}/change-dates", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> updateDates(
             @PathVariable("reservation-id") Long reservationId,
             @RequestBody DateChangeRequestDTO dto
@@ -86,12 +95,14 @@ public class ReservationController {
 
     // 9. Get Matching Beds for Re-assignment (Admin Feature)
     @GetMapping(value = "/{reservation-id}/matching-beds", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<List<AvailableBedDTO>>> getMatchingBeds(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
         return ResponseEntity.ok(ApiResponse.success("Matching beds fetched", reservationService.getMatchingBedsForRes(reservationId)));
     }
 
     // 10. Calculate Price (For Frontend Display)
     @GetMapping(value = "/calculate", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'ADMIN')")
     public ResponseEntity<ApiResponse<Double>> calculateAmount(
             @RequestParam Long bedId,
             @RequestParam LocalDate fromDate,
