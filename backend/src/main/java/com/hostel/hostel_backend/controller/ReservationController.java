@@ -1,5 +1,6 @@
 package com.hostel.hostel_backend.controller;
 
+import com.hostel.hostel_backend.controller.request.AdminReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.AvailableBedDTO;
 import com.hostel.hostel_backend.controller.request.CreateReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.DateChangeRequestDTO;
@@ -53,6 +54,12 @@ public class ReservationController {
         return ResponseEntity.ok(ApiResponse.success("Success: New bed assigned and email sent."));
     }
 
+    @GetMapping(value = "/student/my-bookings", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAuthority('STUDENT')")
+    public ResponseEntity<ApiResponse<List<ReservationListResponseDTO>>> getMyReservations() {
+        return ResponseEntity.ok(ApiResponse.success("My reservations fetched", reservationService.getMyReservations()));
+    }
+
     // 4. Get All Active Reservations
     @GetMapping(headers = "X-Api-Version=v1")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN')")
@@ -62,14 +69,14 @@ public class ReservationController {
 
     // 5. Get Trash Reservations
     @GetMapping(value = "/trash", headers = "X-Api-Version=v1")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN')")
     public ResponseEntity<ApiResponse<List<ReservationListResponseDTO>>> getTrashReservations() {
         return ResponseEntity.ok(ApiResponse.success("Trash reservations fetched", reservationService.getTrashReservations()));
     }
 
     // 6. Get Single Reservation By ID
     @GetMapping(value = "/{reservation-id}", headers = "X-Api-Version=v1")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN')")
     public ResponseEntity<ApiResponse<ReservationDetailResponseDTO>> getReservationById(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
         return ResponseEntity.ok(ApiResponse.success("Reservation details fetched", reservationService.getReservationById(reservationId)));
     }
@@ -84,7 +91,7 @@ public class ReservationController {
 
     // 8. Update Reservation Dates (Student Feature)
     @PatchMapping(value = "/{reservation-id}/change-dates", headers = "X-Api-Version=v1")
-    @PreAuthorize("hasAnyAuthority('STUDENT', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STUDENT')")
     public ResponseEntity<ApiResponse<Void>> updateDates(
             @PathVariable("reservation-id") Long reservationId,
             @RequestBody DateChangeRequestDTO dto
@@ -110,5 +117,17 @@ public class ReservationController {
     ) throws ResourceNotFoundException {
         Double amount = reservationService.getEstimatedPrice(bedId, fromDate, toDate);
         return ResponseEntity.ok(ApiResponse.success("Price calculated successfully", amount));
+    }
+
+    @PostMapping(value = "/admin/create", headers = "X-Api-Version=v1")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> createManualReservation(@RequestBody AdminReservationRequestDTO dto) {
+        // Validation (Service එකේදීත් බලනවා, මෙතනින් සරලව)
+        if(dto.getBedId() == null || dto.getRegistrationNumber() == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Bed ID and Reg No are required"));
+        }
+
+        reservationService.createManualReservation(dto);
+        return ResponseEntity.ok(ApiResponse.success("Manual reservation created successfully."));
     }
 }

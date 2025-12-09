@@ -7,7 +7,7 @@ import 'react-date-range/dist/theme/default.css';
 // Layouts
 import StudentLayout from './layouts/StudentLayout';
 import AdminLayout from './layouts/AdminLayout'; 
-import ProtectedRoute from './components/ProtectedRoute'; // New Import
+import ProtectedRoute from './components/ProtectedRoute'; 
 
 // Student Pages
 import Home from './pages/student/Home';
@@ -19,6 +19,7 @@ import PaymentCancel from './pages/student/PaymentCancel';
 import Contact from './pages/student/Contact';
 import BookingSuccess from './pages/student/BookingSuccess';
 import IssueForm from './pages/student/IssueForm';
+import MyBookings from './pages/student/MyBookings';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -55,6 +56,7 @@ function App() {
               <Route path="payment-cancel" element={<PaymentCancel />} />
               <Route path="issue" element={<IssueForm />} />
               <Route path="contact" element={<Contact />} />
+              <Route path="my-bookings" element={<MyBookings />} />
             </Route>
         </Route>
         

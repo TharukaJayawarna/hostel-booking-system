@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'; // useEffect import කරන්න
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom'; // 1. useNavigate import කරන්න
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -11,13 +11,13 @@ import {
   LogOut,
   Settings,
   ChevronRight,
-  Users // Users icon එක import කරන්න
+  Users 
 } from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate(); // 2. navigate hook එක initialize කරන්න
   
-  // --- 1. User State එක මෙතනට එකතු කරන්න ---
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -26,14 +26,25 @@ const Sidebar = () => {
       setUser(JSON.parse(storedUser));
     }
   }, []);
-  // -------------------------------------------
+
+  // --- 3. Logout Function එක ---
+  const handleLogout = (e) => {
+    e.stopPropagation(); // Card එක click වෙන එක නවත්වන්න (userCard එකට click event එකක් තිබුනොත්)
+    
+    // User data ඉවත් කිරීම
+    localStorage.removeItem('user');
+    setUser(null);
+    
+    // Login පිටුවට යොමු කිරීම
+    navigate('/login');
+  };
 
   // --- STYLES ---
   const s = {
     sidebar: {
       width: '280px',
       height: '100vh',
-      backgroundColor: '#111827', // Modern Dark Slate
+      backgroundColor: '#111827', 
       color: '#9ca3af',
       display: 'flex',
       flexDirection: 'column',
@@ -46,14 +57,12 @@ const Sidebar = () => {
       transition: 'all 0.3s ease'
     },
     
-    // Logo Section
     logoContainer: {
-      padding: '30px 25px',
+      padding: '20px 25px',
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
       borderBottom: '1px solid #1f2937',
-      marginBottom: '20px'
     },
     logoIconBox: {
       width: '40px', height: '40px',
@@ -72,7 +81,6 @@ const Sidebar = () => {
     },
     logoSub: { fontSize: '11px', color: '#6b7280', fontWeight: '500' },
 
-    // Navigation Section
     navScroll: {
       flex: 1,
       overflowY: 'auto',
@@ -89,7 +97,6 @@ const Sidebar = () => {
       paddingLeft: '12px' 
     },
     
-    // Links
     link: (active) => ({
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '12px 16px', marginBottom: '4px', borderRadius: '12px',
@@ -105,7 +112,6 @@ const Sidebar = () => {
     iconGroup: { display: 'flex', alignItems: 'center', gap: '12px' },
     activeIndicator: { width: '6px', height: '6px', borderRadius: '50%', background: 'white' },
 
-    // Footer (User Profile)
     footer: {
       padding: '20px',
       borderTop: '1px solid #1f2937',
@@ -115,7 +121,7 @@ const Sidebar = () => {
       display: 'flex', alignItems: 'center', gap: '12px',
       padding: '12px', borderRadius: '12px',
       background: '#1f2937', color: 'white',
-      cursor: 'pointer', transition: 'background 0.2s'
+      cursor: 'default', transition: 'background 0.2s'
     },
     userAvatar: {
       width: '36px', height: '36px', borderRadius: '50%',
@@ -125,7 +131,17 @@ const Sidebar = () => {
     },
     userInfo: { display: 'flex', flexDirection: 'column' },
     userName: { fontSize: '13px', fontWeight: '600', color: '#f3f4f6' },
-    userRole: { fontSize: '11px', color: '#9ca3af' }
+    userRole: { fontSize: '11px', color: '#9ca3af' },
+    
+    // Logout බොත්තම සඳහා විශේෂ style එකක්
+    logoutBtn: {
+        marginLeft:'auto', 
+        color:'#ef4444', 
+        cursor: 'pointer',
+        padding: '5px',
+        borderRadius: '50%',
+        transition: 'background 0.2s'
+    }
   };
 
   const NavItem = ({ to, icon: Icon, label }) => {
@@ -161,7 +177,7 @@ const Sidebar = () => {
         </div>
         <div>
           <div style={s.logoText}>Hostel PMS</div>
-          <div style={s.logoSub}>Admin Dashboard</div>
+          <div style={s.logoSub}>Dashboard</div>
         </div>
       </div>
 
@@ -185,7 +201,6 @@ const Sidebar = () => {
             <NavItem to="/admin/users" icon={Users} label="Manage Users" />
           </>
         )}
-        {/* ----------------------------- */}
 
         <div style={s.sectionLabel}>Settings</div>
         <NavItem to="/admin/settings" icon={Settings} label="System Settings" />
@@ -199,15 +214,22 @@ const Sidebar = () => {
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f2937'}
         >
             <div style={s.userAvatar}>
-                {/* වෙනස්කම: firstName තිබේ නම් පමණක් charAt ගන්න, නැත්නම් 'U' පෙන්වන්න */}
                 {user && user.firstName ? user.firstName.charAt(0) : 'U'}
             </div>
             <div style={s.userInfo}>
                 <span style={s.userName}>{user && user.firstName ? user.firstName : 'User'}</span>
                 <span style={s.userRole}>{user ? user.role : 'Guest'}</span>
             </div>
-            <div style={{marginLeft:'auto', color:'#ef4444'}}>
-                <LogOut size={16}/>
+            
+            {/* 4. Logout Button with onClick */}
+            <div 
+                style={s.logoutBtn} 
+                onClick={handleLogout}
+                title="Logout"
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+                <LogOut size={18}/>
             </div>
         </div>
       </div>

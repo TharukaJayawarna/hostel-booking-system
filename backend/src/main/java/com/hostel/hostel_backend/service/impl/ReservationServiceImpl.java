@@ -1,5 +1,6 @@
 package com.hostel.hostel_backend.service.impl;
 
+import com.hostel.hostel_backend.controller.request.AdminReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.AvailableBedDTO;
 import com.hostel.hostel_backend.controller.request.CreateReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.DateChangeRequestDTO;
@@ -19,11 +20,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.hostel.hostel_backend.repository.UserRepository;
+import com.hostel.hostel_backend.model.User;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -37,6 +43,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final PaymentRepository paymentRepository;
     private final PayHereUtil payHereUtil;
     private final EmailProducer emailProducer;
+    private final UserRepository userRepository;
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -60,6 +67,10 @@ public class ReservationServiceImpl implements ReservationService {
            }
 
            Double calculatedAmount = calculateTotalAmount(dto.getBedId(), dto.getFromDate(), dto.getToDate());
+
+           String username = SecurityContextHolder.getContext().getAuthentication().getName();
+           User currentUser = userRepository.findByUsername(username)
+                   .orElseThrow(() -> new AppException("User not found", HttpStatus.NOT_FOUND));
 
            //Generate Order ID
            String orderId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -88,6 +99,7 @@ public class ReservationServiceImpl implements ReservationService {
            // Link Objects
            reservation.setBed(bed);
            reservation.setPayment(payment);
+           reservation.setUser(currentUser);
            payment.setReservation(reservation);
 
            // 5. Block the Bed (Optimistic Lock will handle concurrency here)
@@ -155,6 +167,17 @@ public class ReservationServiceImpl implements ReservationService {
         emailProducer.sendEmail(res.getStudentEmail(), subject, body);
     }
 
+    @Override
+    public List<ReservationListResponseDTO> getMyReservations() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // වෙනස්කම: අද දිනය (LocalDate.now()) ලබා දී, ඊට සමාන හෝ වැඩි Checkout Date ඇති ඒවා පමණක් ගන්නවා.
+        List<Reservation> myReservations = reservationRepository.findByUserUsernameAndToDateGreaterThanEqual(username, LocalDate.now());
+
+        return myReservations.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
 
     // Reactivate
     @Transactional
@@ -261,6 +284,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .studentName(res.getStudentName())
                 .studentRegNo(res.getStudentRegistrationNumber())
                 .bedNumber(res.getBed() != null ? res.getBed().getBedNumber() : "N/A")
+                .paymentId(res.getPayment() != null ? res.getPayment().getPaymentId() : "N/A")
                 .checkIn(res.getFromDate())
                 .checkOut(res.getToDate())
                 .status(res.getReservationStatus())
@@ -298,7 +322,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .collect(Collectors.toList());
     }
 
-    // Cancel Reservation (No Refund Rule) ---
+    // Cancel Reservation
     @Transactional
     public void cancelReservation(Long reservationId) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -333,29 +357,50 @@ public class ReservationServiceImpl implements ReservationService {
         emailProducer.sendEmail(reservation.getStudentEmail(), subject, body);
     }
 
-    // Change Dates (Same Duration Only) ---
+    @Override
     @Transactional
     public void updateReservationDates(Long reservationId, DateChangeRequestDTO dto) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id " + reservationId));
 
-        // A. පරණ දින ගණන (Duration) ගණනය කිරීම
-        long oldDays = ChronoUnit.DAYS.between(reservation.getFromDate(), reservation.getToDate());
-
-        // B. අලුත් දින ගණන ගණනය කිරීම
-        long newDays = ChronoUnit.DAYS.between(dto.getNewCheckInDate(), dto.getNewCheckOutDate());
-
-        // C. දින ගණන සමානද බැලීම (Rule Check)
-        if (oldDays != newDays) {
-            throw new AppException("Invalid Date Change! The duration (" + oldDays + " days) must remain the same.", HttpStatus.CONFLICT);
+        // CHECK 1: Payment Success ද?
+        if (reservation.getPayment() == null || reservation.getPayment().getPaymentStatus() != PaymentStatus.APPROVED) {
+            throw new AppException("Cannot change dates! Payment is not verified or failed.", HttpStatus.BAD_REQUEST);
         }
 
-        // D. Dates Update කිරීම
+        // CHECK 2: Duration එක සමානද?
+        long oldDays = ChronoUnit.DAYS.between(reservation.getFromDate(), reservation.getToDate());
+        long newDays = ChronoUnit.DAYS.between(dto.getNewCheckInDate(), dto.getNewCheckOutDate());
+
+        if (oldDays != newDays) {
+            throw new AppException("Invalid Date Change! You paid for " + oldDays + " days. Please select the same duration.", HttpStatus.CONFLICT);
+        }
+
+        // CHECK 3: New Dates Availability (අලුත් දිනවල කාමරය ෆ්‍රී ද?) - [NEW]
+        List<ReservationStatus> blockingStatuses = Arrays.asList(ReservationStatus.APPROVED, ReservationStatus.PENDING);
+
+        boolean isOccupied = reservationRepository.existsOverlappingReservation(
+                reservation.getBed().getId(),
+                reservationId, // මේ booking එක අතහැර අනිත් ඒවා බලන්න
+                dto.getNewCheckInDate(),
+                dto.getNewCheckOutDate(),
+                blockingStatuses
+        );
+
+        if (isOccupied) {
+            // කාමරය ෆ්‍රී නැත්නම් Student ට පණිවිඩයක් යවන්න
+            throw new AppException(
+                    "Selected dates are not available for this bed. Please submit an 'Issue Report' to notify administration.",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        // D. Dates Update කිරීම (OK නම් විතරයි මෙතනට එන්නේ)
         reservation.setFromDate(dto.getNewCheckInDate());
         reservation.setToDate(dto.getNewCheckOutDate());
         reservationRepository.save(reservation);
 
-        // --- EMAIL කොටස වෙනස් කරන්න ---
+        // --- EMAIL Sending ---
         String subject = "Reservation Dates Updated - " + reservation.getReservationNumber();
         String content = "<p>Dear <strong>" + reservation.getStudentName() + "</strong>,</p>" +
                 "<p>Your reservation dates have been successfully <span style='color: #2563eb; font-weight: bold;'>UPDATED</span>.</p>" +
@@ -378,6 +423,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .id(res.getId())
                 .reservationNumber(res.getReservationNumber())
                 .studentName(res.getStudentName())
+                .studentRegistrationNumber(res.getStudentRegistrationNumber())
                 .studentEmail(res.getStudentEmail())
                 .studentContact(res.getStudentContactNumber())
                 .gender(res.getStudentGender())
@@ -386,6 +432,10 @@ public class ReservationServiceImpl implements ReservationService {
                 .checkIn(res.getFromDate())
                 .checkOut(res.getToDate())
                 .status(res.getReservationStatus())
+                .paymentId(res.getPayment() != null ? res.getPayment().getPaymentId() : "N/A")
+                .paymentDate(res.getPayment() != null ? res.getPayment().getPaymentDate() : null)
+                .paymentTime(res.getPayment() != null ? res.getPayment().getPaymentTime() : null)
+                .paymentStatus(res.getPayment() != null ? res.getPayment().getPaymentStatus() : null)
                 .amountPaid(res.getPayment() != null ? res.getPayment().getPaymentAmount() : 0.0)
                 .build();
 
@@ -442,5 +492,90 @@ public class ReservationServiceImpl implements ReservationService {
                 "  </div>" +
                 "</body>" +
                 "</html>";
+    }
+
+    @Override
+    @Transactional
+    public void createManualReservation(AdminReservationRequestDTO dto) {
+        // 1. Bed Availability Check
+        Bed bed = bedRepository.findById(dto.getBedId())
+                .orElseThrow(() -> new AppException("Bed not found", HttpStatus.NOT_FOUND));
+
+        if (Boolean.TRUE.equals(bed.getIsBooked())) {
+            throw new AppException("This bed is already booked!", HttpStatus.CONFLICT);
+        }
+
+        // 2. Payment Validation (අලුත් කොටස)
+        // Admin ලබා දුන් Payment Reference එකෙන් Payment එකක් සොයයි
+        Payment payment = paymentRepository.findByPaymentId(dto.getPaymentReference())
+                .orElseThrow(() -> new AppException("Invalid Payment Reference: Payment ID not found.", HttpStatus.NOT_FOUND));
+
+        // Payment එක APPROVED ද කියා පරීක්ෂා කරයි
+        if (payment.getPaymentStatus() != PaymentStatus.APPROVED) {
+            throw new AppException("Payment is not in APPROVED status. Please approve the payment first.", HttpStatus.BAD_REQUEST);
+        }
+
+        // Payment එක වෙනත් Reservation එකකට භාවිතා කර ඇත්දැයි බලයි (Double Booking වැළැක්වීමට)
+        if (payment.getReservation() != null) {
+            throw new AppException("This Payment ID is already assigned to another reservation.", HttpStatus.CONFLICT);
+        }
+
+        // 3. User Linking
+        User linkedUser = null;
+        Optional<User> userOpt = userRepository.findByUsername(dto.getRegistrationNumber());
+        if (userOpt.isPresent()) {
+            linkedUser = userOpt.get();
+        } else {
+            Optional<User> userByEmail = userRepository.findAll().stream()
+                    .filter(u -> u.getEmail().equalsIgnoreCase(dto.getEmail()))
+                    .findFirst();
+            if (userByEmail.isPresent()) linkedUser = userByEmail.get();
+        }
+
+        // 4. Create Reservation
+        Reservation reservation = new Reservation();
+        reservation.setReservationNumber(dto.getPaymentReference());
+        reservation.setStudentName(dto.getStudentName());
+        reservation.setStudentRegistrationNumber(dto.getRegistrationNumber());
+        reservation.setStudentEmail(dto.getEmail());
+        reservation.setStudentContactNumber(dto.getContactNumber());
+        reservation.setStudentAddress(dto.getAddress());
+        reservation.setStudentGender(dto.getGender());
+        reservation.setFromDate(dto.getFromDate());
+        reservation.setToDate(dto.getToDate());
+        reservation.setReservationStatus(ReservationStatus.APPROVED); // කෙලින්ම Approve
+
+        // Link Objects
+        reservation.setBed(bed);
+        reservation.setPayment(payment); // සොයාගත් Payment එක set කරයි
+        reservation.setUser(linkedUser);
+
+        // Payment එක පැත්තෙනුත් Reservation එක set කරනවා (Bi-directional update)
+        payment.setReservation(reservation);
+
+        // 5. Save Entities
+        bed.setIsBooked(true);
+        bedRepository.save(bed);
+
+        // Payment එක update කරන්න (Reservation එක link වුන නිසා)
+        paymentRepository.save(payment);
+
+        // Reservation එක save කරන්න
+        reservationRepository.save(reservation);
+
+        // 6. Send Email
+        String subject = "Booking Confirmation - " + reservation.getReservationNumber();
+        String content = "<p>Dear <strong>" + dto.getStudentName() + "</strong>,</p>" +
+                "<p>Your bed reservation has been created manually by the administration.</p>" +
+                "<div style='background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px;'>" +
+                "  <p><strong>Reservation ID:</strong> " + reservation.getReservationNumber() + "</p>" +
+                "  <p><strong>Bed:</strong> " + bed.getBedNumber() + " (" + bed.getRoom().getRoomNumber() + ")</p>" +
+                "  <p><strong>Dates:</strong> " + dto.getFromDate() + " to " + dto.getToDate() + "</p>" +
+                "  <p><strong>Status:</strong> <span style='color: #059669; font-weight:bold;'>CONFIRMED</span></p>" +
+                "</div>" +
+                "<p>Thank you!</p>";
+
+        String body = generateCommonEmailTemplate("Booking Confirmed ✅", content);
+        emailProducer.sendEmail(dto.getEmail(), subject, body);
     }
 }

@@ -21,7 +21,7 @@ public class User implements UserDetails { // Implement UserDetails
     private String username;
     private String password;
     private String email;
-    private String phone;
+    private String contactNumber;
     private String role;
 
     @OneToMany(mappedBy ="user",cascade = CascadeType.ALL, fetch = FetchType.LAZY)

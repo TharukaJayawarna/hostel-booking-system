@@ -28,6 +28,19 @@ const Reservation = () => {
   const [priceLoading, setPriceLoading] = useState(true);
 
   useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setFormData(prev => ({
+        ...prev,
+        studentName: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        phone: user.phone || '' 
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
     if (!bedId || !checkIn || !checkOut) {
       toast.error("Invalid booking details.");
       navigate('/');
@@ -128,10 +141,31 @@ const Reservation = () => {
       "country": data.country
     };
 
-    window.payhere.onCompleted = function onCompleted(orderId) {
-      setLoading(false);
-      toast.success("Booking Confirmed!");
-      navigate('/booking-success', { state: { ...formData, orderId, bedNumber, roomNumber, checkIn, checkOut, amount: totalAmount } });
+    window.payhere.onCompleted = async function onCompleted(orderId) {
+      setLoading(true); // Loading එක දාන්න
+      try {
+        // තත්පර 2ක් පමණ රැඳී සිටින්න (PayHere Notify request එක Backend එකට ලැබෙන තෙක්)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Backend එකෙන් Status එක පරීක්ෂා කරන්න
+        const res = await api.get(`/payments/verify/${orderId}`);
+        const status = res.data.data.paymentStatus; // හෝ res.data.data.status
+
+        if (status === 'APPROVED') {
+            toast.success("Payment Verified & Booking Confirmed!");
+            navigate('/booking-success', { state: { ...formData, orderId, bedNumber, roomNumber, checkIn, checkOut, amount: totalAmount } });
+        } else {
+            // Status එක APPROVED නොවේ නම් (උදා: REJECTED හෝ තාම PENDING)
+            toast.warn("Payment verification incomplete. Please check your email.");
+            // අවශ්‍ය නම් navigate නොකර සිටිය හැක, නැතහොත් Warning එකක් සමග යැවිය හැක.
+            // දැනට අපි navigate නොකර සිටිමු.
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to verify payment status.");
+      } finally {
+        setLoading(false);
+      }
     };
 
     window.payhere.onDismissed = function onDismissed() {
@@ -292,8 +326,13 @@ const Reservation = () => {
               <div style={s.inputWrapper}>
                 <User size={18} style={s.inputIcon}/>
                 <input 
-                    name="studentName" required onChange={handleInputChange} 
-                    style={s.input} placeholder="John Doe" 
+                    name="studentName" 
+                    required 
+                    onChange={handleInputChange} 
+                    style={s.input} 
+                    placeholder="John Doe" 
+                    // වැදගත්: value එක මෙතනට දාන්න
+                    value={formData.studentName} 
                     onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
                     onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 />
@@ -304,8 +343,13 @@ const Reservation = () => {
               <div style={s.inputWrapper}>
                 <CreditCard size={18} style={s.inputIcon}/>
                 <input 
-                    name="registrationNumber" required onChange={handleInputChange} 
-                    style={s.input} placeholder="ITxxxxxx" 
+                    name="registrationNumber" 
+                    required 
+                    onChange={handleInputChange} 
+                    style={s.input} 
+                    placeholder="ITxxxxxx" 
+                    // වැදගත්: value එක මෙතනට දාන්න
+                    value={formData.registrationNumber}
                     onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
                     onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 />
@@ -319,8 +363,14 @@ const Reservation = () => {
               <div style={s.inputWrapper}>
                 <Mail size={18} style={s.inputIcon}/>
                 <input 
-                    type="email" name="email" required onChange={handleInputChange} 
-                    style={s.input} placeholder="student@email.com" 
+                    type="email" 
+                    name="email" 
+                    required 
+                    onChange={handleInputChange} 
+                    style={s.input} 
+                    placeholder="student@email.com" 
+                    // වැදගත්: value එක මෙතනට දාන්න
+                    value={formData.email}
                     onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
                     onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 />
@@ -331,8 +381,13 @@ const Reservation = () => {
               <div style={s.inputWrapper}>
                 <Phone size={18} style={s.inputIcon}/>
                 <input 
-                    name="phone" required onChange={handleInputChange} 
-                    style={s.input} placeholder="07xxxxxxxx" 
+                    name="phone" 
+                    required 
+                    onChange={handleInputChange} 
+                    style={s.input} 
+                    placeholder="07xxxxxxxx" 
+                    // වැදගත්: value එක මෙතනට දාන්න
+                    value={formData.phone}
                     onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
                     onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 />
@@ -345,8 +400,13 @@ const Reservation = () => {
             <div style={s.inputWrapper}>
               <MapPin size={18} style={s.inputIcon}/>
               <input 
-                name="address" required onChange={handleInputChange} 
-                style={s.input} placeholder="Your home address" 
+                name="address" 
+                required 
+                onChange={handleInputChange} 
+                style={s.input} 
+                placeholder="Your home address" 
+                // වැදගත්: value එක මෙතනට දාන්න
+                value={formData.address}
                 onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
                 onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
               />
@@ -355,7 +415,12 @@ const Reservation = () => {
 
           <div style={s.inputGroup}>
             <label style={s.label}>Gender</label>
-            <select name="gender" onChange={handleInputChange} value={formData.gender} style={s.select}>
+            <select 
+                name="gender" 
+                onChange={handleInputChange} 
+                value={formData.gender} // මේක දැනටමත් තිබුනා, ඒත් check කරගන්න
+                style={s.select}
+            >
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
             </select>

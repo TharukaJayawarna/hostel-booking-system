@@ -5,11 +5,10 @@ import {
   MessageCircleQuestion, 
   Phone, 
   Menu, 
-  X
+  X,
+  CalendarCheck // 1. මෙන්න මේක import කරන්න ඕන
 } from 'lucide-react';
 
-// Placeholder Logo URL (You can replace this with your actual logo path later)
-// Example: import logo from '../assets/logo.png';
 const HOSTEL_LOGO = "https://img.freepik.com/free-vector/editable-hotel-logo-vector-business-corporate-identity-hostel_53876-111553.jpg?semt=ais_se_enriched&w=740&q=80"; 
 
 const Navbar = () => {
@@ -17,7 +16,10 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
-  // Scroll Event Listener for Shadow effect
+  // User කෙනෙක් Log වෙලා ඉන්නවද කියලා බලන්න (Optional: My Bookings පෙන්වන්නෙ Student ට විතරක් නම්)
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isStudent = user?.role === 'STUDENT';
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -26,12 +28,10 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
 
-  // --- STYLES ---
   const s = {
     navbar: {
       position: 'fixed',
@@ -41,8 +41,8 @@ const Navbar = () => {
       zIndex: 1000,
       transition: 'all 0.3s ease-in-out',
       padding: '4px 0',
-      backgroundColor: '#ffffffff', // Solid White Background added
-      boxShadow: isScrolled ? '0 4px 20px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.05)', // Dynamic Shadow
+      backgroundColor: '#ffffffff',
+      boxShadow: isScrolled ? '0 4px 20px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.05)',
       borderBottom: '1px solid #f1f5f9'
     },
     container: {
@@ -53,8 +53,6 @@ const Navbar = () => {
       justifyContent: 'space-between',
       alignItems: 'center'
     },
-    
-    // Logo Styles
     logoGroup: {
       display: 'flex',
       alignItems: 'center',
@@ -63,7 +61,7 @@ const Navbar = () => {
       cursor: 'pointer'
     },
     logoImage: {
-      height: '50px', // Height for the logo
+      height: '50px',
       width: 'auto',
       objectFit: 'contain'
     },
@@ -74,8 +72,6 @@ const Navbar = () => {
       letterSpacing: '-0.5px',
       fontFamily: "'Inter', sans-serif"
     },
-
-    // Desktop Nav
     navLinks: {
       display: 'flex',
       gap: '35px',
@@ -97,17 +93,13 @@ const Navbar = () => {
       position: 'absolute', bottom: '-4px', left: '50%', transform: 'translateX(-50%)',
       width: '5px', height: '5px', borderRadius: '50%', background: '#4f46e5'
     },
-
-    // Mobile Menu Button
     menuBtn: {
-      display: 'none', // Logic to show/hide is handled by JS below in rendering
+      display: 'none',
       background: 'none',
       border: 'none',
       cursor: 'pointer',
       color: '#334155'
     },
-
-    // Mobile Menu Overlay
     mobileMenu: {
       position: 'fixed',
       top: '0',
@@ -139,7 +131,6 @@ const Navbar = () => {
     })
   };
 
-  // Helper component for Links
   const NavLink = ({ to, icon: Icon, label }) => {
     const isActive = location.pathname === to;
     const [hover, setHover] = useState(false);
@@ -151,14 +142,14 @@ const Navbar = () => {
         onMouseEnter={(e) => { e.currentTarget.style.color = '#4f46e5'; setHover(true); }}
         onMouseLeave={(e) => { e.currentTarget.style.color = isActive ? '#4f46e5' : '#64748b'; setHover(false); }}
       >
-        <Icon size={18} strokeWidth={2.5} style={{opacity: isActive || hover ? 1 : 0.7}}/>
+        {/* Icon එක තිබේ නම් පමණක් render කරන්න */}
+        {Icon && <Icon size={18} strokeWidth={2.5} style={{opacity: isActive || hover ? 1 : 0.7}}/>}
         {label}
         {isActive && <div style={s.activeDot}></div>}
       </Link>
     );
   };
 
-  // Check window width for responsive design
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -171,21 +162,24 @@ const Navbar = () => {
       <nav style={s.navbar}>
         <div style={s.container}>
           
-          {/* Logo Section */}
           <Link to="/" style={s.logoGroup}>
             <img src={HOSTEL_LOGO} alt="Logo" style={s.logoImage} />
             <span style={s.logoText}>Hostel PMS</span>
           </Link>
 
-          {/* Desktop Nav Links */}
           {!isMobile ? (
             <div style={s.navLinks}>
               <NavLink to="/" icon={Home} label="Home" />
+              
+              {/* STUDENT නම් පමණක් My Bookings පෙන්වන්න */}
+              {isStudent && (
+                 <NavLink to="/my-bookings" icon={CalendarCheck} label="My Bookings" />
+              )}
+              
               <NavLink to="/issue" icon={MessageCircleQuestion} label="Report Issue" />
               <NavLink to="/contact" icon={Phone} label="Contact" />
             </div>
           ) : (
-            // Mobile Menu Button
             <button style={s.menuBtn} onClick={() => setIsMobileMenuOpen(true)} className="mobile-menu-btn">
               <Menu size={28} />
             </button>
@@ -194,14 +188,12 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Style fix for mobile button visibility */}
       <style>{`
         @media (max-width: 768px) {
           .mobile-menu-btn { display: block !important; }
         }
       `}</style>
 
-      {/* Mobile Menu Sidebar */}
       <div style={s.mobileOverlay} onClick={() => setIsMobileMenuOpen(false)}></div>
       <div style={s.mobileMenu}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'30px'}}>
@@ -214,6 +206,13 @@ const Navbar = () => {
         <Link to="/" style={s.mobileLink(location.pathname === '/')}>
             <Home size={20}/> Home
         </Link>
+        
+        {isStudent && (
+            <Link to="/my-bookings" style={s.mobileLink(location.pathname === '/my-bookings')}>
+                <CalendarCheck size={20}/> My Bookings
+            </Link>
+        )}
+
         <Link to="/issue" style={s.mobileLink(location.pathname === '/issue')}>
             <MessageCircleQuestion size={20}/> Report Issue
         </Link>

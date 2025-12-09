@@ -1,5 +1,7 @@
 package com.hostel.hostel_backend.service.impl;
 
+import com.hostel.hostel_backend.controller.response.ReservationDetailResponseDTO;
+import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.*;
 import com.hostel.hostel_backend.repository.BedRepository;
 import com.hostel.hostel_backend.repository.PaymentRepository;
@@ -46,9 +48,15 @@ public class PaymentServiceImpl implements PaymentService {
         String md5sig = payload.get("md5sig");
 
         // 1. Validate Hash
-        String localHash = payHereUtil.generateHash(merchantId, orderId, Double.parseDouble(payhereAmount), payhereCurrency, merchantSecret);
-        if (!localHash.equals(md5sig)) return "FAILED";
+//        String localHash = payHereUtil.generateHash(merchantId, orderId, Double.parseDouble(payhereAmount), payhereCurrency, merchantSecret);
+//        if (!localHash.equals(md5sig)) return "FAILED";
 
+        String localHash = payHereUtil.generateNotifyHash(merchantId, orderId, Double.parseDouble(payhereAmount), payhereCurrency, statusCode, merchantSecret);
+
+        if (!localHash.equals(md5sig)) {
+            System.err.println("Hash Mismatch! PayHere: " + md5sig + " vs Local: " + localHash);
+            return "FAILED";
+        }
         // 2. Find Payment
         Optional<Payment> paymentOpt = paymentRepository.findByPaymentId(orderId);
         if (paymentOpt.isEmpty()) return "FAILED";
@@ -132,6 +140,21 @@ public class PaymentServiceImpl implements PaymentService {
         }
         paymentRepository.save(payment);
         return "OK";
+    }
+
+    @Override
+    public ReservationDetailResponseDTO verifyPayment(String orderId) throws ResourceNotFoundException {
+        Reservation reservation = reservationRepository.findByReservationNumber(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found for Order ID: " + orderId));
+
+        return ReservationDetailResponseDTO.builder()
+                .id(reservation.getId())
+                .reservationNumber(reservation.getReservationNumber())
+                .status(reservation.getReservationStatus())
+                .paymentStatus(reservation.getPayment() != null ? reservation.getPayment().getPaymentStatus() : null)
+                .studentName(reservation.getStudentName())
+                .studentEmail(reservation.getStudentEmail())
+                .build();
     }
 
     private String generateCommonEmailTemplate(String title, String content) {

@@ -32,7 +32,7 @@ const Home = () => {
       setLoading(true);
       const [hubsRes, roomsRes] = await Promise.all([
         api.get('/hubs'),
-        api.get('/rooms') // වෙනස්කම: '/rooms/public' වෙනුවට '/rooms' භාවිතා කිරීම (Private Rooms ලබා ගැනීමට)
+        api.get('/rooms') 
       ]);
 
       if (hubsRes.data.status === "SUCCESS") {
@@ -40,7 +40,7 @@ const Home = () => {
       }
 
       if (roomsRes.data.status === "SUCCESS") {
-        calculateDetailedPrices(roomsRes.data.data);
+        processPrices(roomsRes.data.data);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -49,12 +49,12 @@ const Home = () => {
     }
   };
 
-  // --- මිල ගණන් ගණනය කිරීමේ Logic එක (Auto Calculation) ---
-  const calculateDetailedPrices = (rooms) => {
+  // --- නව මිල සැකසුම් Logic එක (No Calculations) ---
+  const processPrices = (rooms) => {
     const prices = {};
 
     rooms.forEach(room => {
-      // දත්ත නොමැති නම් error එකක් නොවී skip කිරීම
+      // දත්ත නොමැති නම් skip කරන්න
       if (!room.price || !room.roomType) return;
 
       const type = room.roomType; // e.g., SHARING_2
@@ -62,28 +62,7 @@ const Home = () => {
       const period = room.reservationPeriod; // DAILY, WEEKLY, MONTHLY
       const price = room.price;
 
-      // 1. කාලය අනුව අනිත් මිල ගණන් ගණනය කිරීම
-      let daily = 0, weekly = 0, monthly = 0;
-
-      if (period === 'MONTHLY') {
-        monthly = price;
-        daily = price / 30;
-        weekly = daily * 7;
-      } else if (period === 'WEEKLY') {
-        weekly = price;
-        daily = price / 7;
-        monthly = daily * 30;
-      } else { // DAILY
-        daily = price;
-        weekly = daily * 7;
-        monthly = daily * 30;
-      }
-
-      // අගයන් වටයන්න (Round values)
-      daily = Math.round(daily);
-      weekly = Math.round(weekly);
-      monthly = Math.round(monthly);
-
+      // Object එක initialize කරන්න (නැත්නම්)
       if (!prices[type]) {
         prices[type] = {
           shared: { DAILY: null, WEEKLY: null, MONTHLY: null },
@@ -91,12 +70,17 @@ const Home = () => {
         };
       }
 
-      // දැනටමත් මිලක් තිබේ නම්, අඩුම මිල තෝරා ගැනීම
       const current = prices[type][isPrivate];
-      
-      if (current.DAILY === null || daily < current.DAILY) current.DAILY = daily;
-      if (current.WEEKLY === null || weekly < current.WEEKLY) current.WEEKLY = weekly;
-      if (current.MONTHLY === null || monthly < current.MONTHLY) current.MONTHLY = monthly;
+
+      // Calculation නොකර Backend එකෙන් එන විදියටම අදාල තැනට දාන්න
+      if (period === 'DAILY') {
+         // එකම වර්ගයේ කාමර කිහිපයක් තිබේ නම්, අඩුම මිල ගන්න
+         if (current.DAILY === null || price < current.DAILY) current.DAILY = price;
+      } else if (period === 'WEEKLY') {
+         if (current.WEEKLY === null || price < current.WEEKLY) current.WEEKLY = price;
+      } else if (period === 'MONTHLY') {
+         if (current.MONTHLY === null || price < current.MONTHLY) current.MONTHLY = price;
+      }
     });
 
     setPriceList(prices);
@@ -231,7 +215,7 @@ const Home = () => {
         
         {/* Detailed Price List */}
         <div style={s.priceContainer}>
-            <div style={s.sectionTitle}><Wallet size={24} color="#4f46e5"/> Estimated Price List (LKR)</div>
+            <div style={s.sectionTitle}><Wallet size={24} color="#4f46e5"/> Price List (LKR)</div>
             
             <div style={{overflowX: 'auto'}}>
                 <table style={s.table}>
@@ -284,7 +268,7 @@ const Home = () => {
                 </table>
             </div>
             <p style={{fontSize:'12px', color:'#9ca3af', marginTop:'15px', fontStyle:'italic'}}>
-                * 'Shared' prices are per person. 'Private' prices are for the entire room.
+                * 'Shared' prices are per bed, while 'Private' prices are for the entire room.
             </p>
         </div>
 

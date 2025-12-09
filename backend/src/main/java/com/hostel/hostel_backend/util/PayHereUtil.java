@@ -7,16 +7,18 @@ import java.util.Locale;
 @Component
 public class PayHereUtil {
 
+    // 1. Payment Form එක සදහා (Frontend එකට යවන Hash එක) - මෙය වෙනස් නොකරන්න
     public String generateHash(String merchantId, String orderId, Double amount, String currency, String merchantSecret) {
-        // 1. මුදල හරියටම දශමස්ථාන 2කට ෆෝමැට් කිරීම (1000.0 -> "1000.00")
-        // Locale.US දැමීමෙන් දශම තිත (.) අනිවාර්ය කෙරේ.
         String formattedAmount = String.format(Locale.US, "%.2f", amount);
-
-        // 2. Hash String එක සෑදීම (MerchantID + OrderID + Amount + Currency + Hash(Secret))
-        // වැදගත්: Secret එක MD5 කර UpperCase කළ යුතුයි.
         String strToHash = merchantId + orderId + formattedAmount + currency + getMd5(merchantSecret).toUpperCase();
+        return getMd5(strToHash).toUpperCase();
+    }
 
-        // 3. සම්පූර්ණ String එක Hash කර UpperCase කර යැවීම
+    // 2. [NEW] Notify Request එක Validate කිරීම සදහා (Status Code එක සහිතව)
+    public String generateNotifyHash(String merchantId, String orderId, Double amount, String currency, String statusCode, String merchantSecret) {
+        String formattedAmount = String.format(Locale.US, "%.2f", amount);
+        // Notify Hash එකේදී Currency එකට පසුව Status Code එක එකතු විය යුතුයි
+        String strToHash = merchantId + orderId + formattedAmount + currency + statusCode + getMd5(merchantSecret).toUpperCase();
         return getMd5(strToHash).toUpperCase();
     }
 

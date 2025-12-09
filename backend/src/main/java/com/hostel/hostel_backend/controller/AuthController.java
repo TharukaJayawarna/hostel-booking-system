@@ -57,6 +57,8 @@ public class AuthController {
                     .role(user.getRole())
                     .firstName(user.getFirstName())
                     .lastName(user.getLastName())
+                    .email(user.getEmail())
+                    .phone(user.getContactNumber())
                     .build();
 
             return ResponseEntity.ok(ApiResponse.success("Login successful", response));

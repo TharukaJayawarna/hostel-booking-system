@@ -3,6 +3,8 @@ package com.hostel.hostel_backend.repository;
 import com.hostel.hostel_backend.model.Reservation;
 import com.hostel.hostel_backend.model.ReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,4 +29,17 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     );
 
     List<Reservation> findByReservationStatusAndToDateBefore(ReservationStatus status, LocalDate date);
+
+    List<Reservation> findByUserUsernameAndToDateGreaterThanEqual(String username, LocalDate date);
+
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM Reservation r " +
+            "WHERE r.bed.id = :bedId " +
+            "AND r.id != :reservationId " +
+            "AND r.reservationStatus IN :statuses " +
+            "AND ((:newCheckIn < r.toDate) AND (:newCheckOut > r.fromDate))")
+    boolean existsOverlappingReservation(@Param("bedId") Long bedId,
+                                         @Param("reservationId") Long reservationId,
+                                         @Param("newCheckIn") LocalDate newCheckIn,
+                                         @Param("newCheckOut") LocalDate newCheckOut,
+                                         @Param("statuses") List<ReservationStatus> statuses);
 }

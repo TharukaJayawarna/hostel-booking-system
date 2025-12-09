@@ -59,6 +59,7 @@ com/hostel/hostel_backend/service/impl/HubServiceImpl.class
 com/hostel/hostel_backend/controller/response/FloorResponseDTO$FloorResponseDTOBuilder.class
 com/hostel/hostel_backend/model/ReservedFor.class
 com/hostel/hostel_backend/service/IssueService.class
+com/hostel/hostel_backend/controller/request/AdminReservationRequestDTO.class
 com/hostel/hostel_backend/repository/PaymentRepository.class
 com/hostel/hostel_backend/model/Gender.class
 com/hostel/hostel_backend/controller/response/ReservationDetailResponseDTO.class

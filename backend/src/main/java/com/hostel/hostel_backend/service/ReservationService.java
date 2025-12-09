@@ -1,5 +1,6 @@
 package com.hostel.hostel_backend.service;
 
+import com.hostel.hostel_backend.controller.request.AdminReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.AvailableBedDTO;
 import com.hostel.hostel_backend.controller.request.CreateReservationRequestDTO;
 import com.hostel.hostel_backend.controller.request.DateChangeRequestDTO;
@@ -25,4 +26,6 @@ public interface ReservationService {
     void updateReservationDates(Long reservationId, DateChangeRequestDTO dto) throws ResourceNotFoundException;
     ReservationDetailResponseDTO getReservationById(Long id) throws ResourceNotFoundException;
     Double getEstimatedPrice(Long bedId, LocalDate checkIn, LocalDate checkOut) throws ResourceNotFoundException;
+    List<ReservationListResponseDTO> getMyReservations();
+    void createManualReservation(AdminReservationRequestDTO dto);
 }
