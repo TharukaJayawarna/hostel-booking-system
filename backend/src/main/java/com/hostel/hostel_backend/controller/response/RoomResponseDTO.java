@@ -12,7 +12,9 @@ public class RoomResponseDTO {
     private Long id;
     private String roomNumber;
     private Boolean isPrivate;
-    private Double price;
+    private Double monthlyPrice;
+    private Double weeklyPrice;  // New
+    private Double dailyPrice;
     private ReservationPeriod reservationPeriod;
     private RoomType roomType;
     private ReservedFor reservedFor;

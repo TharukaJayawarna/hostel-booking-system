@@ -49,20 +49,16 @@ const Home = () => {
     }
   };
 
-  // --- නව මිල සැකසුම් Logic එක (No Calculations) ---
   const processPrices = (rooms) => {
     const prices = {};
 
     rooms.forEach(room => {
-      // දත්ත නොමැති නම් skip කරන්න
-      if (!room.price || !room.roomType) return;
+      // අපි සලකන්නේ DEFAULT කාමර වල මිල ගණන් පමණයි ලිස්ට් එකේ පෙන්නන්න
+      if (room.reservationPeriod !== 'DEFAULT') return;
 
-      const type = room.roomType; // e.g., SHARING_2
+      const type = room.roomType; 
       const isPrivate = room.isPrivate ? 'private' : 'shared';
-      const period = room.reservationPeriod; // DAILY, WEEKLY, MONTHLY
-      const price = room.price;
 
-      // Object එක initialize කරන්න (නැත්නම්)
       if (!prices[type]) {
         prices[type] = {
           shared: { DAILY: null, WEEKLY: null, MONTHLY: null },
@@ -72,19 +68,15 @@ const Home = () => {
 
       const current = prices[type][isPrivate];
 
-      // Calculation නොකර Backend එකෙන් එන විදියටම අදාල තැනට දාන්න
-      if (period === 'DAILY') {
-         // එකම වර්ගයේ කාමර කිහිපයක් තිබේ නම්, අඩුම මිල ගන්න
-         if (current.DAILY === null || price < current.DAILY) current.DAILY = price;
-      } else if (period === 'WEEKLY') {
-         if (current.WEEKLY === null || price < current.WEEKLY) current.WEEKLY = price;
-      } else if (period === 'MONTHLY') {
-         if (current.MONTHLY === null || price < current.MONTHLY) current.MONTHLY = price;
-      }
+      // Backend එකෙන් එන weeklyPrice, dailyPrice, price (monthly) කෙලින්ම ගන්න
+      // අඩුම මිල තෝරාගැනීමේ logic එක
+      if (current.MONTHLY === null || room.price < current.MONTHLY) current.MONTHLY = room.price;
+      if (current.WEEKLY === null || room.weeklyPrice < current.WEEKLY) current.WEEKLY = room.weeklyPrice;
+      if (current.DAILY === null || room.dailyPrice < current.DAILY) current.DAILY = room.dailyPrice;
     });
 
     setPriceList(prices);
-  };
+};
 
   const handleSelectHub = (hubId) => {
     navigate(`/hubs/${hubId}/floors`);

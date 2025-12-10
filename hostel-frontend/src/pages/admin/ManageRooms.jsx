@@ -18,8 +18,8 @@ const ManageRooms = () => {
   const [hoveredComment, setHoveredComment] = useState(null);
 
   const [formData, setFormData] = useState({
-    floorId: '', roomNumber: '', price: '', isPrivate: false, 
-    reservationPeriod: 'MONTHLY', reservedFor: 'BOYS', roomType: 'SHARING_2', comment: ''
+    floorId: '', roomNumber: '', monthlyPrice: '',weeklyPrice: '',dailyPrice: '', isPrivate: false, 
+    reservationPeriod: 'DEFAULT', reservedFor: 'BOYS', roomType: 'SHARING_2', comment: ''
   });
 
   // Check Role
@@ -312,21 +312,40 @@ const ManageRooms = () => {
                         </div>
                     </div>
                     <div>
-                        <div style={s.sectionLabel}>3. Pricing & Access</div>
-                        <div style={s.inputGrid}>
-                            <div style={s.inputGroup}>
-                                <label style={s.label}>Monthly Price (LKR)</label>
-                                <input type="number" style={s.input} placeholder="0.00" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
-                            </div>
-                            <div style={s.inputGroup}>
-                                <label style={s.label}>Duration</label>
-                                <select style={s.select} value={formData.reservationPeriod} onChange={e => setFormData({...formData, reservationPeriod: e.target.value})}>
-                                    <option value="WEEKLY">Weekly</option>
-                                    <option value="MONTHLY">Monthly</option>
-                                    <option value="DAILY">Daily</option>
-                                </select>
-                            </div>
-                        </div>
+                        <div>
+      <div style={s.sectionLabel}>3. Pricing & Access</div>
+      
+      {/* Period Selection */}
+      <div style={{marginBottom:'15px'}}>
+          <label style={s.label}>Pricing Model</label>
+          <select style={s.select} value={formData.reservationPeriod} onChange={e => setFormData({...formData, reservationPeriod: e.target.value})}>
+              <option value="DEFAULT">Default (Any Duration)</option>
+              <option value="MONTHLY">Monthly Only (30/60/90 Days)</option>
+          </select>
+      </div>
+
+      <div style={s.inputGrid}>
+          {/* Monthly Price is always required */}
+          <div style={s.inputGroup}>
+              <label style={s.label}>Monthly Price (LKR)</label>
+              <input type="number" style={s.input} placeholder="0.00" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
+          </div>
+
+          {/* Show Weekly/Daily only if DEFAULT */}
+          {formData.reservationPeriod === 'DEFAULT' && (
+            <>
+              <div style={s.inputGroup}>
+                  <label style={s.label}>Weekly Price (LKR)</label>
+                  <input type="number" style={s.input} placeholder="0.00" value={formData.weeklyPrice} onChange={e => setFormData({...formData, weeklyPrice: e.target.value})} required />
+              </div>
+              <div style={s.inputGroup}>
+                  <label style={s.label}>Daily Price (LKR)</label>
+                  <input type="number" style={s.input} placeholder="0.00" value={formData.dailyPrice} onChange={e => setFormData({...formData, dailyPrice: e.target.value})} required />
+              </div>
+            </>
+          )}
+      </div>
+  </div>
                         <div style={{marginTop:'20px'}}>
                             <div style={s.toggleCard(formData.isPrivate)} onClick={() => setFormData({...formData, isPrivate: !formData.isPrivate})}>
                                 <div style={{display:'flex', alignItems:'center', gap:'12px'}}>

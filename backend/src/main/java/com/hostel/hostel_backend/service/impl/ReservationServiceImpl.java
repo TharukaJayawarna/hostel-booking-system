@@ -302,10 +302,6 @@ public class ReservationServiceImpl implements ReservationService {
                 "</div>";
     }
 
-    // ... (අනෙක් methods: initiateReservation, getMyReservations, reactivateReservation ආදිය එලෙසම තබන්න) ...
-    // Note: getMyReservations, reactivateReservation, assignNewBed, getMatchingBedsForRes, getReservationById, getEstimatedPrice
-    // යන method වල logic එක වෙනස් වී නැත. ඒවා එලෙසම තබා ගන්න.
-
     @Transactional(rollbackFor = Exception.class)
     public PayHereInitResponseDTO initiateReservation(CreateReservationRequestDTO dto) {
         // ... (පරණ කේතයම) ...
@@ -381,21 +377,51 @@ public class ReservationServiceImpl implements ReservationService {
 
     private Double calculateTotalAmount(Long bedId, LocalDate checkIn, LocalDate checkOut) throws ResourceNotFoundException {
         Bed bed = bedRepository.findById(bedId)
-                .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id "+bedId));
+                .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id " + bedId));
 
-        if (bed.getRoom() == null || bed.getRoom().getPrice() == null) {
-            throw new AppException("Room price is not set!", HttpStatus.CONFLICT);
+        Room room = bed.getRoom();
+
+        // මිල ගණන් set කර ඇත්දැයි පරීක්ෂා කිරීම
+        if (room.getMonthlyPrice() == null) {
+            throw new AppException("Room monthly price is not set!", HttpStatus.CONFLICT);
         }
 
-        Double monthlyRate = bed.getRoom().getPrice();
-        long days = ChronoUnit.DAYS.between(checkIn, checkOut);
-
-        if (days <= 0) {
-            throw new RuntimeException("Invalid date range selected.");
+        long totalDays = java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut);
+        if (totalDays <= 0) {
+            throw new AppException("Invalid date range selected.", HttpStatus.BAD_REQUEST);
         }
 
-        Double dailyRate = monthlyRate / 30.0;
-        double totalAmount = dailyRate * days;
+        double totalAmount = 0.0;
+
+        if (room.getReservationPeriod() == com.hostel.hostel_backend.model.ReservationPeriod.MONTHLY) {
+            // --- MONTHLY Logic ---
+            // මාසික කාමර සඳහා දින 30, 60, හෝ 90 විය යුතුය.
+            // මාස ගණන ගණනය කිරීම (පූර්ණ මාස ලෙස සලකයි)
+            long months = totalDays / 30;
+
+            // Monthly Price එකෙන් ගුණ කිරීම
+            totalAmount = months * room.getMonthlyPrice();
+
+        } else {
+            // --- DEFAULT Logic (Tiered Pricing) ---
+            // මුලින්ම මාස ගණන (30 days blocks)
+            long months = totalDays / 30;
+            long remainingDaysAfterMonths = totalDays % 30;
+
+            // ඉතිරි දින වලින් සති ගණන (7 days blocks)
+            long weeks = remainingDaysAfterMonths / 7;
+            long finalDays = remainingDaysAfterMonths % 7; // ඉතිරි දින
+
+            // මිල ගණන් ලබා ගැනීම (null නම් 0 ලෙස සලකයි)
+            double mPrice = room.getMonthlyPrice();
+            double wPrice = room.getWeeklyPrice() != null ? room.getWeeklyPrice() : 0.0;
+            double dPrice = room.getDailyPrice() != null ? room.getDailyPrice() : 0.0;
+
+            // එකතුව ගණනය කිරීම
+            totalAmount = (months * mPrice) + (weeks * wPrice) + (finalDays * dPrice);
+        }
+
+        // දශම ස්ථාන දෙකකට වටයන්න (Round to 2 decimal places)
         return Math.round(totalAmount * 100.0) / 100.0;
     }
 
@@ -488,22 +514,27 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     public List<AvailableBedDTO> getMatchingBedsForRes(Long reservationId) throws ResourceNotFoundException {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id " + reservationId));
 
-        Double originalPrice = 0.0;
-        if (reservation.getBed() != null && reservation.getBed().getRoom() != null) {
-            originalPrice = reservation.getBed().getRoom().getPrice();
-        } else {
-            throw new AppException("Original room price not found.", HttpStatus.CONFLICT);
+        if (reservation.getBed() == null || reservation.getBed().getRoom() == null) {
+            throw new AppException("Original room details not found.", HttpStatus.CONFLICT);
         }
 
-        List<Bed> matchingBeds = bedRepository.findByIsBookedFalseAndRoomPrice(originalPrice);
+        Room originalRoom = reservation.getBed().getRoom();
+        Double originalMonthlyPrice = originalRoom.getMonthlyPrice();
+        var originalPeriod = originalRoom.getReservationPeriod();
 
+        // 1. මුලින්ම Monthly Price එක සමාන, Book නොවූ ඇඳන් සොයන්න (Repository method එක එලෙසම පාවිච්චි කළ හැක)
+        List<Bed> matchingBeds = bedRepository.findByIsBookedFalseAndRoomMonthlyPrice(originalMonthlyPrice);
+
+        // 2. ඉන්පසු Reservation Period එක (DEFAULT ද MONTHLY ද යන්න) ගැලපෙන ඒවා පමණක් ෆිල්ටර් කරන්න
         return matchingBeds.stream()
+                .filter(bed -> bed.getRoom().getReservationPeriod() == originalPeriod)
                 .map(bed -> AvailableBedDTO.builder()
                         .id(bed.getId())
                         .bedNumber(bed.getBedNumber())
-                        .price(bed.getRoom().getPrice())
+                        // මෙතැන අවශ්‍ය නම් weekly/daily price යැවීමට DTO එක update කළ හැක
+                        .price(bed.getRoom().getMonthlyPrice()) // Monthly Price
                         .floorNumber(bed.getRoom().getFloor().getFloorNumber())
                         .hubNumber(bed.getRoom().getFloor().getHub().getHubNumber())
                         .roomNumber(bed.getRoom().getRoomNumber())

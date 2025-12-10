@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @AllArgsConstructor
@@ -34,7 +35,14 @@ public class RoomServiceImpl implements RoomService {
         room.setFloor(floor);
         room.setRoomNumber(dto.getRoomNumber());
         room.setIsPrivate(dto.getIsPrivate());
-        room.setPrice(dto.getPrice());
+        room.setMonthlyPrice(dto.getMonthlyPrice());
+        if (dto.getReservationPeriod() == ReservationPeriod.DEFAULT) {
+            room.setWeeklyPrice(dto.getWeeklyPrice());
+            room.setDailyPrice(dto.getDailyPrice());
+        } else {
+            room.setWeeklyPrice(null);
+            room.setDailyPrice(null);
+        }
         room.setReservationPeriod(dto.getReservationPeriod());
         room.setReservedFor(dto.getReservedFor());
         room.setComment(null);
@@ -83,7 +91,9 @@ public class RoomServiceImpl implements RoomService {
                 .id(room.getId())
                 .roomNumber(room.getRoomNumber())
                 .isPrivate(room.getIsPrivate())
-                .price(room.getPrice())
+                .monthlyPrice(room.getMonthlyPrice())
+                .weeklyPrice(room.getWeeklyPrice())
+                .dailyPrice(room.getDailyPrice())
                 .roomType(room.getRoomType())
                 .reservationPeriod(room.getReservationPeriod())
                 .reservedFor(room.getReservedFor())
@@ -178,13 +188,29 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public List<RoomResponseDTO> getAvailableRooms(Long hubId, LocalDate checkIn, LocalDate checkOut) {
+        // 1. දින ගණන ගණනය කරන්න
+        long days = ChronoUnit.DAYS.between(checkIn, checkOut);
 
+        // 2. Reservation Statuses
         List<ReservationStatus> activeStatuses = Arrays.asList(
                 ReservationStatus.COMPLETED,
-                ReservationStatus.PENDING
+                ReservationStatus.PENDING,
+                ReservationStatus.APPROVED
         );
 
-        return roomRepository.findAvailableRooms(hubId, checkIn, checkOut, activeStatuses).stream()
+        // 3. මූලික query එක run කරන්න (Repository එකේ method එක වෙනස් නොකර එයින් එන data ෆිල්ටර් කරමු)
+        List<Room> allAvailableRooms = roomRepository.findAvailableRooms(hubId, checkIn, checkOut, activeStatuses);
+
+        // 4. දින ගණන අනුව ෆිල්ටර් කිරීම (Filtering Logic)
+        return allAvailableRooms.stream()
+                .filter(room -> {
+                    // දින 30, 60, 90 නම් -> MONTHLY සහ DEFAULT දෙකම පෙන්නන්න
+                    if (days == 30 || days == 60 || days == 90) {
+                        return true;
+                    }
+                    // නැත්නම් -> DEFAULT ඒවා විතරක් පෙන්නන්න
+                    return room.getReservationPeriod() == ReservationPeriod.DEFAULT;
+                })
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -197,7 +223,9 @@ public class RoomServiceImpl implements RoomService {
 
         // Null check karamin data update kirima
         if (dto.getRoomNumber() != null) room.setRoomNumber(dto.getRoomNumber());
-        if (dto.getPrice() != null) room.setPrice(dto.getPrice());
+        if (dto.getMonthlyPrice() != null) room.setMonthlyPrice(dto.getMonthlyPrice());
+        if (dto.getWeeklyPrice() != null) room.setWeeklyPrice(dto.getWeeklyPrice());
+        if (dto.getDailyPrice() != null) room.setDailyPrice(dto.getDailyPrice());
         if (dto.getIsPrivate() != null) room.setIsPrivate(dto.getIsPrivate());
         if (dto.getRoomType() != null) room.setRoomType(dto.getRoomType());
         if (dto.getReservationPeriod() != null) room.setReservationPeriod(dto.getReservationPeriod());

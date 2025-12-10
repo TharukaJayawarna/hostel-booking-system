@@ -19,7 +19,9 @@ public class Room {
     private Long id;
     private String roomNumber;
     private Boolean isPrivate;
-    private Double price;
+    private Double monthlyPrice;
+    private Double weeklyPrice;
+    private Double dailyPrice;
 
     @Column(length = 500)
     private String comment;

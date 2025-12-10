@@ -142,12 +142,16 @@ const Footer = () => {
             <Link to="/" style={s.footerLink} onMouseOver={e => e.target.style.color='white'} onMouseOut={e => e.target.style.color='#cbd5e1'}>
                 <ArrowRight size={14}/> Home
             </Link>
+            <Link to="/my-bookings" style={s.footerLink} onMouseOver={e => e.target.style.color='white'} onMouseOut={e => e.target.style.color='#cbd5e1'}>
+                <ArrowRight size={14}/> My Bookings
+            </Link>
             <Link to="/issue" style={s.footerLink} onMouseOver={e => e.target.style.color='white'} onMouseOut={e => e.target.style.color='#cbd5e1'}>
                 <ArrowRight size={14}/> Report Issue
             </Link>
             <Link to="/contact" style={s.footerLink} onMouseOver={e => e.target.style.color='white'} onMouseOut={e => e.target.style.color='#cbd5e1'}>
                 <ArrowRight size={14}/> Contact Support
             </Link>
+            
             
           </div>
         </div>
