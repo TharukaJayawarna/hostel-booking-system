@@ -508,6 +508,8 @@ public class ReservationServiceImpl implements ReservationService {
                 .checkIn(res.getFromDate())
                 .checkOut(res.getToDate())
                 .status(res.getReservationStatus())
+                .paymentDate(res.getPayment() != null ? res.getPayment().getPaymentDate() : null)
+                .paymentTime(res.getPayment() != null ? res.getPayment().getPaymentTime() : null)
                 .build();
     }
 

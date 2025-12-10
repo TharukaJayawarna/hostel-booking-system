@@ -24,7 +24,7 @@ const ManageUsers = () => {
   
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', username: '', password: '', 
-    email: '', phone: '', role: 'WARDEN'
+    email: '', contactNumber: '', role: 'WARDEN'
   });
 
   // Admin Check (Optional: Frontend Level Hiding)
@@ -55,7 +55,7 @@ const ManageUsers = () => {
     try {
       await api.post('/users/create', formData);
       toast.success("User Created Successfully!");
-      setFormData({ firstName: '', lastName: '', username: '', password: '', email: '', phone: '', role: 'WARDEN' }); 
+      setFormData({ firstName: '', lastName: '', username: '', password: '', email: '', contactNumber: '', role: 'WARDEN' }); 
       setIsModalOpen(false);
       fetchUsers();
     } catch (e) { 
@@ -237,7 +237,7 @@ const ManageUsers = () => {
                     <td style={s.td}>
                         <div style={{display:'flex', flexDirection:'column', gap:'4px', fontSize:'13px'}}>
                             <div style={{display:'flex', alignItems:'center', gap:'6px'}}><Mail size={12} color="#9ca3b8"/> {u.email}</div>
-                            <div style={{display:'flex', alignItems:'center', gap:'6px'}}><Phone size={12} color="#9ca3b8"/> {u.phone || 'N/A'}</div>
+                            <div style={{display:'flex', alignItems:'center', gap:'6px'}}><Phone size={12} color="#9ca3b8"/> {u.contactNumber || 'N/A'}</div>
                         </div>
                     </td>
                     <td style={s.td}>
@@ -281,7 +281,7 @@ const ManageUsers = () => {
                     </div>
 
                     <div style={s.inputGrid}>
-                        <div><label style={s.label}>Phone Number</label><input style={s.input} value={formData.phone} onChange={e=>setFormData({...formData, phone:e.target.value})} placeholder="Optional"/></div>
+                        <div><label style={s.label}>Phone Number</label><input style={s.input} value={formData.contactNumber} onChange={e=>setFormData({...formData, contactNumber:e.target.value})} placeholder="Optional"/></div>
                         <div>
                             <label style={s.label}>Assign Role</label>
                             <select style={s.select} value={formData.role} onChange={e=>setFormData({...formData, role:e.target.value})}>

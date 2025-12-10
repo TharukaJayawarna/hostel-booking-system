@@ -106,23 +106,25 @@ const ManageFloors = () => {
         )}
       </div>
 
-      <div style={s.statsGrid}>
-        <div style={s.statCard}>
-          <div style={s.statIconBox('#eff6ff', '#2563eb')}><Layers size={24}/></div>
-          <div><div style={s.statValue}>{floors.length}</div><div style={s.statLabel}>Total Floors</div></div>
-        </div>
-        <div style={s.statCard}>
-          <div style={s.statIconBox('#f0fdf4', '#16a34a')}><Building2 size={24}/></div>
-          <div><div style={s.statValue}>{hubs.length}</div><div style={s.statLabel}>Active Hubs</div></div>
-        </div>
-        <div style={s.statCard}>
-          <div style={s.statIconBox('#fef2f2', '#dc2626')}><LayoutGrid size={24}/></div>
-          <div>
-            <div style={s.statValue}>{floors.reduce((sum, f) => sum + (f.noOfRooms || 0), 0)}</div>
-            <div style={s.statLabel}>Total Rooms</div>
-          </div>
-        </div>
-      </div>
+<div style={s.statsGrid}>
+  {/* Total Floors */}
+  <div style={s.statCard}>
+    <div style={s.statIconBox('#eff6ff', '#2563eb')}><Layers size={24}/></div>
+    <div>
+      <div style={s.statValue}>{floors.length}</div>
+      <div style={s.statLabel}>Total Floors</div>
+    </div>
+  </div>
+
+  {/* Total Rooms */}
+  <div style={s.statCard}>
+    <div style={s.statIconBox('#fef2f2', '#dc2626')}><LayoutGrid size={24}/></div>
+    <div>
+      <div style={s.statValue}>{floors.reduce((sum, f) => sum + (f.noOfRooms || 0), 0)}</div>
+      <div style={s.statLabel}>Total Rooms</div>
+    </div>
+  </div>
+</div>
 
       <div style={s.toolbar}>
         <div style={s.searchBox}>

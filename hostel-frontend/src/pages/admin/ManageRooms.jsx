@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
-import { DoorOpen, Trash2, Plus, Search, Users, Lock, Unlock, CalendarClock, Building, X, Pencil, MessageSquare, AlertCircle } from 'lucide-react';
+import { DoorOpen, Trash2, Plus, Search, Users, Lock, Unlock, CalendarClock, Building, X, Pencil, MessageSquare, AlertCircle, Info, Filter } from 'lucide-react';
 
 const ManageRooms = () => {
   const [rooms, setRooms] = useState([]);
@@ -40,7 +40,7 @@ const ManageRooms = () => {
   };
 
   const resetForm = () => {
-    setFormData({ floorId: '', roomNumber: '', price: '', isPrivate: false, reservationPeriod: 'MONTHLY', reservedFor: 'BOYS', roomType: 'SHARING_2', comment: '' });
+    setFormData({ floorId: '', roomNumber: '', monthlyPrice: '', isPrivate: false, reservationPeriod: 'MONTHLY', reservedFor: 'BOYS', roomType: 'SHARING_2', comment: '' });
     setIsEditMode(false);
     setEditingRoomId(null);
   };
@@ -48,32 +48,61 @@ const ManageRooms = () => {
   const handleEdit = (room) => {
     const floorObj = floors.find(f => f.floorNumber === room.floorNumber);
     setFormData({
-        floorId: floorObj ? floorObj.id : '', roomNumber: room.roomNumber, price: room.price,
-        isPrivate: room.isPrivate, reservationPeriod: room.reservationPeriod, reservedFor: room.reservedFor,
-        roomType: room.roomType, comment: room.comment || '' 
+        floorId: floorObj ? floorObj.id : '',
+        roomNumber: room.roomNumber,
+        monthlyPrice: room.monthlyPrice, // Monthly Price
+        weeklyPrice: room.weeklyPrice || '', // Weekly Price (නැත්නම් හිස්ව තබන්න)
+        dailyPrice: room.dailyPrice || '',   // Daily Price (නැත්නම් හිස්ව තබන්න)
+        isPrivate: room.isPrivate,
+        reservationPeriod: room.reservationPeriod,
+        reservedFor: room.reservedFor,
+        roomType: room.roomType,
+        comment: room.comment || ''
     });
     setEditingRoomId(room.id);
     setIsEditMode(true);
     setIsModalOpen(true);
-  };
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if(!formData.roomNumber || !formData.price) { toast.warning("Please fill all required fields"); return; }
+
+    // 1. මූලික Validation
+    if (!formData.roomNumber || !formData.monthlyPrice) {
+        toast.warning("Room Number and Monthly Price are required");
+        return;
+    }
+
+    // 2. Reservation Period එක DEFAULT නම් පමණක් Weekly/Daily බලන්න
+    if (formData.reservationPeriod === 'DEFAULT') {
+        if (!formData.weeklyPrice || !formData.dailyPrice) {
+            toast.warning("Weekly and Daily prices are required for Default period");
+            return;
+        }
+    }
+
+    // 3. සෘණ අගයන් (Negative Values) පරීක්ෂා කිරීම (Backend යැවීමට පෙර)
+    if (Number(formData.monthlyPrice) < 0 || Number(formData.weeklyPrice) < 0 || Number(formData.dailyPrice) < 0) {
+        toast.error("Prices cannot be negative!");
+        return;
+    }
+
     try {
-      if (isEditMode) {
-        await api.put(`/rooms/${editingRoomId}`, formData);
-        toast.success("Room Updated Successfully!");
-      } else {
-        if(!formData.floorId) { toast.warning("Please select a floor"); return; }
-        await api.post(`/floors/${formData.floorId}/rooms`, formData);
-        toast.success("Room Added Successfully!");
-      }
-      setIsModalOpen(false);
-      resetForm();
-      fetchAll();
-    } catch (e) { toast.error(isEditMode ? "Failed to update room" : "Failed to add room"); }
-  };
+        if (isEditMode) {
+            await api.put(`/rooms/${editingRoomId}`, formData);
+            toast.success("Room Updated Successfully!");
+        } else {
+            if (!formData.floorId) { toast.warning("Please select a floor"); return; }
+            await api.post(`/floors/${formData.floorId}/rooms`, formData);
+            toast.success("Room Added Successfully!");
+        }
+        setIsModalOpen(false);
+        resetForm();
+        fetchAll();
+    } catch (e) {
+        toast.error(isEditMode ? "Failed to update room" : "Failed to add room");
+    }
+};
 
   const handleDelete = async (id) => {
     if(!window.confirm("Are you sure you want to delete this Room?")) return;
@@ -92,13 +121,15 @@ const ManageRooms = () => {
     const matchesFloor = filterFloor === 'ALL' || room.floorNumber === filterFloor;
     const matchesGender = filterGender === 'ALL' || room.reservedFor === filterGender;
     const matchesHub = filterHub === 'ALL' || room.hubNumber === filterHub;
-    return matchesSearch && matchesFloor && matchesGender;
+    return matchesSearch && matchesFloor && matchesGender && matchesHub;
   });
 
   const stats = {
     total: rooms.length,
     private: rooms.filter(r => r.isPrivate).length,
-    shared: rooms.filter(r => !r.isPrivate).length
+    shared: rooms.filter(r => !r.isPrivate).length,
+    defaultType: rooms.filter(r => r.reservationPeriod === 'DEFAULT').length,
+    monthlyType: rooms.filter(r => r.reservationPeriod === 'MONTHLY').length
   };
 
   const s = {
@@ -169,10 +200,23 @@ const ManageRooms = () => {
       </div>
 
       <div style={s.statsGrid}>
+        {/* Total Rooms */}
         <div style={s.statCard}>
           <div style={s.statIconBox('#eff6ff', '#2563eb')}><Building size={24}/></div>
           <div><div style={s.statValue}>{stats.total}</div><div style={s.statLabel}>Total Rooms</div></div>
         </div>
+
+        {/* Default & Monthly Counts (New) */}
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#f0f9ff', '#0284c7')}><CalendarClock size={24}/></div>
+          <div><div style={s.statValue}>{stats.defaultType}</div><div style={s.statLabel}>Default Rooms</div></div>
+        </div>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#fdf4ff', '#c026d3')}><CalendarClock size={24}/></div>
+          <div><div style={s.statValue}>{stats.monthlyType}</div><div style={s.statLabel}>Monthly Rooms</div></div>
+        </div>
+
+        {/* Private vs Shared */}
         <div style={s.statCard}>
           <div style={s.statIconBox('#f0fdf4', '#16a34a')}><Unlock size={24}/></div>
           <div><div style={s.statValue}>{stats.shared}</div><div style={s.statLabel}>Shared Rooms</div></div>
@@ -188,6 +232,7 @@ const ManageRooms = () => {
           <Search size={18} color="#9ca3af"/>
           <input style={s.searchInput} placeholder="Search by Room Number..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
         </div>
+        <Filter size={18} color="#6b7280" />
         <div style={{display:'flex', gap:'10px'}}>
           <select style={s.filterSelect} value={filterHub} onChange={e => setFilterHub(e.target.value)}>
             <option value="ALL">All Hubs</option>
@@ -205,62 +250,105 @@ const ManageRooms = () => {
         </div>
       </div>
 
-      <div style={s.tableContainer}>
-        <table style={s.table}>
-          <thead style={s.thead}>
-            <tr>
-              <th style={s.th}>Room</th>
-              <th style={s.th}>Location</th>
-              <th style={s.th}>Type / Capacity</th>
-              <th style={s.th}>Access & Gender</th>
-              <th style={s.th}>Monthly Price</th>
-              <th style={s.th}>Period</th>
-              <th style={{...s.th, textAlign:'right'}}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? <tr><td colSpan="7" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>Loading...</td></tr> 
-            : filteredRooms.length === 0 ? <tr><td colSpan="7" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>No rooms found.</td></tr>
-            : filteredRooms.map(r => (
-              <tr key={r.id} style={s.tr} onMouseOver={e => e.currentTarget.style.background='#f8fafc'} onMouseOut={e => e.currentTarget.style.background='white'}>
-                <td style={s.td}>
-                  <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                    <div style={{padding:'8px', background:'#fff7ed', borderRadius:'10px', color:'#ea580c'}}><DoorOpen size={20}/></div>
-                    <div>
-                        <span style={{fontWeight:'700', color:'#1e293b', fontSize:'15px'}}>{r.roomNumber}</span>
-                        {r.comment && (
-                            <div 
-                                onMouseEnter={(e) => handleMouseEnter(e, r.comment)} 
-                                onMouseLeave={() => setHoveredComment(null)} 
-                                style={{marginTop: '6px', fontSize: '11px', color: '#b45309', backgroundColor: '#fffbeb', padding: '4px 8px', borderRadius: '6px', border: '1px solid #fcd34d', display: 'flex', alignItems: 'center', gap: '6px', maxWidth: '100px', cursor: 'pointer'}}
-                            >
-                                <MessageSquare size={12} style={{flexShrink:0}}/>
-                                <span style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block'}}>{r.comment}</span>
-                            </div>
-                        )}
-                    </div>
-                  </div>
-                </td>
-                <td style={s.td}><div style={{fontSize:'13px', fontWeight:'600'}}>{r.floorNumber}</div><div style={{fontSize:'11px', color:'#64748b'}}>{r.hubNumber || 'Hub Info'}</div></td>
-                <td style={s.td}><span style={s.typeBadge(r.roomType || 'SHARING_2')}><Users size={14}/>{r.roomType ? r.roomType.replace('SHARING_', '') : '2'} Person</span></td>
-                <td style={s.td}><span style={s.accessBadge(r.reservedFor, r.isPrivate)}>{r.isPrivate ? <Lock size={12}/> : <Unlock size={12}/>}{r.reservedFor === 'BOYS' ? 'Male' : 'Female'}<span style={{opacity:0.6, margin:'0 4px'}}>|</span>{r.isPrivate ? 'Private' : 'Shared'}</span></td>
-                <td style={s.td}><div style={{display:'flex', alignItems:'center', gap:'4px', fontFamily:'monospace', fontWeight:'700', color:'#0f172a', fontSize:'15px'}}>LKR {parseFloat(r.price).toLocaleString('en-US', {minimumFractionDigits: 2})}</div></td>
-                <td style={s.td}><div style={{display:'flex', alignItems:'center', gap:'6px', color:'#475569', fontSize:'13px'}}><CalendarClock size={14}/>{r.reservationPeriod ? r.reservationPeriod.replace('_', ' ') : 'MONTHLY'}</div></td>
-                
-                <td style={s.td}>
-                  {/* Warden ට Edit සහ Delete බොත්තම් නැත */}
-                  {!isWarden && (
-                      <div style={{display:'flex', justifyContent:'flex-end', gap:'8px'}}>
-                        <button onClick={() => handleEdit(r)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'white', color:'#2563eb', cursor:'pointer'}} title="Edit Room"><Pencil size={16}/></button>
-                        <button onClick={() => handleDelete(r.id)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}} title="Delete Room"><Trash2 size={16}/></button>
+      {/* Table Section */}
+<div style={s.tableContainer}>
+  <table style={s.table}>
+    <thead style={s.thead}>
+      <tr>
+        <th style={s.th}>Room</th>
+        <th style={s.th}>Location</th>
+        <th style={s.th}>Type</th>
+        <th style={s.th}>Access</th>
+        {/* Price Columns 3ක් වෙනුවට එක Column එකක් */}
+        <th style={s.th}>Pricing Structure (LKR)</th>
+        <th style={{...s.th, textAlign:'right'}}>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {loading ? <tr><td colSpan="6" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>Loading...</td></tr> 
+      : filteredRooms.length === 0 ? <tr><td colSpan="6" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>No rooms found.</td></tr>
+      : filteredRooms.map(r => (
+        <tr key={r.id} style={s.tr} onMouseOver={e => e.currentTarget.style.background='#f8fafc'} onMouseOut={e => e.currentTarget.style.background='white'}>
+          
+          {/* Room Number & Comment */}
+          <td style={s.td}>
+            <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+              <div style={{padding:'8px', background:'#fff7ed', borderRadius:'10px', color:'#ea580c'}}><DoorOpen size={20}/></div>
+              <div>
+                  <span style={{fontWeight:'700', color:'#1e293b', fontSize:'15px'}}>{r.roomNumber}</span>
+                  {r.comment && (
+                      <div 
+                          onMouseEnter={(e) => handleMouseEnter(e, r.comment)} 
+                          onMouseLeave={() => setHoveredComment(null)} 
+                          style={{marginTop: '6px', fontSize: '11px', color: '#b45309', backgroundColor: '#fffbeb', padding: '4px 8px', borderRadius: '6px', border: '1px solid #fcd34d', display: 'flex', alignItems: 'center', gap: '6px', maxWidth: '100px', cursor: 'pointer'}}
+                      >
+                          <MessageSquare size={12} style={{flexShrink:0}}/>
+                          <span style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block'}}>{r.comment}</span>
                       </div>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </div>
+          </td>
+
+          {/* Location */}
+          <td style={s.td}><div style={{fontSize:'13px', fontWeight:'600'}}>{r.floorNumber}</div><div style={{fontSize:'11px', color:'#64748b'}}>{r.hubNumber || 'Hub Info'}</div></td>
+          
+          {/* Type */}
+          <td style={s.td}><span style={s.typeBadge(r.roomType || 'SHARING_2')}><Users size={14}/>{r.roomType ? r.roomType.replace('SHARING_', '') : '2'} Person</span></td>
+          
+          {/* Access */}
+          <td style={s.td}><span style={s.accessBadge(r.reservedFor, r.isPrivate)}>{r.isPrivate ? <Lock size={12}/> : <Unlock size={12}/>}{r.reservedFor === 'BOYS' ? 'Male' : 'Female'}<span style={{opacity:0.6, margin:'0 4px'}}>|</span>{r.isPrivate ? 'Private' : 'Shared'}</span></td>
+          
+          {/* --- NEW STACKED PRICE COLUMN --- */}
+          <td style={s.td}>
+    <div style={{display:'flex', flexDirection:'column', gap:'6px'}}>
+        {/* Per Person / Full Room Badge */}
+        <div style={{
+            fontSize:'10px', fontWeight:'700', textTransform:'uppercase', letterSpacing:'0.5px',
+            color: r.isPrivate ? '#be123c' : '#047857', 
+            background: r.isPrivate ? '#fff1f2' : '#ecfdf5',
+            padding:'2px 6px', borderRadius:'4px', width:'fit-content', marginBottom:'2px'
+        }}>
+            {r.isPrivate ? "Full Room Price" : "Per Person Price"}
+        </div>
+
+        {/* Monthly Price */}
+        <div style={{fontFamily:'monospace', fontSize:'14px', color:'#1e293b', fontWeight:'600'}}>
+            Mo: {parseFloat(r.monthlyPrice).toLocaleString('en-US', {minimumFractionDigits: 2})}
+        </div>
+        
+        {/* Weekly & Daily */}
+        {r.reservationPeriod === 'DEFAULT' ? (
+            <>
+                <div style={{fontFamily:'monospace', fontSize:'14px', color:'#1e293b', fontWeight:'600'}}>
+                    We: {r.weeklyPrice ? parseFloat(r.weeklyPrice).toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}
+                </div>
+                <div style={{fontFamily:'monospace', fontSize:'14px', color:'#1e293b', fontWeight:'600'}}>
+                    Da: {r.dailyPrice ? parseFloat(r.dailyPrice).toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}
+                </div>
+            </>
+        ) : (
+            <span style={{fontSize:'11px', color:'#9ca3af', fontStyle:'italic'}}>
+                * Monthly Only
+            </span>
+        )}
+    </div>
+</td>
+
+          {/* Actions */}
+          <td style={s.td}>
+            {!isWarden && (
+                <div style={{display:'flex', justifyContent:'flex-end', gap:'8px'}}>
+                  <button onClick={() => handleEdit(r)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'white', color:'#2563eb', cursor:'pointer'}} title="Edit Room"><Pencil size={16}/></button>
+                  <button onClick={() => handleDelete(r.id)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}} title="Delete Room"><Trash2 size={16}/></button>
+                </div>
+            )}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
       {isModalOpen && (
         <div style={s.overlay} onClick={() => setIsModalOpen(false)}>
@@ -313,39 +401,83 @@ const ManageRooms = () => {
                     </div>
                     <div>
                         <div>
-      <div style={s.sectionLabel}>3. Pricing & Access</div>
-      
-      {/* Period Selection */}
-      <div style={{marginBottom:'15px'}}>
-          <label style={s.label}>Pricing Model</label>
-          <select style={s.select} value={formData.reservationPeriod} onChange={e => setFormData({...formData, reservationPeriod: e.target.value})}>
-              <option value="DEFAULT">Default (Any Duration)</option>
-              <option value="MONTHLY">Monthly Only (30/60/90 Days)</option>
-          </select>
-      </div>
+      <div>
+    <div style={s.sectionLabel}>3. Pricing & Access</div>
+    
+    {/* --- NEW: PRICING NOTE --- */}
+    <div style={{
+        marginBottom:'20px', padding:'12px', borderRadius:'10px', fontSize:'13px', lineHeight:'1.5',
+        backgroundColor: formData.isPrivate ? '#fef2f2' : '#eff6ff', // Private නම් රතු, Shared නම් නිල්
+        color: formData.isPrivate ? '#991b1b' : '#1e40af',
+        border: `1px solid ${formData.isPrivate ? '#fecaca' : '#dbeafe'}`,
+        display:'flex', gap:'10px', alignItems:'start'
+    }}>
+        <Info size={18} style={{marginTop:'2px', flexShrink:0}}/>
+        <span>
+            <strong>Important:</strong> Please enter the price 
+            {formData.isPrivate 
+                ? " for the entire private room (Full Room Price)." 
+                : " per student / per bed (Per Person Price)."
+            }
+        </span>
+    </div>
 
-      <div style={s.inputGrid}>
-          {/* Monthly Price is always required */}
-          <div style={s.inputGroup}>
-              <label style={s.label}>Monthly Price (LKR)</label>
-              <input type="number" style={s.input} placeholder="0.00" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
-          </div>
+    {/* Period Selection */}
+    <div style={{marginBottom:'15px'}}>
+        <label style={s.label}>Pricing Model</label>
+        <select style={s.select} value={formData.reservationPeriod} onChange={e => setFormData({...formData, reservationPeriod: e.target.value})}>
+            <option value="DEFAULT">Default (Any Duration)</option>
+            <option value="MONTHLY">Monthly Only (30/60/90 Days)</option>
+        </select>
+    </div>
 
-          {/* Show Weekly/Daily only if DEFAULT */}
-          {formData.reservationPeriod === 'DEFAULT' && (
-            <>
-              <div style={s.inputGroup}>
-                  <label style={s.label}>Weekly Price (LKR)</label>
-                  <input type="number" style={s.input} placeholder="0.00" value={formData.weeklyPrice} onChange={e => setFormData({...formData, weeklyPrice: e.target.value})} required />
-              </div>
-              <div style={s.inputGroup}>
-                  <label style={s.label}>Daily Price (LKR)</label>
-                  <input type="number" style={s.input} placeholder="0.00" value={formData.dailyPrice} onChange={e => setFormData({...formData, dailyPrice: e.target.value})} required />
-              </div>
-            </>
-          )}
-      </div>
-  </div>
+    <div style={s.inputGrid}>
+        {/* Monthly Price */}
+        <div style={s.inputGroup}>
+            <label style={s.label}>Monthly Price (LKR)</label>
+            <input 
+                type="number" 
+                min="0" 
+                style={s.input} 
+                placeholder="0.00" 
+                value={formData.monthlyPrice} 
+                onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} 
+                required 
+            />
+        </div>
+
+        {/* Weekly & Daily Inputs - Show only if DEFAULT */}
+        {formData.reservationPeriod === 'DEFAULT' && (
+          <>
+            <div style={s.inputGroup}>
+                <label style={s.label}>Weekly Price (LKR)</label>
+                <input 
+                    type="number" 
+                    min="0"
+                    style={s.input} 
+                    placeholder="0.00" 
+                    value={formData.weeklyPrice} 
+                    onChange={e => setFormData({...formData, weeklyPrice: e.target.value})} 
+                    required 
+                />
+            </div>
+            <div style={s.inputGroup}>
+                <label style={s.label}>Daily Price (LKR)</label>
+                <input 
+                    type="number" 
+                    min="0"
+                    style={s.input} 
+                    placeholder="0.00" 
+                    value={formData.dailyPrice} 
+                    onChange={e => setFormData({...formData, dailyPrice: e.target.value})} 
+                    required 
+                />
+            </div>
+          </>
+        )}
+    </div>
+</div>
+</div>
                         <div style={{marginTop:'20px'}}>
                             <div style={s.toggleCard(formData.isPrivate)} onClick={() => setFormData({...formData, isPrivate: !formData.isPrivate})}>
                                 <div style={{display:'flex', alignItems:'center', gap:'12px'}}>

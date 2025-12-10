@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
-import { CalendarDays, Search, Filter, MoreVertical, Eye, RefreshCcw, BedDouble, Ban, User, CreditCard, Phone, Mail, MapPin, CalendarCheck, Building2, Layers, DoorOpen, X, Trash2, Plus, Receipt, Clock } from 'lucide-react';
+import { CalendarDays, Search, Filter, MoreVertical, Eye, RefreshCcw, BedDouble, Ban, User, CreditCard, Phone, Mail, MapPin, CalendarCheck, Building2, Layers, DoorOpen, X, Trash2, Plus, Receipt, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 const ManageReservations = () => {
   const [reservations, setReservations] = useState([]);
   const [showTrash, setShowTrash] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('ALL');
   const [activeDropdownId, setActiveDropdownId] = useState(null);
   const dropdownRef = useRef(null);
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
@@ -91,15 +92,25 @@ const ManageReservations = () => {
   };
 
   const filteredReservations = reservations.filter((res) => {
-    if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       (res.studentName && res.studentName.toLowerCase().includes(term)) ||
       (res.studentRegNo && res.studentRegNo.toLowerCase().includes(term)) ||
-      (res.reservationNumber && res.reservationNumber.toLowerCase().includes(term)) ||
-      (res.paymentId && res.paymentId.toLowerCase().includes(term))
+      (res.reservationNumber && res.reservationNumber.toLowerCase().includes(term))
     );
+    
+    // Status Filter Check
+    const matchesStatus = filterStatus === 'ALL' || res.status === filterStatus;
+
+    return matchesSearch && matchesStatus;
   });
+
+  const stats = {
+    total: reservations.length,
+    approved: reservations.filter(r => r.status === 'APPROVED').length,
+    pending: reservations.filter(r => r.status === 'PENDING').length,
+    rejected: reservations.filter(r => r.status === 'REJECTED' || r.status === 'CANCELLED').length
+  };
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
@@ -204,6 +215,67 @@ const ManageReservations = () => {
         const style = config[status] || { col: '#475569', bg: '#f1f5f9' };
         return { color: style.col, backgroundColor: style.bg, padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', textTransform:'uppercase' };
     },
+    statCard: { 
+        background: 'white', 
+        padding: '20px', 
+        borderRadius: '16px', 
+        border: '1px solid #e5e7eb', 
+        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '15px' 
+    },
+
+    // statIconBox එක Function එකක් ලෙස (මෙය අනිවාර්යයි)
+    statIconBox: (bg, col) => ({ 
+        width: '50px', 
+        height: '50px', 
+        borderRadius: '12px', 
+        background: bg, 
+        color: col, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+    }),
+    statsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)', // කාඩ් 4ක් පේළියට
+        gap: '20px',
+        marginBottom: '30px'
+    },
+    statValue: {
+        fontSize: '28px',
+        fontWeight: '800',
+        color: '#111827',
+        lineHeight: '1.2'
+    },
+    statLabel: {
+        fontSize: '13px',
+        fontWeight: '600',
+        color: '#6b7280',
+        marginTop: '2px'
+    },
+
+    // --- NEW FILTER STYLES ---
+    filterWrapper: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        background: '#f9fafb', // Search box එකේ පාටමයි
+        padding: '10px 15px',
+        borderRadius: '10px',
+        border: '1px solid #e5e7eb'
+    },
+    select: {
+        border: 'none',
+        background: 'transparent',
+        outline: 'none',
+        fontSize: '14px',
+        fontWeight: '500',
+        color: '#374151',
+        cursor: 'pointer',
+        minWidth: '120px' // Dropdown එක පොඩි නොවී තියෙන්න
+    },
     dateBadge: { fontSize: '11px', fontWeight: '600', color: '#64748b', background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px' },
     actionBtn: { background: 'white', border: '1px solid #e2e8f0', color: '#374151', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
     dropdownMenu: { position: 'absolute', right: '50px', top: '40px', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', zIndex: 50, width: '180px', overflow: 'hidden', padding: '6px' },
@@ -243,9 +315,42 @@ const ManageReservations = () => {
             </button>
         )}
       </div>
+
+      {/* --- STATS GRID --- */}
+      <div style={s.statsGrid}>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#eff6ff', '#2563eb')}><CalendarDays size={24}/></div>
+          <div><div style={s.statValue}>{stats.total}</div><div style={s.statLabel}>Total Reservations</div></div>
+        </div>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#dcfce7', '#15803d')}><CheckCircle2 size={24}/></div>
+          <div><div style={s.statValue}>{stats.approved}</div><div style={s.statLabel}>Approved</div></div>
+        </div>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#fffbeb', '#d97706')}><Clock size={24}/></div>
+          <div><div style={s.statValue}>{stats.pending}</div><div style={s.statLabel}>Pending</div></div>
+        </div>
+        <div style={s.statCard}>
+          <div style={s.statIconBox('#fef2f2', '#dc2626')}><XCircle size={24}/></div>
+          <div><div style={s.statValue}>{stats.rejected}</div><div style={s.statLabel}>Rejected / Cancelled</div></div>
+        </div>
+      </div>
       
       <div style={s.toolbar}>
         <div style={s.searchBox}><Search size={18} color="#9ca3af"/><input style={s.searchInput} placeholder="Search by Name, Reg No, or Ref ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/></div>
+        {/* Status Filter */}
+        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+            <Filter size={18} color="#6b7280"/>
+            <select style={s.select} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                <option value="ALL">All Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="CANCELLED">Cancelled</option>
+                {showTrash && <option value="TRASH">Trash</option>}
+            </select>
+        </div>
         <button style={s.toggleBtn(showTrash)} onClick={() => setShowTrash(!showTrash)}>{showTrash ? <Filter size={16}/> : <Trash2 size={16}/>}{showTrash ? "View Active Reservations" : "View Trash / History"}</button>
       </div>
 
@@ -255,7 +360,7 @@ const ManageReservations = () => {
             <tr>
               <th style={s.th}>Reservation Info</th>
               <th style={s.th}>Student Details</th>
-              <th style={s.th}>Payment ID</th>
+              <th style={s.th}>Payment Date & Time</th>
               <th style={s.th}>Dates</th>
               <th style={s.th}>Status</th>
               <th style={{...s.th, width:'100px', textAlign:'right'}}>Actions</th>
@@ -269,11 +374,16 @@ const ManageReservations = () => {
                     <td style={s.td}><div style={{fontWeight:'700', color:'#111827', fontFamily:'monospace', fontSize:'15px'}}>{res.reservationNumber}</div><div style={{display:'flex', alignItems:'center', gap:'5px', marginTop:'4px', color:'#64748b', fontSize:'12px'}}><BedDouble size={12}/> Bed {res.bedNumber}</div></td>
                     <td style={s.td}><div style={{fontWeight:'600', color:'#1e293b'}}>{res.studentName}</div><div style={{fontSize:'12px', color:'#94a3b8'}}>{res.studentRegNo}</div></td>
                     <td style={s.td}>
-                        <div style={{display:'flex', flexDirection:'column', gap:'4px'}}>
-                            <span style={{fontSize:'12px', fontFamily:'monospace', color:'#334155', display:'flex', alignItems:'center', gap:'6px'}}>
-                                <Receipt size={12} color="#64748b"/> {res.paymentId || 'N/A'}
-                            </span>
-                        </div>
+                        {res.paymentDate ? (
+                            <div style={{display:'flex', flexDirection:'column', gap:'2px'}}>
+                                <span style={{fontSize:'13px', fontWeight:'600', color:'#374151'}}>{res.paymentDate}</span>
+                                <span style={{fontSize:'11px', color:'#64748b', display:'flex', alignItems:'center', gap:'4px'}}>
+                                    <Clock size={10}/> {res.paymentTime}
+                                </span>
+                            </div>
+                        ) : (
+                            <span style={{fontSize:'12px', color:'#9ca3b8', fontStyle:'italic'}}>Not Paid</span>
+                        )}
                     </td>
                     <td style={s.td}><div style={{display:'flex', flexDirection:'column', gap:'6px'}}><span style={s.dateBadge}><CalendarCheck size={12}/> In: {res.checkIn}</span><span style={s.dateBadge}><CalendarCheck size={12}/> Out: {res.checkOut}</span></div></td>
                     <td style={s.td}><span style={s.badge(res.status)}>{res.status}</span></td>

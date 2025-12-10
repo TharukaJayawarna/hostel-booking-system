@@ -70,7 +70,7 @@ const Home = () => {
 
       // Backend එකෙන් එන weeklyPrice, dailyPrice, price (monthly) කෙලින්ම ගන්න
       // අඩුම මිල තෝරාගැනීමේ logic එක
-      if (current.MONTHLY === null || room.price < current.MONTHLY) current.MONTHLY = room.price;
+      if (current.MONTHLY === null || room.monthlyPrice < current.MONTHLY) current.MONTHLY = room.monthlyPrice;
       if (current.WEEKLY === null || room.weeklyPrice < current.WEEKLY) current.WEEKLY = room.weeklyPrice;
       if (current.DAILY === null || room.dailyPrice < current.DAILY) current.DAILY = room.dailyPrice;
     });

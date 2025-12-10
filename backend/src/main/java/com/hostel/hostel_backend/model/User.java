@@ -12,7 +12,7 @@ import java.util.List;
 @Entity
 @Data
 @Table(name = "users")
-public class User implements UserDetails { // Implement UserDetails
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,11 +27,9 @@ public class User implements UserDetails { // Implement UserDetails
     @OneToMany(mappedBy ="user",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Reservation> reservations;
 
-    // --- UserDetails Methods ---
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Role එක Authority එකක් ලෙස ලබා දෙයි
         return List.of(new SimpleGrantedAuthority(role));
     }
 

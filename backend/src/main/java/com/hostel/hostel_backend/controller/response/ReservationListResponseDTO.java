@@ -19,5 +19,6 @@ public class ReservationListResponseDTO {
     private LocalDate checkOut;
     private ReservationStatus status;
     private String paymentId;
-
+    private LocalDate paymentDate;
+    private LocalTime paymentTime;
 }

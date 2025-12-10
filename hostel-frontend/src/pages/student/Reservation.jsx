@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
@@ -18,7 +18,7 @@ const Reservation = () => {
     studentName: '',
     registrationNumber: '',
     email: '',
-    phone: '',
+    contactNumber: '',
     address: '',
     gender: 'MALE'
   });
@@ -35,7 +35,7 @@ const Reservation = () => {
         ...prev,
         studentName: `${user.firstName} ${user.lastName}`,
         email: user.email,
-        phone: user.phone || '' 
+        contactNumber: user.contactNumber || user.phone || '' 
       }));
     }
   }, []);
@@ -135,7 +135,7 @@ const Reservation = () => {
       "first_name": data.firstName,
       "last_name": data.lastName,
       "email": data.email,
-      "phone": data.phone,
+      "contactNumber": data.contactNumber,
       "address": data.address,
       "city": data.city,
       "country": data.country
@@ -381,13 +381,13 @@ const Reservation = () => {
               <div style={s.inputWrapper}>
                 <Phone size={18} style={s.inputIcon}/>
                 <input 
-                    name="phone" 
+                    name="contactNumber" 
                     required 
                     onChange={handleInputChange} 
                     style={s.input} 
                     placeholder="07xxxxxxxx" 
                     // වැදගත්: value එක මෙතනට දාන්න
-                    value={formData.phone}
+                    value={formData.contactNumber}
                     onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
                     onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                 />

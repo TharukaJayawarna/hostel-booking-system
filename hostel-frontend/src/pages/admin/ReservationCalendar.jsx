@@ -19,7 +19,8 @@ import {
   User, 
   Clock, 
   BedDouble,
-  Info 
+  Info ,
+  Search
 } from 'lucide-react';
 
 const ReservationCalendar = () => {
@@ -29,6 +30,13 @@ const ReservationCalendar = () => {
   const [loading, setLoading] = useState(true);
   const [hoveredRes, setHoveredRes] = useState(null);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredBeds = beds.filter(bed => 
+    bed.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    bed.bedNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Scroll Sync Refs
   const sidebarRef = useRef(null);
@@ -162,6 +170,16 @@ const ReservationCalendar = () => {
       fontSize: '13px', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
     },
 
+    searchWrapper: {
+        display: 'flex', alignItems: 'center', gap: '10px', 
+        background: '#f1f5f9', padding: '8px 15px', borderRadius: '12px', 
+        border: '1px solid #e2e8f0', width: '300px', marginRight: '20px'
+    },
+    searchInput: {
+        border: 'none', background: 'transparent', outline: 'none', 
+        width: '100%', fontSize: '14px', color: '#334155'
+    },
+
     // --- Main Grid Layout ---
     contentArea: {
       display: 'flex',
@@ -283,24 +301,37 @@ const ReservationCalendar = () => {
           </div>
         </div>
 
-        <div style={s.controls}>
-          <button 
-            style={s.navBtn} 
-            onClick={prevMonth}
-            onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <ChevronLeft size={20}/>
-          </button>
-          <button style={s.todayBtn} onClick={goToToday}>Today</button>
-          <button 
-            style={s.navBtn} 
-            onClick={nextMonth}
-            onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <ChevronRight size={20}/>
-          </button>
+        {/* --- NEW: SEARCH BAR --- */}
+        <div style={{display:'flex', alignItems:'center'}}>
+            <div style={s.searchWrapper}>
+                <Search size={18} color="#94a3b8"/>
+                <input 
+                    style={s.searchInput} 
+                    placeholder="Search Room or Bed..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+
+            <div style={s.controls}>
+              <button 
+                style={s.navBtn} 
+                onClick={prevMonth}
+                onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <ChevronLeft size={20}/>
+              </button>
+              <button style={s.todayBtn} onClick={goToToday}>Today</button>
+              <button 
+                style={s.navBtn} 
+                onClick={nextMonth}
+                onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <ChevronRight size={20}/>
+              </button>
+            </div>
         </div>
       </div>
 
@@ -310,7 +341,8 @@ const ReservationCalendar = () => {
         {/* Left Sidebar (Rooms) */}
         <div style={s.sidebar} ref={sidebarRef}>
           <div style={s.sidebarHeaderCell}>Accommodation Unit</div>
-          {beds.map(bed => (
+          {/* මෙතන beds වෙනුවට filteredBeds දාන්න */}
+          {filteredBeds.map(bed => (
             <div key={bed.id} style={s.sidebarRow}>
               <div style={s.roomText}>{bed.roomNumber}</div>
               <div style={s.bedText}><BedDouble size={14}/> {bed.bedNumber}</div>
@@ -337,7 +369,7 @@ const ReservationCalendar = () => {
 
             {/* Grid Body */}
             <div style={s.gridBody}>
-              {beds.map(bed => {
+              {filteredBeds.map(bed => {
                 const bedRes = getReservationsForBed(bed.bedNumber);
                 
                 return (

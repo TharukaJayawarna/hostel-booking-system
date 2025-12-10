@@ -13,7 +13,7 @@ const Signup = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    contactNumber: '',
     username: '',
     password: '',
     role: 'STUDENT'
@@ -226,9 +226,9 @@ const Signup = () => {
             <div style={s.gridRow}>
                 <div style={s.inputGroup}>
                     <label style={s.label}>Phone Number</label>
-                    <div style={s.inputContainer(focusedInput === 'phone')}>
+                    <div style={s.inputContainer(focusedInput === 'contactNumber')}>
                         <div style={s.iconBox}><Phone size={18}/></div>
-                        <input name="phone" style={s.input} placeholder="0771234567" onChange={handleChange} onFocus={() => setFocusedInput('phone')} onBlur={() => setFocusedInput(null)} required />
+                        <input name="contactNumber" style={s.input} placeholder="0771234567" onChange={handleChange} onFocus={() => setFocusedInput('phone')} onBlur={() => setFocusedInput(null)} required />
                     </div>
                 </div>
                 <div style={s.inputGroup}>
