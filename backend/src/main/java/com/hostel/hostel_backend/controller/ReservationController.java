@@ -76,7 +76,7 @@ public class ReservationController {
 
     // 6. Get Single Reservation By ID
     @GetMapping(value = "/{reservation-id}", headers = "X-Api-Version=v1")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN', 'STUDENT')")
     public ResponseEntity<ApiResponse<ReservationDetailResponseDTO>> getReservationById(@PathVariable("reservation-id") Long reservationId) throws ResourceNotFoundException {
         return ResponseEntity.ok(ApiResponse.success("Reservation details fetched", reservationService.getReservationById(reservationId)));
     }

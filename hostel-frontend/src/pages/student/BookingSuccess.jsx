@@ -24,10 +24,13 @@ const BookingSuccess = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const receiptRef = useRef(null); 
   
+  // location.state වෙතින් දත්ත ලබා ගැනීම (email සහ phone එකතු කර ඇත)
   const { 
     orderId, 
     studentName, 
     studentId, 
+    studentEmail, // අලුතින් එක් කරන ලදී
+    studentPhone, // අලුතින් එක් කරන ලදී
     bedNumber, 
     roomNumber, 
     checkIn, 
@@ -35,7 +38,6 @@ const BookingSuccess = () => {
     amount 
   } = location.state || {};
 
-  // ගෙවීම් කළ වේලාව ලෙස දැනට පවතින වේලාව ලබා ගනී
   const [paymentTime] = useState(new Date().toLocaleString('en-US', { 
     year: 'numeric', month: 'short', day: 'numeric', 
     hour: '2-digit', minute: '2-digit' 
@@ -95,7 +97,7 @@ const BookingSuccess = () => {
       borderRadius: '24px',
       boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)',
       width: '100%',
-      maxWidth: '550px', // Slightly wider for better date display
+      maxWidth: '550px',
       overflow: 'hidden',
       border: '1px solid #ffffff',
       position: 'relative'
@@ -140,7 +142,7 @@ const BookingSuccess = () => {
     metaLabel: { fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' },
     metaValue: { fontSize: '13px', fontWeight: '600', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' },
 
-    // Date Section (Highlighted)
+    // Date Section
     dateSection: {
       backgroundColor: '#eff6ff',
       borderRadius: '16px',
@@ -167,8 +169,6 @@ const BookingSuccess = () => {
     label: { color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' },
     val: { fontWeight: '600', color: '#1e293b', fontSize: '15px' },
     
-    divider: { height: '1px', background: '#e2e8f0', margin: '15px 0' },
-
     // Total Amount
     totalRow: { 
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -236,7 +236,7 @@ const BookingSuccess = () => {
                 </div>
             </div>
 
-            {/* Date Timeline (Highlighted) */}
+            {/* Date Timeline */}
             <div style={s.dateSection}>
                 <div style={s.dateBox}>
                     <span style={s.dateLabel}>Check-in</span>
@@ -249,12 +249,17 @@ const BookingSuccess = () => {
                 </div>
             </div>
 
-            {/* Details */}
+            {/* Details Grid (Updated Student Section) */}
             <div style={s.detailsGrid}>
                 <div style={s.detailItem}>
                     <span style={s.label}><User size={14}/> Student</span>
                     <span style={s.val}>{studentName}</span>
-                    <span style={{fontSize:'12px', color:'#94a3b8'}}>{studentId}</span>
+                    {/* අලුතින් එකතු කරන ලද කොටස */}
+                    <div style={{display:'flex', flexDirection:'column', gap:'2px', marginTop:'4px', fontSize:'12px', color:'#64748b'}}>
+                        <span>{studentId}</span>
+                        <span>{studentEmail}</span>
+                        <span>{studentPhone}</span>
+                    </div>
                 </div>
                 <div style={s.detailItem}>
                     <span style={s.label}><MapPin size={14}/> Accommodation</span>
@@ -273,7 +278,7 @@ const BookingSuccess = () => {
 
         </div>
 
-        {/* Footer Buttons (Excluded from PDF) */}
+        {/* Footer Buttons */}
         <div style={s.footer}>
           <button 
             style={s.homeBtn}

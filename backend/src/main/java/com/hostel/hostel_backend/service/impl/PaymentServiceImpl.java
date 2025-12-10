@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,6 +28,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final PayHereUtil payHereUtil;
     private final EmailProducer emailProducer;
     private final ReservationServiceImpl reservationService;
+    private final NotificationServiceImpl notificationService;
+
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -82,12 +85,12 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private String handleSuccess(Payment payment, Reservation reservation, String payhereAmount, String orderId) {
-        // Late Payment
+        // Late Payment Scenario
         if (reservation != null && reservation.getReservationStatus() == ReservationStatus.REJECTED) {
             payment.setPaymentStatus(PaymentStatus.APPROVED);
             paymentRepository.save(payment);
 
-            // Admin Email (Late Payment)
+            // 1. Admin Email (Late Payment) - මෙය එලෙසම තබන්න (Admin Alert එකක් නිසා)
             String adminSubject = "URGENT: Late Payment Received - " + orderId;
             String adminContent = "<p>A payment was received <strong>AFTER</strong> the reservation was cancelled.</p>" +
                     "<ul>" +
@@ -100,17 +103,24 @@ public class PaymentServiceImpl implements PaymentService {
             String adminBody = generateCommonEmailTemplate("Late Payment Alert 🚨", adminContent);
             emailProducer.sendEmail(ADMIN_EMAIL, adminSubject, adminBody);
 
-            // Student Email
-            String studentSubject = "Payment Received - Booking Cancellation Alert";
-            String studentContent = "<p>Dear " + reservation.getStudentName() + ",</p>" +
-                    "<p>We received your payment of <strong>LKR " + payhereAmount + "</strong>.</p>" +
-                    "<div style='background-color: #fff7ed; border-left: 4px solid #ea580c; padding: 15px; margin: 20px 0; color: #9a3412;'>" +
-                    "  However, your reservation time had expired before the payment was completed." +
-                    "</div>" +
-                    "<p>Don't worry! Your payment has been recorded and a <strong>REFUND</strong> will be processed shortly.</p>";
+            // 2. Student Notification (Email වෙනුවට)
+            if (reservation.getUser() != null) {
+                String studentSubject = "Payment Received - Booking Cancellation Alert";
+                String studentContent = "<p>Dear " + reservation.getStudentName() + ",</p>" +
+                        "<p>We received your payment of <strong>LKR " + payhereAmount + "</strong>.</p>" +
+                        "<div style='background-color: #fff7ed; border-left: 4px solid #ea580c; padding: 15px; margin: 20px 0; color: #9a3412;'>" +
+                        "  However, your reservation time had expired before the payment was completed." +
+                        "</div>" +
+                        "<p>Don't worry! Your payment has been recorded and a <strong>REFUND</strong> will be processed shortly.</p>";
 
-            String studentBody = generateCommonEmailTemplate("Payment Issue ⚠️", studentContent);
-            emailProducer.sendEmail(reservation.getStudentEmail(), studentSubject, studentBody);
+                // Email එක වෙනුවට Notification එක යවන්න
+                notificationService.createNotification(reservation.getUser(), studentSubject, studentContent);
+            }
+
+            // පැරණි Email යැවීම ඉවත් කර ඇත:
+            // String studentBody = generateCommonEmailTemplate("Payment Issue ⚠️", studentContent);
+            // emailProducer.sendEmail(reservation.getStudentEmail(), studentSubject, studentBody);
+
             return "OK";
         }
 

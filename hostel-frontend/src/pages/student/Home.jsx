@@ -102,7 +102,7 @@ const Home = () => {
   // --- STYLES ---
   const s = {
     pageContainer: {
-      width: '100%', minHeight: '100vh', padding: '60px 20px',
+      width: '100%', minHeight: '100vh', padding: '70px 20px',
       fontFamily: "'Inter', sans-serif", backgroundColor: '#f3f4f6',
       color: '#1e293b', display: 'flex', flexDirection: 'column', alignItems: 'center'
     },
