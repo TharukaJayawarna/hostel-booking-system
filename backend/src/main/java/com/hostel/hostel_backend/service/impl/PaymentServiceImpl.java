@@ -111,7 +111,7 @@ public class PaymentServiceImpl implements PaymentService {
                         "<div style='background-color: #fff7ed; border-left: 4px solid #ea580c; padding: 15px; margin: 20px 0; color: #9a3412;'>" +
                         "  However, your reservation time had expired before the payment was completed." +
                         "</div>" +
-                        "<p>Don't worry! Your payment has been recorded and a <strong>REFUND</strong> will be processed shortly.</p>";
+                        "<p>Don't worry! Your payment has been recorded and a necessary arrangement will be processed shortly.</p>";
 
                 // Email එක වෙනුවට Notification එක යවන්න
                 notificationService.createNotification(reservation.getUser(), studentSubject, studentContent);

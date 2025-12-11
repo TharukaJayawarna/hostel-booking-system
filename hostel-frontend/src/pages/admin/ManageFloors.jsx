@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
+import ConfirmModal from '../../components/ConfirmModal';
 import { Layers, Building2, DoorOpen, Plus, Trash2, X, Search, LayoutGrid, Filter } from 'lucide-react';
 
 const ManageFloors = () => {
+  const notify = useNotification();
   const [floors, setFloors] = useState([]);
   const [hubs, setHubs] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -11,6 +13,8 @@ const ManageFloors = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterHub, setFilterHub] = useState('ALL');
   const [loading, setLoading] = useState(true);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [floorToDelete, setFloorToDelete] = useState(null);
 
   // Check Role
   const user = JSON.parse(localStorage.getItem('user'));
@@ -24,26 +28,39 @@ const ManageFloors = () => {
       const [f, h] = await Promise.all([api.get('/floors'), api.get('/hubs')]);
       if(f.data.status === 'SUCCESS') setFloors(f.data.data);
       if(h.data.status === 'SUCCESS') setHubs(h.data.data);
-    } catch (error) { toast.error("Failed to load data"); } 
+    } catch (error) { notify.error("Failed to load data"); } 
     finally { setLoading(false); }
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!formData.hubId || !formData.floorNumber) return toast.warning("Please fill all fields");
+    if (!formData.hubId || !formData.floorNumber) return notify.warning("Please fill all fields");
     try {
       await api.post(`/hubs/${formData.hubId}/floors`, { floorNumber: formData.floorNumber });
-      toast.success("Floor Created Successfully!");
+      notify.success("Floor Created Successfully!");
       setIsModalOpen(false);
       setFormData({ hubId: '', floorNumber: '' });
       fetchAll();
-    } catch (e) { toast.error("Failed to create floor"); }
+    } catch (e) { notify.error("Failed to create floor"); }
   };
 
-  const handleDelete = async (id) => {
-    if(!window.confirm("Are you sure you want to delete this Floor?")) return;
-    try { await api.delete(`/floors/${id}`); toast.success("Floor Deleted"); fetchAll(); } 
-    catch (e) { toast.error("Failed to delete"); }
+  const openDeleteModal = (id) => {
+    setFloorToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!floorToDelete) return;
+    try { 
+        await api.delete(`/floors/${floorToDelete}`); 
+        notify.success("Floor Deleted Successfully"); 
+        fetchAll(); 
+    } catch (e) { 
+        notify.error("Failed to delete floor"); 
+    } finally {
+        setIsDeleteModalOpen(false);
+        setFloorToDelete(null);
+    }
   };
 
   const filteredFloors = floors.filter(floor => {
@@ -147,7 +164,7 @@ const ManageFloors = () => {
               <th style={s.th}>Floor Details</th>
               <th style={s.th}>Parent Hub</th>
               <th style={s.th}>Capacity</th>
-              <th style={{...s.th, textAlign:'right'}}>Actions</th>
+              {!isWarden &&<th style={{...s.th, textAlign:'right'}}>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -166,13 +183,13 @@ const ManageFloors = () => {
                     </td>
                     <td style={s.td}><span style={s.badge('hub')}><Building2 size={12}/> {f.hubNumber || 'Unassigned'}</span></td>
                     <td style={s.td}><span style={s.badge('room')}><DoorOpen size={12}/> {f.noOfRooms} Rooms</span></td>
-                    <td style={s.td}>
-                        {!isWarden && (
+                   {!isWarden && ( <td style={s.td}>
+                        
                             <div style={{display:'flex', justifyContent:'flex-end'}}>
-                                <button style={s.actionBtn} onClick={() => handleDelete(f.id)}><Trash2 size={16}/></button>
+                                <button style={s.actionBtn} onClick={() => openDeleteModal(f.id)}><Trash2 size={16}/></button>
                             </div>
-                        )}
-                    </td>
+                        
+                    </td>)}
                 </tr>
                 ))
             )}
@@ -209,6 +226,16 @@ const ManageFloors = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Floor?"
+        message="Are you sure you want to delete this floor? All rooms inside will be removed."
+        confirmText="Delete Floor"
+        isDanger={true}
+      />
     </div>
   );
 };

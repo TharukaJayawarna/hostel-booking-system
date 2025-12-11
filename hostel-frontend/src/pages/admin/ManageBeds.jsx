@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { BedDouble, Wrench, Trash2, Plus, Search, Filter, CheckCircle2, XCircle } from 'lucide-react';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const ManageBeds = () => {
+  const notify = useNotification();
   const [beds, setBeds] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +14,8 @@ const ManageBeds = () => {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ roomId: '', bedNumber: '' });
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [bedToDelete, setBedToDelete] = useState(null);
 
   // Check Role
   const user = JSON.parse(localStorage.getItem('user'));
@@ -25,26 +29,39 @@ const ManageBeds = () => {
       const [b, r] = await Promise.all([api.get('/beds'), api.get('/rooms')]);
       if(b.data.status === 'SUCCESS') setBeds(b.data.data);
       if(r.data.status === 'SUCCESS') setRooms(r.data.data);
-    } catch (e) { toast.error("Failed to load data"); } 
+    } catch (e) { notify.error("Failed to load data"); } 
     finally { setLoading(false); }
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if(!formData.roomId || !formData.bedNumber) { toast.warning("Please fill all fields"); return; }
+    if(!formData.roomId || !formData.bedNumber) { notify.warning("Please fill all fields"); return; }
     try {
       await api.post(`/rooms/${formData.roomId}/beds`, { bedNumber: formData.bedNumber });
-      toast.success("Bed Added Successfully!");
+      notify.success("Bed Added Successfully!");
       setIsModalOpen(false);
       setFormData({ roomId: '', bedNumber: '' });
       fetchAll();
-    } catch (e) { toast.error("Failed to create bed"); }
+    } catch (e) { notify.error("Failed to create bed"); }
   };
 
-  const handleDelete = async (id) => {
-    if(!window.confirm("Are you sure you want to delete this Bed?")) return;
-    try { await api.delete(`/beds/${id}`); toast.success("Bed Deleted"); fetchAll(); } 
-    catch (e) { toast.error("Failed to delete"); }
+  const openDeleteModal = (id) => {
+    setBedToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!bedToDelete) return;
+    try { 
+        await api.delete(`/beds/${bedToDelete}`); 
+        notify.success("Bed Deleted Successfully"); 
+        fetchAll(); 
+    } catch (e) { 
+        notify.error("Failed to delete bed"); 
+    } finally {
+        setIsDeleteModalOpen(false);
+        setBedToDelete(null);
+    }
   };
 
   const toggleMaintenance = async (bed) => {
@@ -57,11 +74,11 @@ const ManageBeds = () => {
         const updatedBeds = beds.map(b => b.id === bed.id ? { ...b, underMaintenance: newStatus } : b);
         setBeds(updatedBeds);
         await api.patch(`/beds/${bed.id}/maintenance?status=${newStatus}`);
-        toast.success(`Maintenance Mode: ${newStatus ? 'ON' : 'OFF'}`);
+        notify.success(`Maintenance Mode: ${newStatus ? 'ON' : 'OFF'}`);
     } catch (e) {
         const revertedBeds = beds.map(b => b.id === bed.id ? { ...b, underMaintenance: previousStatus } : b);
         setBeds(revertedBeds);
-        toast.error("Failed to update status");
+        notify.error("Failed to update status");
     }
   };
 
@@ -172,7 +189,7 @@ const ManageBeds = () => {
               <th style={s.th}>Room</th>
               <th style={s.th}>Current Status</th>
               <th style={s.th}>Maintenance Mode</th>
-              <th style={{...s.th, textAlign:'right'}}>Actions</th>
+              {!isWarden && <th style={{...s.th, textAlign:'right'}}>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -203,14 +220,15 @@ const ManageBeds = () => {
                         </span>
                       </div>
                     </td>
-                    <td style={s.td}>
+                    {!isWarden && (<td style={s.td}>
                       {/* Warden ට Delete බැහැ */}
-                      {!isWarden && (
+                      
                           <div style={{display:'flex', justifyContent:'flex-end'}}>
-                            <button onClick={() => handleDelete(bed.id)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}} title="Delete Bed"><Trash2 size={16}/></button>
+                            <button onClick={() => openDeleteModal(bed.id)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}} title="Delete Bed"><Trash2 size={16}/></button>
                           </div>
-                      )}
+                      
                     </td>
+                    )}
                   </tr>
                 );
             })}
@@ -243,6 +261,16 @@ const ManageBeds = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Bed?"
+        message="Are you sure you want to delete this bed? This action cannot be undone."
+        confirmText="Delete Bed"
+        isDanger={true}
+      />
     </div>
   );
 };

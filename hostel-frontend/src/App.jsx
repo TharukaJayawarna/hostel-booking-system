@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
+
+import { NotificationProvider } from './context/NotificationContext';
 
 // Layouts
 import StudentLayout from './layouts/StudentLayout';
@@ -24,6 +24,7 @@ import MyBookings from './pages/student/MyBookings';
 // Auth Pages
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
+import ForgotPassword from './pages/auth/ForgotPassword';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -34,15 +35,17 @@ import ManageFloors from './pages/admin/ManageFloors';
 import ManageBeds from './pages/admin/ManageBeds';
 import ReservationCalendar from './pages/admin/ReservationCalendar';
 import ManageUsers from './pages/admin/ManageUsers';
+import SystemSettings from './pages/admin/SystemSettings';
 
 function App() {
   return (
+    <NotificationProvider>
     <Router>
-      <ToastContainer position="top-right" autoClose={3000} />
       
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* === STUDENT ROUTES (Only STUDENT) === */}
         <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
@@ -71,15 +74,19 @@ function App() {
               <Route path="beds" element={<ManageBeds />} />
               <Route path="reservations" element={<ManageReservations />} />
               <Route path="calendar" element={<ReservationCalendar />} />
-              
-              {/* User Management - ONLY ADMIN can access this inside the layout */}
-              {/* Note: Sidebar already hides the link for Warden, but we can add extra check here if needed or rely on API security */}
-              <Route path="users" element={<ManageUsers />} />
             </Route> 
         </Route>
 
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+    <Route path="/admin" element={<AdminLayout />}>
+        <Route path="settings" element={<SystemSettings />} /> {/* මෙතනට දාන්න */}
+        <Route path="users" element={<ManageUsers />} />
+    </Route>
+</Route>
+
       </Routes>
     </Router>
+    </NotificationProvider>
   );
 }
 

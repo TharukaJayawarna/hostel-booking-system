@@ -14,6 +14,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -65,6 +67,31 @@ public class AuthController {
 
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Invalid Username or Password"));
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestBody Map<String, String> payload) {
+        try {
+            String email = payload.get("email");
+            userService.forgotPassword(email);
+            return ResponseEntity.ok(ApiResponse.success("OTP sent to your email"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@RequestBody Map<String, String> payload) {
+        try {
+            String email = payload.get("email");
+            String otp = payload.get("otp");
+            String newPassword = payload.get("newPassword");
+
+            userService.resetPassword(email, otp, newPassword);
+            return ResponseEntity.ok(ApiResponse.success("Password changed successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 }

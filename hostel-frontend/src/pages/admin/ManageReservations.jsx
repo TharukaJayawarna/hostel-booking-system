@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
+import ConfirmModal from '../../components/ConfirmModal';
 import { CalendarDays, Search, Filter, MoreVertical, Eye, RefreshCcw, BedDouble, Ban, User, CreditCard, Phone, Mail, MapPin, CalendarCheck, Building2, Layers, DoorOpen, X, Trash2, Plus, Receipt, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 const ManageReservations = () => {
+  const notify = useNotification();
   const [reservations, setReservations] = useState([]);
   const [showTrash, setShowTrash] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,6 +24,10 @@ const ManageReservations = () => {
   const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [beds, setBeds] = useState([]);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [reservationToCancel, setReservationToCancel] = useState(null);
+  const [isReactivateModalOpen, setIsReactivateModalOpen] = useState(false);
+  const [reservationToReactivate, setReservationToReactivate] = useState(null);
 
   const [manualForm, setManualForm] = useState({
     studentName: '', registrationNumber: '', email: '', contactNumber: '', address: '',
@@ -82,7 +88,7 @@ const ManageReservations = () => {
       const endpoint = showTrash ? '/reservations/trash' : '/reservations';
       const res = await api.get(endpoint);
       if(res.data.status === 'SUCCESS') setReservations(res.data.data);
-    } catch(e) { toast.error("Failed to load reservations"); } 
+    } catch(e) { notify.error("Failed to load reservations"); } 
     finally { setLoading(false); }
   };
 
@@ -114,11 +120,11 @@ const ManageReservations = () => {
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
-    if (!manualForm.bedId) return toast.warning("Please select a bed.");
+    if (!manualForm.bedId) return notify.warning("Please select a bed.");
     
     try {
         await api.post('/reservations/admin/create', manualForm);
-        toast.success("Manual Reservation Created!");
+        notify.success("Manual Reservation Created!");
         setIsManualModalOpen(false);
         fetchReservations();
         setManualForm({
@@ -127,31 +133,52 @@ const ManageReservations = () => {
             hubId: '', floorId: '', roomId: '', bedId: ''
         });
     } catch (e) {
-        toast.error(e.response?.data?.message || "Creation Failed");
+        notify.error(e.response?.data?.message || "Creation Failed");
     }
   };
 
-  const handleCancel = async (id) => {
-    if(!window.confirm("Are you sure you want to CANCEL this reservation?")) return;
+  const openCancelModal = (id) => {
+    setReservationToCancel(id);
+    setIsCancelModalOpen(true);
+  };
+
+  const confirmCancel = async () => {
+    if (!reservationToCancel) return;
     try { 
-        await api.patch(`/reservations/${id}/cancel`); 
-        toast.success("Reservation Cancelled"); 
+        await api.patch(`/reservations/${reservationToCancel}/cancel`); 
+        notify.success("Reservation Cancelled Successfully"); 
         fetchReservations(); 
         setActiveDropdownId(null); 
-    } catch(e) { toast.error("Cancellation Failed"); }
+    } catch(e) { 
+        notify.error("Cancellation Failed"); 
+    } finally {
+        setIsCancelModalOpen(false);
+        setReservationToCancel(null);
+    }
   };
 
-  const handleReactivate = async (id) => {
-    if(!window.confirm("Are you sure you want to reactivate this reservation?")) return;
-    try { await api.post(`/reservations/${id}/reactivate`); toast.success("Reactivated Successfully!"); fetchReservations(); setActiveDropdownId(null); } 
-    catch(e) { toast.error(e.response?.data?.message || "Failed to reactivate"); }
+  const openReactivateModal = (id) => {
+    setReservationToReactivate(id);
+    setIsReactivateModalOpen(true);
+    setActiveDropdownId(null); // Dropdown එක වැසීමට
   };
 
-  const handleRefund = async (id) => {
-    if(!window.confirm("Are you sure you want to cancel/refund this reservation?")) return;
-    try { await api.patch(`/reservations/${id}/cancel`); toast.success("Cancelled/Refunded Successfully"); fetchReservations(); setActiveDropdownId(null); } 
-    catch(e) { toast.error("Failed to cancel"); }
+  const confirmReactivate = async () => {
+    if (!reservationToReactivate) return;
+    try { 
+        await api.post(`/reservations/${reservationToReactivate}/reactivate`); 
+        // notify.success("Reactivated Successfully!"); // (ඔබ අලුත් notification system එක දැම්මා නම්)
+        notify.success("Reactivated Successfully!"); 
+        fetchReservations(); 
+    } catch(e) { 
+        // notify.error(...)
+        notify.error(e.response?.data?.message || "Failed to reactivate"); 
+    } finally {
+        setIsReactivateModalOpen(false);
+        setReservationToReactivate(null);
+    }
   };
+
 
   const openMoveModal = async (id) => {
     setSelectedResId(id);
@@ -162,16 +189,16 @@ const ManageReservations = () => {
         setMatchingBeds(res.data.data);
         setIsMoveModalOpen(true);
       }
-    } catch(e) { toast.error("No matching beds found"); }
+    } catch(e) { notify.error("No matching beds found"); }
   };
 
   const confirmMove = async (newBedId) => {
     try {
       await api.post(`/reservations/${selectedResId}/assign/${newBedId}`);
-      toast.success("Bed moved successfully!");
+      notify.success("Bed moved successfully!");
       setIsMoveModalOpen(false);
       fetchReservations();
-    } catch(e) { toast.error("Failed to move bed"); }
+    } catch(e) { notify.error("Failed to move bed" + e.response?.data?.message || ""); }
   };
 
   const openViewModal = async (id) => {
@@ -184,7 +211,7 @@ const ManageReservations = () => {
       if (response.data.status === 'SUCCESS') {
         setSelectedReservation(response.data.data);
       }
-    } catch (error) { toast.error("Failed to load details"); setIsViewModalOpen(false); } 
+    } catch (error) { notify.error("Failed to load details"); setIsViewModalOpen(false); } 
     finally { setIsLoadingDetails(false); }
   };
 
@@ -399,15 +426,15 @@ const ManageReservations = () => {
                                         <button style={s.actionBtn} onClick={(e) => toggleDropdown(res.id, e)}><MoreVertical size={16}/></button>
                                         {activeDropdownId === res.id && (
                                         <div style={s.dropdownMenu}>
-                                            <button style={s.dropdownItem('#059669')} onClick={() => handleReactivate(res.id)} onMouseOver={(e) => e.currentTarget.style.background = '#f0fdf4'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}><RefreshCcw size={14}/> Reactivate</button>
+                                            <button style={s.dropdownItem('#059669')} onClick={() => openReactivateModal(res.id)} onMouseOver={(e) => e.currentTarget.style.background = '#f0fdf4'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}><RefreshCcw size={14}/> Reactivate</button>
                                             <button style={s.dropdownItem('#d97706')} onClick={() => openMoveModal(res.id)} onMouseOver={(e) => e.currentTarget.style.background = '#fffbeb'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}><BedDouble size={14}/> Move Bed</button>
-                                            <button style={s.dropdownItem('#dc2626')} onClick={() => handleRefund(res.id)} onMouseOver={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}><Ban size={14}/> Refund</button>
+                                            
                                         </div>
                                         )}
                                     </div>
                                 )}
                                 {(res.status === 'COMPLETED' || res.status === 'APPROVED') && (
-                                    <button style={{...s.actionBtn, color: '#dc2626'}} onClick={() => handleCancel(res.id)} title="Cancel Reservation" onMouseOver={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseOut={(e) => e.currentTarget.style.background = 'white'}><Ban size={16}/></button>
+                                    <button style={{...s.actionBtn, color: '#dc2626'}} onClick={() => openCancelModal(res.id)} title="Cancel Reservation" onMouseOver={(e) => e.currentTarget.style.background = '#fef2f2'} onMouseOut={(e) => e.currentTarget.style.background = 'white'}><Ban size={16}/></button>
                                 )}
                             </>
                           )}
@@ -567,6 +594,28 @@ const ManageReservations = () => {
             </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={isReactivateModalOpen}
+        onClose={() => setIsReactivateModalOpen(false)}
+        onConfirm={confirmReactivate}
+        title="Reactivate Reservation?"
+        message="Are you sure you want to reactivate this reservation? This will mark the bed as occupied again."
+        confirmText="Yes, Reactivate"
+        cancelText="Cancel"
+        isDanger={false} // Reactivate කිරීම ධනාත්මක ක්‍රියාවක් නිසා false දාන්න (නිල් පාටින් පෙනේවි)
+      />
+
+      <ConfirmModal 
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirm={confirmCancel}
+        title="Cancel Reservation?"
+        message="Are you sure you want to CANCEL this reservation? This might affect room availability and payments."
+        confirmText="Yes, Cancel Booking"
+        cancelText="No, Keep it"
+        isDanger={true}
+      />
     </div>
   );
 };

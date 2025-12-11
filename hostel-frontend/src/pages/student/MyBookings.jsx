@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { 
   Calendar, Clock, MapPin, Ban, Edit3, CheckCircle2, XCircle, 
   BedDouble, History, CalendarDays, X, Ticket, User, CreditCard, Phone, Mail, ShieldCheck
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { DateRange } from 'react-date-range';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const MyBookings = () => {
+  const notify = useNotification();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -23,30 +25,48 @@ const MyBookings = () => {
   const [passDetails, setPassDetails] = useState(null);
   const [passLoading, setPassLoading] = useState(false);
 
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+const [bookingToCancel, setBookingToCancel] = useState(null);
+
   useEffect(() => { fetchBookings(); }, []);
 
   const fetchBookings = async () => {
     try {
       const res = await api.get('/reservations/student/my-bookings');
       if (res.data.status === 'SUCCESS') {
-        const sortedBookings = res.data.data.sort((a, b) => b.id - a.id);
+        // මෙතනදී අපි CANCELLED සහ REJECTED නොවන ඒවා පමණක් තෝරා ගනිමු
+        const activeBookings = res.data.data.filter(
+            booking => booking.status !== 'CANCELLED' && booking.status !== 'REJECTED'
+        );
+
+        // ඉන්පසු ඒවා sort කර setBookings වෙත යවමු
+        const sortedBookings = activeBookings.sort((a, b) => b.id - a.id);
         setBookings(sortedBookings);
       }
     } catch (e) { 
-      toast.error("Failed to load bookings"); 
+      notify.error("Failed to load bookings"); 
     } finally { 
       setLoading(false); 
     }
   };
+  // --- Cancel Booking Logic ---
+const handleCancelClick = (id) => {
+    setBookingToCancel(id);
+    setCancelModalOpen(true);
+};
 
-  const handleCancel = async (id) => {
-    if(!window.confirm("Are you sure? Refunds are not available for cancellations.")) return;
+const confirmCancel = async () => {
+    if (!bookingToCancel) return;
     try {
-      await api.patch(`/reservations/${id}/cancel`);
-      toast.success("Booking Cancelled");
-      fetchBookings();
-    } catch (e) { toast.error("Cancellation Failed"); }
-  };
+        await api.patch(`/reservations/${bookingToCancel}/cancel`);
+        notify.success("Booking Cancelled");
+        fetchBookings();
+    } catch (e) {
+        notify.error("Cancellation Failed");
+    } finally {
+        setCancelModalOpen(false);
+    }
+};
 
   // --- View Gate Pass Logic ---
   const handleViewPass = async (id) => {
@@ -59,7 +79,7 @@ const MyBookings = () => {
             setPassDetails(res.data.data);
         }
     } catch (e) {
-        toast.error("Failed to load pass details");
+        notify.error("Failed to load pass details");
         setIsPassModalOpen(false);
     } finally {
         setPassLoading(false);
@@ -83,7 +103,7 @@ const MyBookings = () => {
     const newDuration = differenceInDays(newEnd, newStart);
 
     if (newDuration !== requiredDuration) {
-      toast.error(`Invalid Duration! Please select exactly ${requiredDuration} days.`);
+      notify.error(`Invalid Duration! Please select exactly ${requiredDuration} days.`);
       return;
     }
 
@@ -92,11 +112,11 @@ const MyBookings = () => {
         newCheckInDate: format(newStart, 'yyyy-MM-dd'),
         newCheckOutDate: format(newEnd, 'yyyy-MM-dd')
       });
-      toast.success("Dates Updated Successfully!");
+      notify.success("Dates Updated Successfully!");
       setIsDateModalOpen(false);
       fetchBookings();
     } catch (e) {
-      toast.error(e.response?.data?.message || "Update Failed");
+      notify.error(e.response?.data?.message || "Update Failed");
     }
   };
 
@@ -181,7 +201,7 @@ const MyBookings = () => {
                     <div style={s.cardFooter}>
                         <button onClick={() => handleViewPass(booking.id)} style={s.btn('pass')}><Ticket size={16}/> View Gate Pass</button>
                         <button onClick={() => openDateModal(booking)} style={s.btn('outline')}><Edit3 size={16}/> Change Dates</button>
-                        <button onClick={() => handleCancel(booking.id)} style={s.btn('danger')}><Ban size={16}/> Cancel</button>
+                        <button onClick={() => handleCancelClick(booking.id)} style={s.btn('danger')}><Ban size={16}/> Cancel</button>
                     </div>
                 )}
             </div>
@@ -271,6 +291,16 @@ const MyBookings = () => {
             </div>
         </div>
       )}
+
+      <ConfirmModal 
+    isOpen={cancelModalOpen}
+    onClose={() => setCancelModalOpen(false)}
+    onConfirm={confirmCancel}
+    title="Cancel Booking?"
+    message="Are you sure you want to cancel? Payments are non-refundable according to our policy."
+    confirmText="Yes, Cancel"
+    isDanger={true}
+/>
     </div>
   );
 };

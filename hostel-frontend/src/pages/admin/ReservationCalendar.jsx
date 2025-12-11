@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { 
   format, 
   startOfMonth, 
@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 
 const ReservationCalendar = () => {
+  const notify = useNotification();
   const [beds, setBeds] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -65,7 +66,7 @@ const ReservationCalendar = () => {
         setReservations(resRes.data.data);
       }
     } catch (error) {
-      toast.error("Failed to load calendar data.");
+      notify.error("Failed to load calendar data.");
     } finally {
       setLoading(false);
     }
@@ -196,7 +197,7 @@ const ReservationCalendar = () => {
       flexShrink: 0,
       borderRight: '1px solid #e2e8f0',
       background: 'white',
-      overflow: 'hidden', // Scroll is controlled by timeline scroll
+      overflow: 'hidden', 
       zIndex: 10
     },
     sidebarHeaderCell: {
@@ -231,6 +232,9 @@ const ReservationCalendar = () => {
     dayCell: (isToday) => ({
       minWidth: `${CELL_WIDTH}px`,
       maxWidth: `${CELL_WIDTH}px`,
+      width: `${CELL_WIDTH}px`,         // 1. Width එක ස්ථිර කරන්න
+      flexShrink: 0,                    // 2. Shrink වීම වලක්වන්න
+      boxSizing: 'border-box',          // 3. Border එකත් Width එක ඇතුලට ගන්න (මෙය තමයි ප්‍රධාන විසඳුම)
       borderRight: '1px solid #f1f5f9',
       borderBottom: '1px solid #e2e8f0',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -258,6 +262,11 @@ const ReservationCalendar = () => {
         top: '12px', height: `${ROW_HEIGHT - 24}px`,
         left: `${start * CELL_WIDTH + 4}px`,
         width: `${duration * CELL_WIDTH - 8}px`,
+        
+        // --- මෙන්න මේ property එක add කරන්න ---
+        boxSizing: 'border-box', 
+        // -------------------------------------
+
         background: isPending 
             ? 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)' 
             : 'linear-gradient(135deg, #34d399 0%, #059669 100%)',

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { 
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 const BookingSuccess = () => {
+  const notify = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
   const [isCopied, setIsCopied] = useState(false);
@@ -52,7 +53,7 @@ const BookingSuccess = () => {
   const handleCopy = () => {
     navigator.clipboard.writeText(orderId);
     setIsCopied(true);
-    toast.success("Booking ID Copied!");
+    notify.success("Booking ID Copied!");
     setTimeout(() => setIsCopied(false), 2000);
   };
 
@@ -71,10 +72,10 @@ const BookingSuccess = () => {
       
       pdf.addImage(imgData, 'PNG', 0, 20, pdfWidth, imgHeight);
       pdf.save(`Hostel_Receipt_${orderId}.pdf`);
-      toast.success("Receipt downloaded successfully!");
+      notify.success("Receipt downloaded successfully!");
     } catch (error) {
       console.error("Download Error:", error);
-      toast.error("Failed to download receipt.");
+      notify.error("Failed to download receipt.");
     } finally {
       setIsDownloading(false);
     }

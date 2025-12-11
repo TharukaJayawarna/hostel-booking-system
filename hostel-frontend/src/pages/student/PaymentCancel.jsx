@@ -1,14 +1,15 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 
 const PaymentCancel = () => {
+  const notify = useNotification();
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('order_id'); // optional display
 
   // Optional: Show toast on load
   React.useEffect(() => {
-    toast.error('Payment was cancelled.');
+    notify.error('Payment was cancelled.');
   }, []);
 
   return (

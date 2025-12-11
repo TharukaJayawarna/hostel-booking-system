@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { LogIn, User, Lock, ArrowRight, Loader2 } from 'lucide-react';
 
 const Login = () => {
+  const notify = useNotification();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
@@ -29,7 +30,7 @@ const Login = () => {
       if (response.data.status === 'SUCCESS') {
         const user = response.data.data;
         localStorage.setItem('user', JSON.stringify(user));
-        toast.success(`Welcome back, ${user.firstName}!`);
+        notify.success(`Welcome back, ${user.firstName}!`);
         
         if (user.role === 'ADMIN') {
           navigate('/admin/dashboard');
@@ -40,7 +41,7 @@ const Login = () => {
         }
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed. Check your credentials.");
+      notify.error(error.response?.data?.message || "Login failed. Check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -221,7 +222,7 @@ const Login = () => {
                <label style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'13px', color:'#64748b', cursor:'pointer'}}>
                   <input type="checkbox" style={{accentColor:'#4f46e5', width:'16px', height:'16px'}}/> Remember me
                </label>
-               <span style={{fontSize:'13px', color:'#4f46e5', fontWeight:'600', cursor:'pointer'}}>Forgot password?</span>
+               <Link to="/forgot-password" style={{fontSize:'13px', color:'#4f46e5', fontWeight:'600', cursor:'pointer', textDecoration:'none'}}>Forgot password?</Link>
             </div>
 
             <button 

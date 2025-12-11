@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
+import ConfirmModal from '../../components/ConfirmModal';
 import { 
   Users, 
   Trash2, 
@@ -16,11 +17,16 @@ import {
 } from 'lucide-react';
 
 const ManageUsers = () => {
+  const notify = useNotification();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('ALL');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  
+  // Default එක 'STAFF' කළා (එතකොට මුලින්ම පේන්නේ Admin + Warden විතරයි)
+  const [filterRole, setFilterRole] = useState('STAFF');
   
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', username: '', password: '', 
@@ -49,35 +55,56 @@ const ManageUsers = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     if(!formData.username || !formData.password || !formData.email) {
-        return toast.warning("Please fill all required fields");
+        return notify.warning("Please fill all required fields");
     }
 
     try {
       await api.post('/users/create', formData);
-      toast.success("User Created Successfully!");
+      notify.success("User Created Successfully!");
       setFormData({ firstName: '', lastName: '', username: '', password: '', email: '', contactNumber: '', role: 'WARDEN' }); 
       setIsModalOpen(false);
       fetchUsers();
     } catch (e) { 
-      toast.error(e.response?.data?.message || "Creation Failed"); 
+      notify.error(e.response?.data?.message || "Creation Failed"); 
     }
   };
 
-  const handleDelete = async (id) => {
-    if(!window.confirm("Are you sure you want to remove this user? This action cannot be undone.")) return;
+  const openDeleteModal = (id) => {
+    setUserToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
     try {
-      await api.delete(`/users/${id}`);
-      toast.success("User Removed Successfully");
+      await api.delete(`/users/${userToDelete}`);
+      notify.success("User Removed Successfully");
       fetchUsers();
-    } catch (e) { toast.error("Delete Failed"); }
+    } catch (e) { 
+      notify.error("Delete Failed"); 
+    } finally {
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
+    }
   };
 
   // --- Filtering & Stats ---
   const filteredUsers = users.filter(user => {
+    const term = searchTerm.toLowerCase();
     const matchesSearch = 
-        (user.firstName && user.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesRole = filterRole === 'ALL' || user.role === filterRole;
+        (user.firstName && user.firstName.toLowerCase().includes(term)) ||
+        (user.username && user.username.toLowerCase().includes(term));
+    
+    // NEW FILTER LOGIC
+    let matchesRole = false;
+    if (filterRole === 'ALL') {
+        matchesRole = true;
+    } else if (filterRole === 'STAFF') {
+        matchesRole = user.role === 'ADMIN' || user.role === 'WARDEN';
+    } else {
+        matchesRole = user.role === filterRole;
+    }
+
     return matchesSearch && matchesRole;
   });
 
@@ -198,10 +225,12 @@ const ManageUsers = () => {
         <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
             <Filter size={18} color="#6b7280"/>
             <select style={s.filterSelect} value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
-                <option value="ALL">All Roles</option>
-                <option value="ADMIN">Admins</option>
-                <option value="WARDEN">Wardens</option>
-                <option value="STUDENT">Students</option>
+                <option value="STAFF">Staff Only (Admins & Wardens)</option>
+                <option value="STUDENT">Students Only</option>
+                <option value="ALL">Show All Users</option>
+                <option disabled>──────────</option>
+                <option value="ADMIN">Admins Only</option>
+                <option value="WARDEN">Wardens Only</option>
             </select>
         </div>
       </div>
@@ -219,7 +248,7 @@ const ManageUsers = () => {
           </thead>
           <tbody>
             {loading ? <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>Loading users...</td></tr> 
-            : filteredUsers.length === 0 ? <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>No users found.</td></tr>
+            : filteredUsers.length === 0 ? <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>No users found matching this filter.</td></tr>
             : filteredUsers.map(u => (
                 <tr key={u.id} style={s.tr} onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.background = 'white'}>
                     <td style={s.td}>
@@ -243,7 +272,7 @@ const ManageUsers = () => {
                     <td style={s.td}>
                         <div style={{display:'flex', justifyContent:'flex-end'}}>
                             {u.username !== 'admin' && u.role !== 'STUDENT' && (
-                                <button style={s.actionBtn} onClick={() => handleDelete(u.id)} title="Delete User">
+                                <button style={s.actionBtn} onClick={() => openDeleteModal(u.id)} title="Delete User">
                                     <Trash2 size={16}/>
                                 </button>
                             )}
@@ -299,6 +328,16 @@ const ManageUsers = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Remove User?"
+        message="Are you sure you want to remove this user? They will lose access to the system immediately."
+        confirmText="Remove User"
+        isDanger={true}
+      />
 
     </div>
   );

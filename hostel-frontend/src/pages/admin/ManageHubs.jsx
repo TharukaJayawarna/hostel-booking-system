@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
+import ConfirmModal from '../../components/ConfirmModal';
 import { 
   Building2, 
   Layers, 
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 const ManageHubs = () => {
+  const notify = useNotification();
   const [hubs, setHubs] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hubName, setHubName] = useState('');
@@ -20,6 +22,8 @@ const ManageHubs = () => {
   const [description, setDescription] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+const [hubToDelete, setHubToDelete] = useState(null);   
 
   // Check Role
   const user = JSON.parse(localStorage.getItem('user'));
@@ -33,7 +37,7 @@ const ManageHubs = () => {
       const res = await api.get('/hubs');
       if (res.data.status === 'SUCCESS') setHubs(res.data.data);
     } catch (e) { 
-      toast.error("Error loading hubs"); 
+      notify.error("Error loading hubs"); 
     } finally {
       setLoading(false);
     }
@@ -41,7 +45,7 @@ const ManageHubs = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if(!hubName.trim()) return toast.warning("Hub name is required");
+    if(!hubName.trim()) return notify.warning("Hub name is required");
     
     try {
       const formData = new FormData();
@@ -55,7 +59,7 @@ const ManageHubs = () => {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
-      toast.success("Hub Created Successfully!");
+      notify.success("Hub Created Successfully!");
       setHubName('');
       setDescription('');
       setImageFile(null); 
@@ -63,15 +67,31 @@ const ManageHubs = () => {
       fetchHubs();
     } catch (e) { 
       console.error(e);
-      toast.error("Failed to create hub"); 
+      notify.error("Failed to create hub"); 
     }
   };
 
-  const handleDelete = async (id) => {
-    if(!window.confirm("Are you sure you want to delete this Hub?")) return;
-    try { await api.delete(`/hubs/${id}`); toast.success("Hub Deleted"); fetchHubs(); } 
-    catch (e) { toast.error("Failed to delete"); }
-  };
+  // 1. Delete බොත්තම එබූ විට Modal එක විවෘත කිරීම
+const openDeleteModal = (id) => {
+    setHubToDelete(id);
+    setIsDeleteModalOpen(true);
+};
+
+// 2. Modal එකේ "Delete" එබූ විට ඇත්තටම Delete කිරීම
+const confirmDelete = async () => {
+    if (!hubToDelete) return;
+
+    try { 
+        await api.delete(`/hubs/${hubToDelete}`); 
+        notify.success("Hub Deleted Successfully");
+        fetchHubs(); 
+    } catch (e) { 
+        notify.error("Failed to delete hub"); 
+    } finally {
+        setIsDeleteModalOpen(false);
+        setHubToDelete(null);
+    }
+};
 
   const filteredHubs = hubs.filter(hub => 
     hub.hubNumber.toLowerCase().includes(searchTerm.toLowerCase())
@@ -173,7 +193,7 @@ const ManageHubs = () => {
               <th style={s.th}>Hub Name</th>
               <th style={s.th}>Floor Capacity</th>
               <th style={s.th}>Room Capacity</th>
-              <th style={{...s.th, textAlign: 'right'}}>Actions</th>
+              {!isWarden && <th style={{...s.th, textAlign: 'right'}}>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -204,7 +224,7 @@ const ManageHubs = () => {
                             <div style={{display:'flex', justifyContent:'flex-end'}}>
                                 <button 
                                     style={s.actionBtn} 
-                                    onClick={() => handleDelete(hub.id)}
+                                    onClick={() => openDeleteModal(hub.id)}
                                     title="Delete Hub"
                                     onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
                                     onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
@@ -249,8 +269,19 @@ const ManageHubs = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+    isOpen={isDeleteModalOpen}
+    onClose={() => setIsDeleteModalOpen(false)}
+    onConfirm={confirmDelete}
+    title="Delete Hub?"
+    message="Are you sure you want to delete this hub? This action cannot be undone and will remove all related floors and rooms."
+    confirmText="Delete Hub"
+    isDanger={true}
+/>
     </div>
   );
+  
 };
 
 export default ManageHubs;

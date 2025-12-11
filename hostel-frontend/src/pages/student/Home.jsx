@@ -100,7 +100,7 @@ const Home = () => {
     },
     
     // Hero
-    hero: { textAlign: 'center', marginBottom: '0px', maxWidth: '700px', padding: '0 20px' },
+    hero: { textAlign: 'center', maxWidth: '700px', padding: '0 20px' },
     badge: {
       display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', 
       borderRadius: '99px', backgroundColor: '#e0e7ff', color: '#4338ca',
@@ -111,7 +111,7 @@ const Home = () => {
 
     // Info Grid
     infoSection: {
-      width: '100%', maxWidth: '1200px', marginBottom: '1px',
+      width: '100%', maxWidth: '1200px', marginBottom: '0px',
       display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px', alignItems: 'start'
     },
     
@@ -152,7 +152,7 @@ const Home = () => {
     // Scroll Indicator
     actionIndicator: {
       textAlign: 'center', marginBottom: '40px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px',
       animation: 'fadeIn 1s ease-in-out'
     },
     actionText: { fontSize: '16px', fontWeight: '700', color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '1px' },

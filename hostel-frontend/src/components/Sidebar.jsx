@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom'; // 1. useNavigate import කරන්න
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -9,14 +9,13 @@ import {
   Bed, 
   Home,
   LogOut,
-  Settings,
-  ChevronRight,
+  Settings, // අලුතින් Settings icon එක import කළා
   Users 
 } from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
-  const navigate = useNavigate(); // 2. navigate hook එක initialize කරන්න
+  const navigate = useNavigate();
   
   const [user, setUser] = useState(null);
 
@@ -27,15 +26,10 @@ const Sidebar = () => {
     }
   }, []);
 
-  // --- 3. Logout Function එක ---
   const handleLogout = (e) => {
-    e.stopPropagation(); // Card එක click වෙන එක නවත්වන්න (userCard එකට click event එකක් තිබුනොත්)
-    
-    // User data ඉවත් කිරීම
+    e.stopPropagation();
     localStorage.removeItem('user');
     setUser(null);
-    
-    // Login පිටුවට යොමු කිරීම
     navigate('/login');
   };
 
@@ -73,28 +67,20 @@ const Sidebar = () => {
       boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)'
     },
     logoText: {
-      fontSize: '18px',
-      fontWeight: '800',
-      color: '#f9fafb',
-      letterSpacing: '0.5px',
-      lineHeight: '1.2'
+      fontSize: '18px', fontWeight: '800', color: '#f9fafb',
+      letterSpacing: '0.5px', lineHeight: '1.2'
     },
     logoSub: { fontSize: '11px', color: '#6b7280', fontWeight: '500' },
 
     navScroll: {
       flex: 1,
       overflowY: 'auto',
-      padding: '0 15px'
+      padding: '0 15px' // මේ Padding එක නිසා තමයි හැම link එකම කෙලින් තියෙන්නේ
     },
     sectionLabel: { 
-      fontSize: '11px', 
-      textTransform: 'uppercase', 
-      color: '#4b5563', 
-      fontWeight: '700', 
-      letterSpacing: '1px',
-      marginTop: '25px', 
-      marginBottom: '10px', 
-      paddingLeft: '12px' 
+      fontSize: '11px', textTransform: 'uppercase', color: '#4b5563', 
+      fontWeight: '700', letterSpacing: '1px', marginTop: '25px', 
+      marginBottom: '10px', paddingLeft: '12px' 
     },
     
     link: (active) => ({
@@ -113,9 +99,7 @@ const Sidebar = () => {
     activeIndicator: { width: '6px', height: '6px', borderRadius: '50%', background: 'white' },
 
     footer: {
-      padding: '20px',
-      borderTop: '1px solid #1f2937',
-      marginTop: 'auto'
+      padding: '20px', borderTop: '1px solid #1f2937', marginTop: 'auto'
     },
     userCard: {
       display: 'flex', alignItems: 'center', gap: '12px',
@@ -133,14 +117,9 @@ const Sidebar = () => {
     userName: { fontSize: '13px', fontWeight: '600', color: '#f3f4f6' },
     userRole: { fontSize: '11px', color: '#9ca3af' },
     
-    // Logout බොත්තම සඳහා විශේෂ style එකක්
     logoutBtn: {
-        marginLeft:'auto', 
-        color:'#ef4444', 
-        cursor: 'pointer',
-        padding: '5px',
-        borderRadius: '50%',
-        transition: 'background 0.2s'
+        marginLeft:'auto', color:'#ef4444', cursor: 'pointer',
+        padding: '5px', borderRadius: '50%', transition: 'background 0.2s'
     }
   };
 
@@ -194,19 +173,17 @@ const Sidebar = () => {
         <NavItem to="/admin/rooms" icon={DoorOpen} label="Rooms" />
         <NavItem to="/admin/beds" icon={Bed} label="Beds" />
 
-        {/* --- 2. ADMIN ONLY SECTION --- */}
+        {/* --- 3. ADMIN ONLY SECTION (Correctly Aligned) --- */}
         {user && user.role === 'ADMIN' && (
           <>
-            <div style={s.sectionLabel}>User Management</div>
+            <div style={s.sectionLabel}>Administration</div>
             <NavItem to="/admin/users" icon={Users} label="Manage Users" />
+            <NavItem to="/admin/settings" icon={Settings} label="System Settings" />
           </>
         )}
-
-        <div style={s.sectionLabel}>Settings</div>
-        <NavItem to="/admin/settings" icon={Settings} label="System Settings" />
       </div>
 
-      {/* 3. FOOTER (USER) */}
+      {/* 4. FOOTER */}
       <div style={s.footer}>
         <div 
             style={s.userCard}
@@ -221,7 +198,6 @@ const Sidebar = () => {
                 <span style={s.userRole}>{user ? user.role : 'Guest'}</span>
             </div>
             
-            {/* 4. Logout Button with onClick */}
             <div 
                 style={s.logoutBtn} 
                 onClick={handleLogout}

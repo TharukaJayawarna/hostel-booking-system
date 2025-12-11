@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 
 const PaymentSuccess = () => {
+  const notify = useNotification();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [reservationNumber, setReservationNumber] = useState('');
@@ -11,7 +12,7 @@ const PaymentSuccess = () => {
   useEffect(() => {
     const orderId = searchParams.get('order_id'); // PayHere returns order_id in query params
     if (!orderId) {
-      toast.error('Invalid payment confirmation.');
+      notify.error('Invalid payment confirmation.');
       setLoading(false);
       return;
     }
@@ -28,10 +29,10 @@ const PaymentSuccess = () => {
         const reservationNo = response.data.data?.reservationNumber;
         setReservationNumber(reservationNo);
 
-        toast.success('Payment successful! Reservation confirmed.');
+        notify.success('Payment successful! Reservation confirmed.');
       } catch (err) {
         console.error(err);
-        toast.error(err.response?.data?.message || 'Payment verification failed!');
+        notify.error(err.response?.data?.message || 'Payment verification failed!');
       } finally {
         setLoading(false);
       }

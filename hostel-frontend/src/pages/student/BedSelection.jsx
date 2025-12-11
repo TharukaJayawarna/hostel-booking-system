@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { 
   BedDouble, 
   CheckCircle2, 
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 const BedSelection = () => {
+  const notify = useNotification();
   const { roomId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,7 +23,7 @@ const BedSelection = () => {
 
   useEffect(() => {
     if (!checkIn || !checkOut) {
-      toast.error("Please select dates first.");
+      notify.error("Please select dates first.");
       navigate('/'); 
       return;
     }
@@ -38,7 +39,7 @@ const BedSelection = () => {
       }
     } catch (error) {
       console.error("Error fetching beds:", error);
-      toast.error("Failed to load beds.");
+      notify.error("Failed to load beds.");
     } finally {
       setLoading(false);
     }

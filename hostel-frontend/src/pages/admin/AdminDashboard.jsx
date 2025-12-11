@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { 
   Building2, 
   Layers, // Floors සඳහා අයිකනය
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 const AdminDashboard = () => {
+    const notify = useNotification();
   const [stats, setStats] = useState({
     totalHubs: 0,
     totalFloors: 0, // අලුතින් එකතු කරන ලදී
@@ -35,7 +36,6 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Floors දත්ත ලබා ගැනීමට API call එක එකතු කරන ලදී
       const [hubsRes, floorsRes, roomsRes, bedsRes, resRes] = await Promise.all([
         api.get('/hubs'),
         api.get('/floors'),
@@ -50,37 +50,63 @@ const AdminDashboard = () => {
       const beds = bedsRes.data.data || [];
       const reservations = resRes.data.data || [];
 
-      // ගණනය කිරීම් (Calculations)
+      // Occupancy Rate ගණනය කිරීම
       const bookedCount = beds.filter(bed => bed.isBooked).length;
       const totalBedCount = beds.length;
       const availableCount = totalBedCount - bookedCount;
-      
-      // Occupancy Rate
       const occupancy = totalBedCount > 0 ? ((bookedCount / totalBedCount) * 100).toFixed(1) : 0;
 
-      // Estimated Revenue
-      const revenue = bookedCount * 15000; 
+      // --- 1. Active Reservations ---
+      // දැනට ක්‍රියාත්මක (Ongoing) වන්නේ 'APPROVED' ඒවා පමණි.
+      const activeReservationsList = reservations.filter(r => r.status === 'APPROVED');
+
+      // --- 2. Revenue Calculation (No Refund Logic) ---
+      // මුදල් ආපසු නොගෙවන නිසා, පහත සඳහන් සියල්ල ආදායම් ලෙස ගණනය කෙරේ:
+      // 1. APPROVED (දැනට සිටින)
+      // 2. COMPLETED (කාලය අවසන් වූ)
+      // 3. CANCELLED (මුදල් ගෙවා අවලංගු කළ)
+      const revenueReservations = reservations.filter(r => 
+          ['APPROVED', 'COMPLETED', 'CANCELLED'].includes(r.status)
+      );
+
+      // කාර්යක්ෂමව දත්ත සොයා ගැනීමට Maps සාදා ගනිමු
+      const bedsMap = new Map(beds.map(b => [b.bedNumber, b]));
+      const roomsMap = new Map(rooms.map(r => [r.roomNumber, r]));
+
+      let totalRevenue = 0;
+      
+      revenueReservations.forEach(res => {
+          const bed = bedsMap.get(res.bedNumber);
+          if (bed) {
+              const room = roomsMap.get(bed.roomNumber);
+              // කාමරයේ මාසික ගාස්තුව ආදායමට එකතු කිරීම
+              if (room && room.monthlyPrice) {
+                  totalRevenue += room.monthlyPrice;
+              }
+          }
+      });
+
+      
 
       setStats({
         totalHubs: hubs.length,
-        totalFloors: floors.length, // Floors ගණන සකසන ලදී
+        totalFloors: floors.length,
         totalRooms: rooms.length,
         totalBeds: totalBedCount,
         availableBeds: availableCount,
         bookedBeds: bookedCount,
-        activeReservations: reservations.length,
+        activeReservations: activeReservationsList.length, // යාවත්කාලීන කළ Active ගණන (Only APPROVED)
         occupancyRate: occupancy,
-        estimatedRevenue: revenue
+        estimatedRevenue: totalRevenue // Cancel කළත් අඩු නොවන ආදායම
       });
 
     } catch (error) {
       console.error("Error loading dashboard:", error);
-      toast.error("Failed to load statistics.");
+      notify.error("Failed to load statistics.");
     } finally {
       setLoading(false);
     }
   };
-
   // --- STYLES ---
   const s = {
     container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px' },

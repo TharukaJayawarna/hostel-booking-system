@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
+import ConfirmModal from '../../components/ConfirmModal';
 import { DoorOpen, Trash2, Plus, Search, Users, Lock, Unlock, CalendarClock, Building, X, Pencil, MessageSquare, AlertCircle, Info, Filter } from 'lucide-react';
 
 const ManageRooms = () => {
+  const notify = useNotification();
   const [rooms, setRooms] = useState([]);
   const [floors, setFloors] = useState([]);
   const [hubs, setHubs] = useState([]);
@@ -16,6 +18,8 @@ const ManageRooms = () => {
   const [isEditMode, setIsEditMode] = useState(false); 
   const [editingRoomId, setEditingRoomId] = useState(null);
   const [hoveredComment, setHoveredComment] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [roomToDelete, setRoomToDelete] = useState(null);
 
   const [formData, setFormData] = useState({
     floorId: '', roomNumber: '', monthlyPrice: '',weeklyPrice: '',dailyPrice: '', isPrivate: false, 
@@ -35,7 +39,7 @@ const ManageRooms = () => {
       if(r.data.status === 'SUCCESS') setRooms(r.data.data);
       if(f.data.status === 'SUCCESS') setFloors(f.data.data);
       if(h.data.status === 'SUCCESS') setHubs(h.data.data); 
-    } catch (e) { toast.error("Failed to load data"); } 
+    } catch (e) { notify.error("Failed to load data"); } 
     finally { setLoading(false); }
   };
 
@@ -69,45 +73,58 @@ const ManageRooms = () => {
 
     // 1. මූලික Validation
     if (!formData.roomNumber || !formData.monthlyPrice) {
-        toast.warning("Room Number and Monthly Price are required");
+        notify.warning("Room Number and Monthly Price are required");
         return;
     }
 
     // 2. Reservation Period එක DEFAULT නම් පමණක් Weekly/Daily බලන්න
     if (formData.reservationPeriod === 'DEFAULT') {
         if (!formData.weeklyPrice || !formData.dailyPrice) {
-            toast.warning("Weekly and Daily prices are required for Default period");
+            notify.warning("Weekly and Daily prices are required for Default period");
             return;
         }
     }
 
     // 3. සෘණ අගයන් (Negative Values) පරීක්ෂා කිරීම (Backend යැවීමට පෙර)
     if (Number(formData.monthlyPrice) < 0 || Number(formData.weeklyPrice) < 0 || Number(formData.dailyPrice) < 0) {
-        toast.error("Prices cannot be negative!");
+        notify.error("Prices cannot be negative!");
         return;
     }
 
     try {
         if (isEditMode) {
             await api.put(`/rooms/${editingRoomId}`, formData);
-            toast.success("Room Updated Successfully!");
+            notify.success("Room Updated Successfully!");
         } else {
-            if (!formData.floorId) { toast.warning("Please select a floor"); return; }
+            if (!formData.floorId) { notify.warning("Please select a floor"); return; }
             await api.post(`/floors/${formData.floorId}/rooms`, formData);
-            toast.success("Room Added Successfully!");
+            notify.success("Room Added Successfully!");
         }
         setIsModalOpen(false);
         resetForm();
         fetchAll();
     } catch (e) {
-        toast.error(isEditMode ? "Failed to update room" : "Failed to add room");
+        notify.error(isEditMode ? "Failed to update room" : "Failed to add room");
     }
 };
 
-  const handleDelete = async (id) => {
-    if(!window.confirm("Are you sure you want to delete this Room?")) return;
-    try { await api.delete(`/rooms/${id}`); toast.success("Room Deleted"); fetchAll(); } 
-    catch (e) { toast.error("Failed to delete"); }
+  const openDeleteModal = (id) => {
+    setRoomToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!roomToDelete) return;
+    try { 
+        await api.delete(`/rooms/${roomToDelete}`); 
+        notify.success("Room Deleted Successfully"); 
+        fetchAll(); 
+    } catch (e) { 
+        notify.error("Failed to delete room"); 
+    } finally {
+        setIsDeleteModalOpen(false);
+        setRoomToDelete(null);
+    }
   };
 
   const handleMouseEnter = (e, text) => {
@@ -261,7 +278,7 @@ const ManageRooms = () => {
         <th style={s.th}>Access</th>
         {/* Price Columns 3ක් වෙනුවට එක Column එකක් */}
         <th style={s.th}>Pricing Structure (LKR)</th>
-        <th style={{...s.th, textAlign:'right'}}>Actions</th>
+        {!isWarden && <th style={{...s.th, textAlign:'right'}}>Actions</th>}
       </tr>
     </thead>
     <tbody>
@@ -340,7 +357,7 @@ const ManageRooms = () => {
             {!isWarden && (
                 <div style={{display:'flex', justifyContent:'flex-end', gap:'8px'}}>
                   <button onClick={() => handleEdit(r)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'white', color:'#2563eb', cursor:'pointer'}} title="Edit Room"><Pencil size={16}/></button>
-                  <button onClick={() => handleDelete(r.id)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}} title="Delete Room"><Trash2 size={16}/></button>
+                  <button onClick={() => openDeleteModal(r.id)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}} title="Delete Room"><Trash2 size={16}/></button>
                 </div>
             )}
           </td>
@@ -506,6 +523,16 @@ const ManageRooms = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Room?"
+        message="Are you sure you want to delete this room? This action cannot be undone."
+        confirmText="Delete Room"
+        isDanger={true}
+      />
     </div>
   );
 };

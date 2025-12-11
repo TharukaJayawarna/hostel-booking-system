@@ -7,4 +7,6 @@ import com.hostel.hostel_backend.model.User;
 public interface UserService {
     void registerUser(User user) throws AppException;
     User loginUser(String username, String password) throws ResourceNotFoundException, AppException;
+    void forgotPassword(String email);
+    void resetPassword(String email, String otp, String newPassword);
 }

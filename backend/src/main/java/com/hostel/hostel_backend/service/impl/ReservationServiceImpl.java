@@ -196,7 +196,10 @@ public class ReservationServiceImpl implements ReservationService {
     public void sendFailureEmail(Reservation res) {
         if (res.getUser() != null) {
             String title = "Reservation Failed ❌";
-            String message = "<p>Dear " + res.getStudentName() + ",</p><p>We regret to inform you that your payment was unsuccessful. Please try again.</p>";
+            String message = "<p>Dear " + res.getStudentName() + ",</p>" +
+                    "<p>Your payment for reservation <strong>#" + res.getReservationNumber() + "</strong> was unsuccessful.</p>" +
+                    "<p style='color: red;'>As a result, your booking has been cancelled.</p>" +
+                    "<p>Please try making the reservation again.</p>";
             notificationService.createNotification(res.getUser(), title, message);
         }
     }
@@ -235,11 +238,11 @@ public class ReservationServiceImpl implements ReservationService {
                         "  </tr>" +
                         "  <tr>" +
                         "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; color:#4b5563;'>Check-in</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + res.getFromDate().format(dateFormatter) + " <span style='color:#9ca3af; font-size:11px;'>(2:00 PM)</span></td>" +
+                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + res.getFromDate().format(dateFormatter) + " <span style='color:#9ca3af; font-size:11px;'>(5:00 am - 9.00 pm)</span></td>" +
                         "  </tr>" +
                         "  <tr>" +
                         "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; color:#4b5563;'>Check-out</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + res.getToDate().format(dateFormatter) + " <span style='color:#9ca3af; font-size:11px;'>(12:00 PM)</span></td>" +
+                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + res.getToDate().format(dateFormatter) + " <span style='color:#9ca3af; font-size:11px;'>(8.00 am - 12:30 PM)</span></td>" +
                         "  </tr>" +
                         "  <tr>" +
                         "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; color:#4b5563;'>Duration</td>" +
@@ -467,20 +470,43 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
 
+        // --- NEW VALIDATION: Payment Status Check ---
+        // Payment එකක් තිබිය යුතුයි සහ එය APPROVED විය යුතුයි.
+        if (reservation.getPayment() == null || reservation.getPayment().getPaymentStatus() != PaymentStatus.APPROVED) {
+            throw new AppException("Cannot assign new bed! Payment is not verified or approved.", HttpStatus.BAD_REQUEST);
+        }
+        // --------------------------------------------
+
         Bed newBed = bedRepository.findById(newBedId)
                 .orElseThrow(() -> new ResourceNotFoundException("New Bed not found with id "+newBedId));
 
+        // අලුත් Bed එක දැනටමත් Book වී ඇත්දැයි බැලීම (Optional safety check)
+        if (Boolean.TRUE.equals(newBed.getIsBooked())) {
+            throw new AppException("The selected new bed is already occupied!", HttpStatus.CONFLICT);
+        }
+
+        // පරණ Bed එකක් තිබුනා නම් එය නිදහස් කිරීම (Safety cleanup)
+        if (reservation.getBed() != null) {
+            Bed oldBed = reservation.getBed();
+            // Reservation එක REJECTED/CANCELLED වෙලා තිබුනා නම් Bed එක දැනටමත් free වෙලා ඇති,
+            // නමුත් තවම Link වී ඇත්නම් එය අයින් කරමු.
+            // (මෙය අවශ්‍ය වන්නේ පරණ bed එක තාම මේ reservation එකටම lock වී ඇත්නම් පමණි)
+            oldBed.setIsBooked(false);
+        }
+
+        // අලුත් Bed එක Book කිරීම
         newBed.setIsBooked(true);
         bedRepository.save(newBed);
 
+        // Reservation එකට අලුත් Bed එක set කිරීම සහ Status එක APPROVED කිරීම
         reservation.setBed(newBed);
         reservation.setReservationStatus(ReservationStatus.APPROVED);
         reservationRepository.save(reservation);
 
-        // SEND NOTIFICATION
+        // Notification යැවීම
         if (reservation.getUser() != null) {
             String title = "New Bed Assigned 🛏️";
-            String message = generateDetailedBillHtml(reservation, "Since your original bed was unavailable, we have assigned you a new bed.");
+            String message = generateDetailedBillHtml(reservation, "Since your original bed was unavailable due to late payment verification, we have assigned you a new matching bed.");
             notificationService.createNotification(reservation.getUser(), title, message);
         }
     }

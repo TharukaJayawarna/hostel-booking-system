@@ -55,6 +55,7 @@ com/hostel/hostel_backend/controller/request/CreateReservationRequestDTO.class
 com/hostel/hostel_backend/service/EmailProducer.class
 com/hostel/hostel_backend/repository/FloorRepository.class
 com/hostel/hostel_backend/model/Bed.class
+com/hostel/hostel_backend/repository/SystemSettingRepository.class
 com/hostel/hostel_backend/model/ReservationPeriod.class
 com/hostel/hostel_backend/controller/response/ApiResponse.class
 com/hostel/hostel_backend/controller/response/ReservationListResponseDTO.class
@@ -75,6 +76,7 @@ com/hostel/hostel_backend/service/PaymentService.class
 com/hostel/hostel_backend/model/Reservation.class
 com/hostel/hostel_backend/controller/response/BedsResponseDTO.class
 com/hostel/hostel_backend/repository/ReservationRepository.class
+com/hostel/hostel_backend/controller/SettingsController.class
 com/hostel/hostel_backend/controller/NotificationController.class
 com/hostel/hostel_backend/service/impl/RoomServiceImpl.class
 com/hostel/hostel_backend/service/RoomService.class
@@ -89,6 +91,7 @@ com/hostel/hostel_backend/service/NotificationService.class
 com/hostel/hostel_backend/controller/response/FloorResponseDTO.class
 com/hostel/hostel_backend/controller/request/AvailableBedDTO.class
 com/hostel/hostel_backend/repository/RoomRepository.class
+com/hostel/hostel_backend/model/SystemSetting.class
 com/hostel/hostel_backend/controller/response/RoomResponseDTO$RoomResponseDTOBuilder.class
 com/hostel/hostel_backend/model/Hub.class
 com/hostel/hostel_backend/controller/BedController.class

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { User, Mail, Phone, Lock, Type, ArrowRight, Loader2, CheckCircle, Wifi, ShieldCheck, Coffee } from 'lucide-react';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const notify = useNotification();
   const [loading, setLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
 
@@ -29,10 +30,10 @@ const Signup = () => {
 
     try {
       await api.post('/auth/register', formData);
-      toast.success("Registration Successful! Please login.");
+      notify.success("Registration Successful! Please login.");
       navigate('/login');
     } catch (error) {
-      toast.error(error.response?.data?.message || "Registration failed.");
+      notify.error(error.response?.data?.message || "Registration failed.");
     } finally {
       setLoading(false);
     }

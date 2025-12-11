@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // 1. useEffect import kala
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   User, 
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 const IssueForm = () => {
+  const notify = useNotification();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,7 +26,7 @@ const IssueForm = () => {
     studentId: '',
     studentEmail: '',
     studentPhone: '',
-    duration: '',
+    duration: '1 Month', // Default value set kala
     checkinDate: '',
     checkoutDate: '',
     bank: '',
@@ -33,6 +34,24 @@ const IssueForm = () => {
     cardLastFour: '',
     comment: ''
   });
+
+  // --- 2. NEW: USER DATA AUTO FILL LOGIC ---
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            setFormData(prev => ({
+                ...prev,
+                studentName: (user.firstName || '') + ' ' + (user.lastName || ''),
+                studentEmail: user.email || '',
+                studentPhone: user.phone || ''
+            }));
+        } catch (e) {
+            console.error("Error parsing user data", e);
+        }
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,17 +62,16 @@ const IssueForm = () => {
     setLoading(true);
     try {
       await api.post('/issues', formData);
-      toast.success("Issue reported successfully! Admin will contact you.");
+      notify.success("Issue reported successfully! Admin will contact you.");
       navigate('/');
     } catch (error) {
-      toast.error("Failed to submit issue. Please try again.");
+      notify.error("Failed to submit issue. Please try again.");
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- STYLES ---
   const s = {
     pageContainer: {
       minHeight: '100vh',
@@ -64,12 +82,7 @@ const IssueForm = () => {
       justifyContent: 'center',
       alignItems: 'flex-start'
     },
-    innerWrapper: {
-      maxWidth: '850px',
-      width: '100%'
-    },
-    
-    // Header
+    innerWrapper: { maxWidth: '850px', width: '100%' },
     header: { marginBottom: '5px', textAlign: 'center', position: 'relative' },
     backBtn: {
       position: 'absolute', left: 0, top: '10px',
@@ -82,29 +95,17 @@ const IssueForm = () => {
     titleBox: { display: 'inline-block' },
     title: { fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px', letterSpacing: '-0.5px' },
     subTitle: { fontSize: '15px', color: '#64748b' },
-
-    // Card
     card: {
-      backgroundColor: 'white',
-      borderRadius: '24px',
-      padding: '40px 50px',
-      boxShadow: '0 10px 30px -5px rgba(0,0,0,0.05)',
-      border: '1px solid #e2e8f0'
+      backgroundColor: 'white', borderRadius: '24px', padding: '40px 50px',
+      boxShadow: '0 10px 30px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0'
     },
-
-    // Sections
     sectionTitle: {
       fontSize: '16px', fontWeight: '700', color: '#0f172a',
       marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px',
       paddingBottom: '10px', borderBottom: '1px solid #f1f5f9'
     },
     sectionIcon: { color: '#4f46e5' },
-
-    // Form Grid
     grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '30px' },
-    fullWidth: { gridColumn: '1 / -1' },
-
-    // Inputs
     inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
     label: { fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' },
     inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
@@ -112,23 +113,21 @@ const IssueForm = () => {
     input: {
       width: '100%', padding: '12px 16px 12px 45px', borderRadius: '12px',
       border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
-      outline: 'none', transition: 'all 0.2s', backgroundColor: '#d9dde2ff',
+      outline: 'none', transition: 'all 0.2s', backgroundColor: '#f8fafc', // Changed slightly for read-only feel if needed
       boxSizing: 'border-box'
     },
     select: {
       width: '100%', padding: '12px 16px 12px 16px', borderRadius: '12px',
       border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
-      outline: 'none', backgroundColor: '#d9dde2ff', cursor: 'pointer',
+      outline: 'none', backgroundColor: '#f8fafc', cursor: 'pointer',
       boxSizing: 'border-box'
     },
     textarea: {
       width: '100%', padding: '16px', borderRadius: '12px',
       border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
-      outline: 'none', backgroundColor: '#d9dde2ff', minHeight: '120px',
+      outline: 'none', backgroundColor: '#f8fafc', minHeight: '120px',
       resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box'
     },
-
-    // Buttons
     btnContainer: { display: 'flex', justifyContent: 'flex-end', gap: '15px', marginTop: '10px' },
     submitBtn: {
       padding: '14px 32px', background: '#4f46e5', color: 'white',
@@ -146,17 +145,8 @@ const IssueForm = () => {
   return (
     <div style={s.pageContainer}>
       <div style={s.innerWrapper}>
-        
-        {/* Header */}
         <div style={s.header}>
-          <button 
-            style={s.backBtn} 
-            onClick={() => navigate('/')}
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-          >
-            <ArrowLeft size={16}/> Back Home
-          </button>
+          <button style={s.backBtn} onClick={() => navigate('/')} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}><ArrowLeft size={16}/> Back Home</button>
           <div style={s.titleBox}>
             <h1 style={s.title}>Report an Issue</h1>
             <p style={s.subTitle}>Facing a problem? Let us know and we'll fix it.</p>
@@ -164,7 +154,6 @@ const IssueForm = () => {
         </div>
         
         <form onSubmit={handleSubmit} style={s.card}>
-          
           {/* 1. Student Info */}
           <div style={s.sectionTitle}><User size={20} style={s.sectionIcon}/> Student Information</div>
           <div style={s.grid}>
@@ -172,48 +161,29 @@ const IssueForm = () => {
               <label style={s.label}>Full Name</label>
               <div style={s.inputWrapper}>
                 <User size={18} style={s.inputIcon}/>
-                <input 
-                    name="studentName" required onChange={handleChange} 
-                    style={s.input} placeholder="Kamal Perera"
-                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                />
+                {/* 3. Added value={formData.xxx} to all inputs */}
+                <input name="studentName" required value={formData.studentName} onChange={handleChange} style={s.input} placeholder="Kamal Perera" />
               </div>
             </div>
             <div style={s.inputGroup}>
               <label style={s.label}>Student ID / Reg No</label>
               <div style={s.inputWrapper}>
                 <Hash size={18} style={s.inputIcon}/>
-                <input 
-                    name="studentId" required onChange={handleChange} 
-                    style={s.input} placeholder="IT20001234"
-                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                />
+                <input name="studentId" required value={formData.studentId} onChange={handleChange} style={s.input} placeholder="IT20001234" />
               </div>
             </div>
             <div style={s.inputGroup}>
               <label style={s.label}>Email Address</label>
               <div style={s.inputWrapper}>
                 <Mail size={18} style={s.inputIcon}/>
-                <input 
-                    type="email" name="studentEmail" required onChange={handleChange} 
-                    style={s.input} placeholder="student@university.edu"
-                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                />
+                <input type="email" name="studentEmail" required value={formData.studentEmail} onChange={handleChange} style={s.input} placeholder="student@university.edu" />
               </div>
             </div>
             <div style={s.inputGroup}>
               <label style={s.label}>Phone Number</label>
               <div style={s.inputWrapper}>
                 <Phone size={18} style={s.inputIcon}/>
-                <input 
-                    name="studentPhone" required onChange={handleChange} 
-                    style={s.input} placeholder="077xxxxxxx"
-                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                />
+                <input name="studentPhone" required value={formData.studentPhone} onChange={handleChange} style={s.input} placeholder="077xxxxxxx" />
               </div>
             </div>
           </div>
@@ -225,27 +195,26 @@ const IssueForm = () => {
               <label style={s.label}>Check-in Date</label>
               <div style={s.inputWrapper}>
                 <Calendar size={18} style={s.inputIcon}/>
-                <input type="date" name="checkinDate" style={s.input} onChange={handleChange} />
+                <input type="date" name="checkinDate" value={formData.checkinDate} style={s.input} onChange={handleChange} />
               </div>
             </div>
             <div style={s.inputGroup}>
               <label style={s.label}>Check-out Date</label>
               <div style={s.inputWrapper}>
                 <Calendar size={18} style={s.inputIcon}/>
-                <input type="date" name="checkoutDate" style={s.input} onChange={handleChange} />
+                <input type="date" name="checkoutDate" value={formData.checkoutDate} style={s.input} onChange={handleChange} />
               </div>
             </div>
             
             <div style={s.inputGroup}>
               <label style={s.label}>Duration</label>
-              <select name="duration" style={s.select} onChange={handleChange}>
+              <select name="duration" value={formData.duration} style={s.select} onChange={handleChange}>
                 <option value="1 Month">1 Month</option>
                 <option value="2 Months">2 Months</option>
-                <option value="3 Months"> 3 Months</option>
+                <option value="3 Months">3 Months</option>
                 <option value="Less than 1 Month">Less than 1 Month</option>
                 <option value="Less than 2 Months">Less than 2 Months</option>
                 <option value="Less than 3 Month">Less than 3 Months</option>
-                
               </select>
             </div>
 
@@ -253,7 +222,7 @@ const IssueForm = () => {
               <label style={s.label}>Bank / Payment Method</label>
               <div style={s.inputWrapper}>
                 <Building2 size={18} style={s.inputIcon}/>
-                <input name="bank" style={s.input} onChange={handleChange} placeholder="e.g. PayHere, BOC" />
+                <input name="bank" value={formData.bank} style={s.input} onChange={handleChange} placeholder="e.g. PayHere, BOC" />
               </div>
             </div>
 
@@ -261,7 +230,7 @@ const IssueForm = () => {
               <label style={s.label}>Payment Date</label>
               <div style={s.inputWrapper}>
                 <Calendar size={18} style={s.inputIcon}/>
-                <input type="date" name="paymentDoneDate" style={s.input} onChange={handleChange} />
+                <input type="date" name="paymentDoneDate" value={formData.paymentDoneDate} style={s.input} onChange={handleChange} />
               </div>
             </div>
 
@@ -269,13 +238,7 @@ const IssueForm = () => {
               <label style={s.label}>Last 4 Digits (Reference)</label>
               <div style={s.inputWrapper}>
                 <CreditCard size={18} style={s.inputIcon}/>
-                <input 
-                    name="cardLastFour" 
-                    style={{...s.input, fontFamily: 'monospace', letterSpacing: '1px'}} 
-                    onChange={handleChange} 
-                    placeholder="XXXX" 
-                    maxLength={4}
-                />
+                <input name="cardLastFour" value={formData.cardLastFour} style={{...s.input, fontFamily: 'monospace', letterSpacing: '1px'}} onChange={handleChange} placeholder="XXXX" maxLength={4} />
               </div>
             </div>
           </div>
@@ -285,30 +248,13 @@ const IssueForm = () => {
           <div style={{marginBottom:'30px'}}>
             <div style={s.inputGroup}>
               <label style={s.label}>Detailed Description</label>
-              <textarea 
-                required 
-                name="comment" 
-                style={s.textarea} 
-                onChange={handleChange} 
-                placeholder="Please explain the issue clearly. Include error messages or reservation numbers if applicable." 
-                onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-              />
+              <textarea required name="comment" value={formData.comment} style={s.textarea} onChange={handleChange} placeholder="Please explain the issue clearly..." />
             </div>
           </div>
 
-          {/* Buttons */}
           <div style={s.btnContainer}>
-            <button type="button" style={s.cancelBtn} onClick={() => navigate('/')}>
-                Cancel
-            </button>
-            <button 
-              type="submit" 
-              style={{...s.submitBtn, opacity: loading ? 0.7 : 1}} 
-              disabled={loading}
-              onMouseEnter={e => !loading && (e.currentTarget.style.transform = 'translateY(-2px)')}
-              onMouseLeave={e => !loading && (e.currentTarget.style.transform = 'translateY(0)')}
-            >
+            <button type="button" style={s.cancelBtn} onClick={() => navigate('/')}>Cancel</button>
+            <button type="submit" style={{...s.submitBtn, opacity: loading ? 0.7 : 1}} disabled={loading}>
               {loading ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>}
               {loading ? "Sending..." : "Submit Ticket"}
             </button>

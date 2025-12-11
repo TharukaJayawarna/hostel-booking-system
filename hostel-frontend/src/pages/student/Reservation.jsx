@@ -1,13 +1,14 @@
 import React, { use, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api/axiosConfig';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../context/NotificationContext';
 import { 
   User, Mail, Phone, MapPin, CreditCard, Calendar, 
   BedDouble, ShieldCheck, ArrowLeft, Loader2, Building2, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 
 const Reservation = () => {
+  const notify = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -42,7 +43,7 @@ const Reservation = () => {
 
   useEffect(() => {
     if (!bedId || !checkIn || !checkOut) {
-      toast.error("Invalid booking details.");
+      notify.error("Invalid booking details.");
       navigate('/');
       return;
     }
@@ -62,7 +63,7 @@ const Reservation = () => {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Error calculating price.");
+      notify.error("Error calculating price.");
     } finally {
       setPriceLoading(false);
     }
@@ -81,12 +82,12 @@ const Reservation = () => {
         // reservedFor values: "BOYS" or "GIRLS"
 
         if (reservedFor === 'BOYS' && studentGender === 'FEMALE') {
-            toast.error("Gender Mismatch! This room is reserved for BOYS only.");
+            notify.error("Gender Mismatch! This room is reserved for BOYS only.");
             return; // Stop execution
         }
         
         if (reservedFor === 'GIRLS' && studentGender === 'MALE') {
-            toast.error("Gender Mismatch! This room is reserved for GIRLS only.");
+            notify.error("Gender Mismatch! This room is reserved for GIRLS only.");
             return; // Stop execution
         }
     }
@@ -109,14 +110,14 @@ const Reservation = () => {
         openPayHerePopup(response.data.data);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Payment initiation failed.");
+      notify.error(error.response?.data?.message || "Payment initiation failed.");
       setLoading(false);
     }
   };
 
   const openPayHerePopup = (data) => {
     if (!window.payhere) {
-      toast.error("PayHere SDK not loaded!");
+      notify.error("PayHere SDK not loaded!");
       setLoading(false);
       return;
     }
@@ -152,17 +153,17 @@ const Reservation = () => {
         const status = res.data.data.paymentStatus; // හෝ res.data.data.status
 
         if (status === 'APPROVED') {
-            toast.success("Payment Verified & Booking Confirmed!");
+            notify.success("Payment Verified & Booking Confirmed!");
             navigate('/booking-success', { state: { ...formData, orderId, bedNumber, roomNumber, checkIn, checkOut, amount: totalAmount } });
         } else {
             // Status එක APPROVED නොවේ නම් (උදා: REJECTED හෝ තාම PENDING)
-            toast.warn("Payment verification incomplete. Please check your email.");
+            notify.warn("Payment verification incomplete.");
             // අවශ්‍ය නම් navigate නොකර සිටිය හැක, නැතහොත් Warning එකක් සමග යැවිය හැක.
             // දැනට අපි navigate නොකර සිටිමු.
         }
       } catch (error) {
         console.error(error);
-        toast.error("Failed to verify payment status.");
+        notify.error("Failed to verify payment status.");
       } finally {
         setLoading(false);
       }
@@ -170,12 +171,12 @@ const Reservation = () => {
 
     window.payhere.onDismissed = function onDismissed() {
       setLoading(false);
-      toast.warn("Payment Cancelled.");
+      notify.warn("Payment Cancelled.");
     };
 
     window.payhere.onError = function onError(error) {
       setLoading(false);
-      toast.error("Payment Error: " + error);
+      notify.error("Payment Error: " + error);
     };
 
     window.payhere.startPayment(paymentObject);
