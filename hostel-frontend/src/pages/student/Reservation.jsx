@@ -1,69 +1,91 @@
-import React, { use, useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../../api/axiosConfig';
-import { useNotification } from '../../context/NotificationContext';
-import { 
-  User, Mail, Phone, MapPin, CreditCard, Calendar, 
-  BedDouble, ShieldCheck, ArrowLeft, Loader2, Building2, CheckCircle2, AlertTriangle
-} from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useNotification } from "../../context/NotificationContext";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  CreditCard,
+  Calendar,
+  BedDouble,
+  ShieldCheck,
+  ArrowLeft,
+  Loader2,
+  Building2,
+  CheckCircle2,
+  AlertTriangle,
+} from "lucide-react";
+import "./styles/Reservation.css";
+
+// Services
+import reservationService from "../../services/reservation.service";
+import paymentService from "../../services/payment.service";
+import authService from "../../services/auth.service";
 
 const Reservation = () => {
   const notify = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
-  
-  // 1. මෙතන reservedFor (Room Gender) එක ලබා ගන්නවා
-  const { bedId, bedNumber, roomNumber, checkIn, checkOut, reservedFor } = location.state || {};
+
+  const { bedId, bedNumber, roomNumber, checkIn, checkOut, reservedFor } =
+    location.state || {};
 
   const [formData, setFormData] = useState({
-    studentName: '',
-    registrationNumber: '',
-    email: '',
-    contactNumber: '',
-    address: '',
-    gender: 'MALE'
+    studentName: "",
+    registrationNumber: "",
+    email: "",
+    contactNumber: "",
+    address: "",
+    gender: "MALE",
   });
 
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [priceLoading, setPriceLoading] = useState(true);
 
+  // Auto-fill user data
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setFormData(prev => ({
+    const user = authService.getCurrentUser();
+    if (user) {
+      setFormData((prev) => ({
         ...prev,
-        studentName: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        contactNumber: user.contactNumber || user.phone || '' 
+        studentName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+        email: user.email || "",
+        contactNumber: user.contactNumber || user.phone || "",
       }));
     }
   }, []);
 
+  // Fetch Price
   useEffect(() => {
     if (!bedId || !checkIn || !checkOut) {
-      notify.error("Invalid booking details.");
-      navigate('/');
+      notify.error("Session expired. Please restart booking.");
+      navigate("/");
       return;
     }
     fetchPrice();
-  }, [bedId, checkIn, checkOut]);
+  }, [bedId, checkIn, checkOut, navigate, notify]);
 
   const fetchPrice = async () => {
     setPriceLoading(true);
     try {
-      const response = await api.get(`/reservations/calculate`, {
-        params: { bedId, fromDate: checkIn, toDate: checkOut },
-        headers: { 'X-Api-Version': 'v1' }
+      const response = await reservationService.calculatePrice({
+        bedId,
+        fromDate: checkIn,
+        toDate: checkOut,
       });
 
       if (response.status === 200) {
-        setTotalAmount(typeof response.data === 'number' ? response.data : (response.data.data || 0));
+        setTotalAmount(
+          typeof response.data === "number"
+            ? response.data
+            : response.data.data || 0
+        );
       }
     } catch (error) {
       console.error(error);
-      notify.error("Error calculating price.");
+      notify.error("Error calculating price. Please try again.");
     } finally {
       setPriceLoading(false);
     }
@@ -76,35 +98,44 @@ const Reservation = () => {
   const handlePayment = async (e) => {
     e.preventDefault();
 
-    // --- GENDER VALIDATION LOGIC START ---
-    if (reservedFor) {
-        const studentGender = formData.gender; // "MALE" or "FEMALE"
-        // reservedFor values: "BOYS" or "GIRLS"
-
-        if (reservedFor === 'BOYS' && studentGender === 'FEMALE') {
-            notify.error("Gender Mismatch! This room is reserved for BOYS only.");
-            return; // Stop execution
-        }
-        
-        if (reservedFor === 'GIRLS' && studentGender === 'MALE') {
-            notify.error("Gender Mismatch! This room is reserved for GIRLS only.");
-            return; // Stop execution
-        }
+    // 1. Validate Form Data
+    if (
+      !formData.studentName.trim() ||
+      !formData.registrationNumber.trim() ||
+      !formData.email.trim() ||
+      !formData.contactNumber.trim() ||
+      !formData.address.trim()
+    ) {
+      notify.warning("Please fill in all required fields.");
+      return;
     }
-    // --- GENDER VALIDATION LOGIC END ---
+
+    // 2. Validate Gender Restriction
+    if (reservedFor) {
+      const studentGender = formData.gender;
+      if (reservedFor === "BOYS" && studentGender === "FEMALE") {
+        notify.error("Gender Mismatch! This room is reserved for BOYS only.");
+        return;
+      }
+      if (reservedFor === "GIRLS" && studentGender === "MALE") {
+        notify.error("Gender Mismatch! This room is reserved for GIRLS only.");
+        return;
+      }
+    }
 
     setLoading(true);
 
     const bookingPayload = {
       ...formData,
-      bedId, fromDate: checkIn, toDate: checkOut,
-      amount: Number(totalAmount)
+      bedId,
+      fromDate: checkIn,
+      toDate: checkOut,
+      amount: Number(totalAmount),
     };
 
     try {
-      const response = await api.post('/reservations/initiate', bookingPayload, {
-        headers: { 'X-Api-Version': 'v1' }
-      });
+      // 3. Initiate Reservation
+      const response = await reservationService.initiateReservation(bookingPayload);
 
       if (response.status === 200) {
         openPayHerePopup(response.data.data);
@@ -117,53 +148,67 @@ const Reservation = () => {
 
   const openPayHerePopup = (data) => {
     if (!window.payhere) {
-      notify.error("PayHere SDK not loaded!");
+      notify.error("PayHere SDK not loaded! Check internet connection.");
       setLoading(false);
       return;
     }
 
+    const appUrl = import.meta.env.VITE_APP_BASE_URL;
+    const notifyUrl = import.meta.env.VITE_PAYHERE_NOTIFY_URL;
+    // Check for 'true' string explicitly for env variable
+    const isSandbox = import.meta.env.VITE_PAYHERE_IS_SANDBOX === 'true'; 
+
     const paymentObject = {
-      "sandbox": true,
-      "merchant_id": data.merchantId,
-      "return_url": "http://localhost:5173/payment-success",
-      "cancel_url": "http://localhost:5173/payment-cancel",
-      "notify_url": "https://ursula-brainy-jessi.ngrok-free.dev/payments/notify", 
-      "order_id": data.orderId,
-      "items": data.items,
-      "amount": data.amount.toFixed(2), 
-      "currency": data.currency,
-      "hash": data.hash,
-      "first_name": data.firstName,
-      "last_name": data.lastName,
-      "email": data.email,
-      "contactNumber": data.contactNumber,
-      "address": data.address,
-      "city": data.city,
-      "country": data.country
+      sandbox: isSandbox,
+      merchant_id: data.merchantId,
+      return_url: `${appUrl}/payment-success`,
+      cancel_url: `${appUrl}/payment-cancel`,
+      notify_url: notifyUrl,
+      order_id: data.orderId,
+      items: data.items,
+      amount: data.amount.toFixed(2),
+      currency: data.currency,
+      hash: data.hash,
+      first_name: data.firstName,
+      last_name: data.lastName,
+      email: data.email,
+      phone: data.contactNumber,
+      address: data.address,
+      city: data.city,
+      country: data.country,
     };
 
     window.payhere.onCompleted = async function onCompleted(orderId) {
-      setLoading(true); // Loading එක දාන්න
+      setLoading(true);
       try {
-        // තත්පර 2ක් පමණ රැඳී සිටින්න (PayHere Notify request එක Backend එකට ලැබෙන තෙක්)
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Wait slightly for webhook processing (optional but safer)
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // Backend එකෙන් Status එක පරීක්ෂා කරන්න
-        const res = await api.get(`/payments/verify/${orderId}`);
-        const status = res.data.data.paymentStatus; // හෝ res.data.data.status
+        // Verify Payment
+        const res = await paymentService.verifyPayment(orderId);
+        const status = res.data.data.paymentStatus;
 
-        if (status === 'APPROVED') {
-            notify.success("Payment Verified & Booking Confirmed!");
-            navigate('/booking-success', { state: { ...formData, orderId, bedNumber, roomNumber, checkIn, checkOut, amount: totalAmount } });
+        if (status === "APPROVED") {
+          notify.success("Payment Verified & Booking Confirmed!");
+          navigate("/booking-success", {
+            state: {
+              ...formData,
+              orderId,
+              bedNumber,
+              roomNumber,
+              checkIn,
+              checkOut,
+              amount: totalAmount,
+            },
+          });
         } else {
-            // Status එක APPROVED නොවේ නම් (උදා: REJECTED හෝ තාම PENDING)
-            notify.warn("Payment verification incomplete.");
-            // අවශ්‍ය නම් navigate නොකර සිටිය හැක, නැතහොත් Warning එකක් සමග යැවිය හැක.
-            // දැනට අපි navigate නොකර සිටිමු.
+          notify.warn("Payment verification pending. Please check status later.");
+          navigate("/payment-success?order_id=" + orderId); // Fallback page
         }
       } catch (error) {
         console.error(error);
         notify.error("Failed to verify payment status.");
+        navigate("/payment-success?order_id=" + orderId);
       } finally {
         setLoading(false);
       }
@@ -171,256 +216,129 @@ const Reservation = () => {
 
     window.payhere.onDismissed = function onDismissed() {
       setLoading(false);
-      notify.warn("Payment Cancelled.");
+      notify.info("Payment Cancelled by user.");
     };
 
     window.payhere.onError = function onError(error) {
       setLoading(false);
-      notify.error("Payment Error: " + error);
+      console.error("PayHere Error:", error);
+      notify.error("Payment Gateway Error. Please try again.");
     };
 
     window.payhere.startPayment(paymentObject);
   };
 
-  // --- STYLES ---
-  const s = {
-    // Main Layout (Full Screen, No Scroll)
-    container: {
-      height: '100vh',
-      width: '100vw',
-      display: 'flex',
-      backgroundColor: '#f3f4f6',
-      overflow: 'hidden', // Prevents page scrolling
-      fontFamily: "'Inter', sans-serif"
-    },
-    
-    // Left Side (Form)
-    leftPanel: {
-      flex: '1.2',
-      padding: '40px 60px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      backgroundColor: '#ffffff',
-      boxShadow: '4px 0 24px rgba(0,0,0,0.05)',
-      zIndex: 10,
-      overflowY: 'auto' // Only form scrolls if screen is very small
-    },
-    header: { marginBottom: '30px' },
-    backBtn: {
-      display: 'inline-flex', alignItems: 'center', gap: '8px',
-      background: 'transparent', border: 'none',
-      color: '#64748b', fontSize: '14px', fontWeight: '600',
-      cursor: 'pointer', marginBottom: '15px',
-      transition: 'color 0.2s',
-      ':hover': { color: '#1e293b' }
-    },
-    title: { fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '5px', letterSpacing: '-0.5px' },
-    subTitle: { fontSize: '15px', color: '#64748b' },
-
-    // Form
-    formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
-    inputGroup: { marginBottom: '15px' },
-    label: { display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', marginBottom: '6px' },
-    inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
-    inputIcon: { position: 'absolute', left: '16px', color: '#94a3b8' },
-    input: {
-      width: '100%', padding: '14px 16px 14px 45px', borderRadius: '12px',
-      border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
-      outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s',
-      backgroundColor: '#f8fafc', boxSizing: 'border-box'
-    },
-    select: {
-      width: '100%', padding: '14px 16px', borderRadius: '12px',
-      border: '1px solid #e2e8f0', fontSize: '14px', color: '#1e293b',
-      outline: 'none', backgroundColor: '#f8fafc', cursor: 'pointer',
-      boxSizing: 'border-box'
-    },
-
-    // Right Side (Summary Card)
-    rightPanel: {
-      flex: '0.8',
-      background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', // Dark Indigo Gradient
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '40px',
-      position: 'relative',
-      overflow: 'hidden'
-    },
-    // Background Decoration
-    bgCircle1: { position: 'absolute', top: '-10%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', zIndex: 0 },
-    bgCircle2: { position: 'absolute', bottom: '-10%', left: '-10%', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)', zIndex: 0 },
-
-    ticketCard: {
-      width: '100%', maxWidth: '420px',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)', // Glass Effect
-      backdropFilter: 'blur(20px)',
-      borderRadius: '24px',
-      padding: '35px',
-      color: 'white',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      zIndex: 1,
-      position: 'relative'
-    },
-    ticketHeader: { borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '20px', marginBottom: '20px' },
-    ticketTitle: { fontSize: '18px', fontWeight: '700', letterSpacing: '0.5px', marginBottom: '5px' },
-    ticketSub: { fontSize: '13px', opacity: 0.7 },
-
-    // Room Details in Ticket
-    roomBox: { 
-      background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '15px', 
-      display: 'flex', justifyContent: 'space-between', marginBottom: '25px',
-      border: '1px solid rgba(255,255,255,0.05)'
-    },
-    roomItem: { display: 'flex', flexDirection: 'column', gap: '4px' },
-    roomLabel: { fontSize: '11px', textTransform: 'uppercase', opacity: 0.6, fontWeight: '700' },
-    roomValue: { fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' },
-
-    // Date Lines
-    dateLine: { display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '12px', opacity: 0.9 },
-    
-    // Total
-    totalSection: {
-      marginTop: '30px', paddingTop: '20px', borderTop: '1px dashed rgba(255,255,255,0.3)',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-    },
-    totalLabel: { fontSize: '15px', fontWeight: '600', opacity: 0.9 },
-    totalValue: { fontSize: '28px', fontWeight: '800', color: '#4ade80' }, // Green text for price
-
-    payBtn: {
-      width: '100%', padding: '16px', marginTop: '25px',
-      background: 'white', color: '#1e1b4b', border: 'none', borderRadius: '14px',
-      fontSize: '16px', fontWeight: '800', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-      boxShadow: '0 4px 15px rgba(0,0,0,0.2)', transition: 'transform 0.2s'
-    },
-    footerNote: { textAlign: 'center', fontSize: '11px', opacity: 0.5, marginTop: '15px', display: 'flex', justifyContent: 'center', gap: '5px' }
-  };
-
   return (
-    <div style={s.container}>
-      
+    <div className="reservation-container">
       {/* --- Left Side: Input Form --- */}
-      <div style={s.leftPanel}>
-        <div style={s.header}>
-          <button style={s.backBtn} onClick={() => navigate(-1)}>
-            <ArrowLeft size={18}/> Back to Beds
+      <div className="res-left-panel">
+        <div className="res-header">
+          <button className="res-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={18} /> Back
           </button>
-          <h1 style={s.title}>Student Details</h1>
-          <p style={s.subTitle}>Please complete your registration to secure your spot.</p>
+          <h1 className="res-title">Student Details</h1>
+          <p className="res-subtitle">Please complete your registration to secure your spot.</p>
         </div>
 
-        {/* 2. Warning message if Gender doesn't match room type (Visual Cue) */}
         {reservedFor && (
-            <div style={{marginBottom:'20px', padding:'10px 15px', background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:'10px', color:'#b45309', fontSize:'13px', display:'flex', alignItems:'center', gap:'8px'}}>
-                <AlertTriangle size={16}/>
-                This room is reserved for <strong>{reservedFor}</strong> students only.
-            </div>
+          <div className={`res-warning-box ${reservedFor === "BOYS" ? "info-blue" : "info-pink"}`}>
+            <AlertTriangle size={16} />
+            This room is reserved for <strong>{reservedFor}</strong> students only.
+          </div>
         )}
 
         <form onSubmit={handlePayment}>
-          <div style={s.formGrid}>
-            <div style={s.inputGroup}>
-              <label style={s.label}>Full Name</label>
-              <div style={s.inputWrapper}>
-                <User size={18} style={s.inputIcon}/>
-                <input 
-                    name="studentName" 
-                    required 
-                    onChange={handleInputChange} 
-                    style={s.input} 
-                    placeholder="John Doe" 
-                    // වැදගත්: value එක මෙතනට දාන්න
-                    value={formData.studentName} 
-                    onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+          <div className="res-form-grid">
+            <div className="res-input-group">
+              <label className="res-label">Full Name <span style={{color:'red'}}>*</span></label>
+              <div className="res-input-wrapper">
+                <User size={18} className="res-input-icon" />
+                <input
+                  name="studentName"
+                  required
+                  onChange={handleInputChange}
+                  className="res-input"
+                  placeholder="John Doe"
+                  value={formData.studentName}
+                  disabled={loading}
                 />
               </div>
             </div>
-            <div style={s.inputGroup}>
-              <label style={s.label}>Student ID</label>
-              <div style={s.inputWrapper}>
-                <CreditCard size={18} style={s.inputIcon}/>
-                <input 
-                    name="registrationNumber" 
-                    required 
-                    onChange={handleInputChange} 
-                    style={s.input} 
-                    placeholder="ITxxxxxx" 
-                    // වැදගත්: value එක මෙතනට දාන්න
-                    value={formData.registrationNumber}
-                    onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+            <div className="res-input-group">
+              <label className="res-label">Student ID <span style={{color:'red'}}>*</span></label>
+              <div className="res-input-wrapper">
+                <CreditCard size={18} className="res-input-icon" />
+                <input
+                  name="registrationNumber"
+                  required
+                  onChange={handleInputChange}
+                  className="res-input"
+                  placeholder="ITxxxxxx"
+                  value={formData.registrationNumber}
+                  disabled={loading}
                 />
               </div>
             </div>
           </div>
 
-          <div style={s.formGrid}>
-            <div style={s.inputGroup}>
-              <label style={s.label}>Email Address</label>
-              <div style={s.inputWrapper}>
-                <Mail size={18} style={s.inputIcon}/>
-                <input 
-                    type="email" 
-                    name="email" 
-                    required 
-                    onChange={handleInputChange} 
-                    style={s.input} 
-                    placeholder="student@email.com" 
-                    // වැදගත්: value එක මෙතනට දාන්න
-                    value={formData.email}
-                    onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+          <div className="res-form-grid">
+            <div className="res-input-group">
+              <label className="res-label">Email Address <span style={{color:'red'}}>*</span></label>
+              <div className="res-input-wrapper">
+                <Mail size={18} className="res-input-icon" />
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  onChange={handleInputChange}
+                  className="res-input"
+                  placeholder="student@email.com"
+                  value={formData.email}
+                  disabled={loading}
                 />
               </div>
             </div>
-            <div style={s.inputGroup}>
-              <label style={s.label}>Phone Number</label>
-              <div style={s.inputWrapper}>
-                <Phone size={18} style={s.inputIcon}/>
-                <input 
-                    name="contactNumber" 
-                    required 
-                    onChange={handleInputChange} 
-                    style={s.input} 
-                    placeholder="07xxxxxxxx" 
-                    // වැදගත්: value එක මෙතනට දාන්න
-                    value={formData.contactNumber}
-                    onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+            <div className="res-input-group">
+              <label className="res-label">Phone Number <span style={{color:'red'}}>*</span></label>
+              <div className="res-input-wrapper">
+                <Phone size={18} className="res-input-icon" />
+                <input
+                  name="contactNumber"
+                  required
+                  onChange={handleInputChange}
+                  className="res-input"
+                  placeholder="07xxxxxxxx"
+                  value={formData.contactNumber}
+                  disabled={loading}
                 />
               </div>
             </div>
           </div>
 
-          <div style={s.inputGroup}>
-            <label style={s.label}>Residential Address</label>
-            <div style={s.inputWrapper}>
-              <MapPin size={18} style={s.inputIcon}/>
-              <input 
-                name="address" 
-                required 
-                onChange={handleInputChange} 
-                style={s.input} 
-                placeholder="Your home address" 
-                // වැදගත්: value එක මෙතනට දාන්න
+          <div className="res-input-group">
+            <label className="res-label">Residential Address <span style={{color:'red'}}>*</span></label>
+            <div className="res-input-wrapper">
+              <MapPin size={18} className="res-input-icon" />
+              <input
+                name="address"
+                required
+                onChange={handleInputChange}
+                className="res-input"
+                placeholder="Your home address"
                 value={formData.address}
-                onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
-                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                disabled={loading}
               />
             </div>
           </div>
 
-          <div style={s.inputGroup}>
-            <label style={s.label}>Gender</label>
-            <select 
-                name="gender" 
-                onChange={handleInputChange} 
-                value={formData.gender} // මේක දැනටමත් තිබුනා, ඒත් check කරගන්න
-                style={s.select}
+          <div className="res-input-group">
+            <label className="res-label">Gender <span style={{color:'red'}}>*</span></label>
+            <select
+              name="gender"
+              onChange={handleInputChange}
+              value={formData.gender}
+              className="res-select"
+              disabled={loading}
             >
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
@@ -430,66 +348,81 @@ const Reservation = () => {
       </div>
 
       {/* --- Right Side: Ticket Summary --- */}
-      <div style={s.rightPanel}>
-        <div style={s.bgCircle1}></div>
-        <div style={s.bgCircle2}></div>
+      <div className="res-right-panel">
+        <div className="res-bg-circle-1"></div>
+        <div className="res-bg-circle-2"></div>
 
-        <div style={s.ticketCard}>
-          <div style={s.ticketHeader}>
-            <div style={s.ticketTitle}>Booking Summary</div>
-            <div style={s.ticketSub}>Review your booking details before payment.</div>
+        <div className="res-ticket-card">
+          <div className="res-ticket-header">
+            <h2 className="res-ticket-title">Booking Summary</h2>
+            <p className="res-ticket-sub">Review your booking details.</p>
           </div>
 
-          <div style={s.roomBox}>
-            <div style={s.roomItem}>
-              <span style={s.roomLabel}>Room</span>
-              <span style={s.roomValue}><Building2 size={16}/> {roomNumber}</span>
+          <div className="res-room-box">
+            <div className="res-room-item">
+              <span className="res-room-label">Room</span>
+              <span className="res-room-value">
+                <Building2 size={16} /> {roomNumber}
+              </span>
             </div>
-            <div style={{width:'1px', background:'rgba(255,255,255,0.1)'}}></div>
-            <div style={s.roomItem}>
-              <span style={s.roomLabel}>Bed No</span>
-              <span style={s.roomValue}><BedDouble size={16}/> {bedNumber}</span>
+            <div className="res-room-separator"></div>
+            <div className="res-room-item">
+              <span className="res-room-label">Bed No</span>
+              <span className="res-room-value">
+                <BedDouble size={16} /> {bedNumber}
+              </span>
             </div>
           </div>
 
-          <div style={s.dateLine}>
-            <span style={{display:'flex', alignItems:'center', gap:'8px'}}><Calendar size={15} opacity={0.7}/> Check-in</span>
-            <span style={{fontWeight:'600'}}>{checkIn}</span>
+          <div className="res-date-line">
+            <span className="res-date-label">
+              <Calendar size={15} opacity={0.7} /> Check-in
+            </span>
+            <span className="res-date-val">{checkIn}</span>
           </div>
-          <div style={s.dateLine}>
-            <span style={{display:'flex', alignItems:'center', gap:'8px'}}><CheckCircle2 size={15} opacity={0.7}/> Check-out</span>
-            <span style={{fontWeight:'600'}}>{checkOut}</span>
+          <div className="res-date-line">
+            <span className="res-date-label">
+              <CheckCircle2 size={15} opacity={0.7} /> Check-out
+            </span>
+            <span className="res-date-val">{checkOut}</span>
           </div>
 
           {reservedFor && (
-             <div style={{margin:'15px 0', fontSize:'12px', textAlign:'center', color:'#fcd34d', fontWeight:'600'}}>
-               ROOM RESERVED FOR: {reservedFor}
-             </div>
+            <div className="res-reserved-note">
+              RESERVED FOR: {reservedFor}
+            </div>
           )}
 
-          <div style={s.totalSection}>
-            <span style={s.totalLabel}>Total Payable</span>
-            <span style={s.totalValue}>
-                {priceLoading ? <Loader2 size={24} className="animate-spin"/> : `LKR ${typeof totalAmount === 'number' ? totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2}) : '0.00'}`}
+          <div className="res-total-section">
+            <span className="res-total-label">Total Payable</span>
+            <span className="res-total-value">
+              {priceLoading ? (
+                <Loader2 size={24} className="animate-spin" />
+              ) : (
+                `LKR ${typeof totalAmount === "number" ? totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 }) : "0.00"}`
+              )}
             </span>
           </div>
 
-          <button 
-            onClick={handlePayment} 
-            style={{...s.payBtn, opacity: loading ? 0.8 : 1}} 
-            disabled={loading}
-            onMouseOver={(e) => !loading && (e.currentTarget.style.transform = 'scale(1.02)')}
-            onMouseOut={(e) => !loading && (e.currentTarget.style.transform = 'scale(1)')}
+          <button
+            onClick={handlePayment}
+            className="res-pay-btn"
+            disabled={loading || priceLoading}
           >
-            {loading ? <Loader2 size={20} className="animate-spin"/> : <>Pay Securely <CreditCard size={18}/></>}
+            {loading ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <>
+                Pay Securely <CreditCard size={18} />
+              </>
+            )}
           </button>
 
-          <div style={s.footerNote}>
-            <ShieldCheck size={12}/> Secured by PayHere Payment Gateway
+          <div className="res-footer-note">
+            <ShieldCheck size={12} /> Secured by PayHere Payment Gateway
           </div>
         </div>
       </div>
-
     </div>
   );
 };

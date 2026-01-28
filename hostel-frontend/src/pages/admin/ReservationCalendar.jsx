@@ -1,45 +1,98 @@
-import React, { useEffect, useState, useRef } from 'react';
-import api from '../../api/axiosConfig';
-import { useNotification } from '../../context/NotificationContext';
-import { 
-  format, 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  isSameDay, 
-  addMonths, 
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useNotification } from "../../context/NotificationContext";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  addMonths,
   subMonths,
   parseISO,
-  differenceInCalendarDays 
-} from 'date-fns';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Calendar as CalendarIcon, 
-  User, 
-  Clock, 
+  differenceInCalendarDays,
+  isWithinInterval,
+} from "date-fns";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+  User,
+  Clock,
   BedDouble,
-  Info ,
-  Search
-} from 'lucide-react';
+  Search,
+  Loader2,
+  Info
+} from "lucide-react";
+import "./styles/ReservationCalendar.css";
+
+// Services
+import bedService from "../../services/bed.service";
+import reservationService from "../../services/reservation.service";
+
+// --- Constants ---
+const CELL_WIDTH = 40; // පික්සල් වලින් දිනක පළල
+
+// --- Sub-Component: Tooltip (Performance සදහා වෙන් කරන ලදී) ---
+const CalendarTooltip = ({ hoveredRes, position }) => {
+  if (!hoveredRes) return null;
+
+  const nights = differenceInCalendarDays(
+    parseISO(hoveredRes.checkOut),
+    parseISO(hoveredRes.checkIn)
+  );
+
+  return (
+    <div className="rc-tooltip" style={{ top: position.y, left: position.x }}>
+      <div className="rc-tooltip-header">
+        <span>Reservation Details</span>
+        <span className={`rc-status-badge ${hoveredRes.status === "PENDING" ? "status-pending" : "status-confirmed"}`}>
+          {hoveredRes.status}
+        </span>
+      </div>
+
+      <div className="rc-tooltip-row">
+        <span className="rc-tt-label">Name</span>{" "}
+        <span className="rc-tt-val">{hoveredRes.studentName}</span>
+      </div>
+      <div className="rc-tooltip-row">
+        <span className="rc-tt-label">Reg No</span>{" "}
+        <span className="rc-tt-val">{hoveredRes.studentRegNo || "-"}</span>
+      </div>
+
+      <div className="rc-tooltip-divider"></div>
+
+      <div className="rc-tooltip-row">
+        <span className="rc-tt-label">Check-in</span>
+        <span className="rc-tt-val">{hoveredRes.checkIn}</span>
+      </div>
+      <div className="rc-tooltip-row">
+        <span className="rc-tt-label">Check-out</span>
+        <span className="rc-tt-val">{hoveredRes.checkOut}</span>
+      </div>
+
+      <div className="rc-tooltip-footer">
+        <Clock size={14} />
+        {nights} Nights Stay
+      </div>
+    </div>
+  );
+};
 
 const ReservationCalendar = () => {
   const notify = useNotification();
+  
+  // Data States
   const [beds, setBeds] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
+  
+  // UI States
+  const [searchTerm, setSearchTerm] = useState("");
   const [hoveredRes, setHoveredRes] = useState(null);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredBeds = beds.filter(bed => 
-    bed.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bed.bedNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Scroll Sync Refs
+  // Refs for Scroll Sync
   const sidebarRef = useRef(null);
   const timelineRef = useRef(null);
 
@@ -51,18 +104,19 @@ const ReservationCalendar = () => {
     try {
       setLoading(true);
       const [bedsRes, resRes] = await Promise.all([
-        api.get('/beds'),
-        api.get('/reservations')
+        bedService.getAllBeds(),
+        reservationService.getAllReservations(),
       ]);
 
-      if (bedsRes.data.status === 'SUCCESS') {
-        // Sort beds by Room Number then Bed Number
-        const sortedBeds = bedsRes.data.data.sort((a, b) => 
-          a.roomNumber.localeCompare(b.roomNumber) || a.bedNumber.localeCompare(b.bedNumber)
+      if (bedsRes.data.status === "SUCCESS") {
+        const sortedBeds = bedsRes.data.data.sort(
+          (a, b) =>
+            a.roomNumber.localeCompare(b.roomNumber) ||
+            a.bedNumber.localeCompare(b.bedNumber)
         );
         setBeds(sortedBeds);
       }
-      if (resRes.data.status === 'SUCCESS') {
+      if (resRes.data.status === "SUCCESS") {
         setReservations(resRes.data.data);
       }
     } catch (error) {
@@ -72,347 +126,218 @@ const ReservationCalendar = () => {
     }
   };
 
-  // Date Navigation
+  // --- OPTIMIZATION 1: Group Reservations by Bed Number ($O(N) Complexity) ---
+  // මෙය සිදු කිරීමෙන් Render වන සෑම අවස්ථාවකම Loop වීම වැළකේ.
+  const reservationsMap = useMemo(() => {
+    const map = {};
+    reservations.forEach((res) => {
+      if (!map[res.bedNumber]) {
+        map[res.bedNumber] = [];
+      }
+      map[res.bedNumber].push(res);
+    });
+    return map;
+  }, [reservations]);
+
+  // --- OPTIMIZATION 2: Memoize Filtered Beds ---
+  const filteredBeds = useMemo(() => {
+    return beds.filter(
+      (bed) =>
+        bed.roomNumber.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+        bed.bedNumber.toLowerCase().includes(searchTerm.toLowerCase().trim())
+    );
+  }, [beds, searchTerm]);
+
+  // --- OPTIMIZATION 3: Memoize Days Array ---
+  const daysInMonth = useMemo(() => {
+    return eachDayOfInterval({
+      start: startOfMonth(currentDate),
+      end: endOfMonth(currentDate),
+    });
+  }, [currentDate]);
+
+  // Handlers
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const goToToday = () => setCurrentDate(new Date());
 
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(currentDate),
-    end: endOfMonth(currentDate)
-  });
-
-  // Mouse Event Handlers
+  // Mouse Handlers (Optimization: Only update position on Enter/Move to reduce jitter)
   const handleMouseEnter = (e, res) => {
     setHoveredRes(res);
-    updateCursorPos(e);
+    setCursorPos({ x: e.clientX + 20, y: e.clientY + 20 });
   };
 
   const handleMouseMove = (e) => {
-    updateCursorPos(e);
-  };
-
-  const updateCursorPos = (e) => {
-    // Tooltip offset
-    const x = e.clientX + 20; 
-    const y = e.clientY + 20;
-    setCursorPos({ x, y });
+    // Optional: Only update if moved significantly to reduce re-renders
+    if (hoveredRes) {
+      setCursorPos({ x: e.clientX + 20, y: e.clientY + 20 });
+    }
   };
 
   const handleMouseLeave = () => {
     setHoveredRes(null);
   };
 
-  // Sync scrolling between sidebar and timeline
+  // Scroll Sync Logic
   const handleScroll = (e) => {
     if (sidebarRef.current) {
       sidebarRef.current.scrollTop = e.target.scrollTop;
     }
   };
 
-  const getReservationsForBed = (bedNumber) => {
+  // --- Helper Function: Get Reservations for current view ---
+  const getVisibleReservations = (bedNumber) => {
+    const bedResList = reservationsMap[bedNumber] || [];
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
 
-    return reservations.filter(res => {
-      if (res.bedNumber !== bedNumber) return false;
+    return bedResList.filter((res) => {
       const resStart = parseISO(res.checkIn);
       const resEnd = parseISO(res.checkOut);
       // Check if reservation overlaps with current month
-      return (resStart <= monthEnd && resEnd >= monthStart);
+      return resStart <= monthEnd && resEnd >= monthStart;
     });
   };
 
-  // --- CONSTANTS & STYLES ---
-  const CELL_WIDTH = 40;
-  const ROW_HEIGHT = 70;
-  const HEADER_HEIGHT = 60;
-
-  const s = {
-    pageContainer: {
-      fontFamily: "'Inter', sans-serif",
-      color: '#1f2937',
-      height: 'calc(100vh - 10px)', // Fit to screen minus padding
-      display: 'flex',
-      flexDirection: 'column',
-      background: '#f8fafc',
-      overflow: 'hidden'
-    },
-    
-    // --- Header Section ---
-    headerBar: {
-      padding: '20px 30px',
-      background: 'white',
-      borderBottom: '1px solid #e2e8f0',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
-      zIndex: 20
-    },
-    headerLeft: { display: 'flex', alignItems: 'center', gap: '15px' },
-    titleIcon: {
-      background: '#e0e7ff', color: '#4338ca', padding: '10px',
-      borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-    },
-    monthTitle: { fontSize: '24px', fontWeight: '800', color: '#1e293b', margin: 0, lineHeight: 1 },
-    subTitle: { fontSize: '14px', color: '#64748b', fontWeight: '500', marginTop: '4px' },
-
-    controls: { display: 'flex', gap: '12px', alignItems: 'center', background: '#f1f5f9', padding: '4px', borderRadius: '12px' },
-    navBtn: {
-      padding: '8px 12px', borderRadius: '8px', border: 'none',
-      background: 'transparent', cursor: 'pointer', color: '#475569',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'all 0.2s'
-    },
-    todayBtn: {
-      padding: '8px 16px', borderRadius: '8px', border: 'none',
-      background: 'white', color: '#0f172a', fontWeight: '700',
-      fontSize: '13px', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-    },
-
-    searchWrapper: {
-        display: 'flex', alignItems: 'center', gap: '10px', 
-        background: '#f1f5f9', padding: '8px 15px', borderRadius: '12px', 
-        border: '1px solid #e2e8f0', width: '300px', marginRight: '20px'
-    },
-    searchInput: {
-        border: 'none', background: 'transparent', outline: 'none', 
-        width: '100%', fontSize: '14px', color: '#334155'
-    },
-
-    // --- Main Grid Layout ---
-    contentArea: {
-      display: 'flex',
-      flex: 1,
-      overflow: 'hidden',
-      background: 'white',
-      position: 'relative',
-      paddingBottom: '10px'
-    },
-
-    // Sidebar (Left Column)
-    sidebar: {
-      width: '100px',
-      flexShrink: 0,
-      borderRight: '1px solid #e2e8f0',
-      background: 'white',
-      overflow: 'hidden', 
-      zIndex: 10
-    },
-    sidebarHeaderCell: {
-      height: `${HEADER_HEIGHT}px`,
-      borderBottom: '1px solid #e2e8f0',
-      background: '#f8fafc',
-      display: 'flex', alignItems: 'center', paddingLeft: '24px',
-      fontSize: '7px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em'
-    },
-    sidebarRow: {
-      height: `${ROW_HEIGHT}px`,
-      borderBottom: '1px solid #f1f5f9',
-      display: 'flex', flexDirection: 'column', justifyContent: 'center',
-      paddingLeft: '27px', boxSizing: 'border-box'
-    },
-    roomText: { fontWeight: '700', fontSize: '15px', color: '#334155' },
-    bedText: { fontSize: '13px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' },
-
-    // Timeline (Right Scrollable Area)
-    timelineContainer: {
-      flex: 1,
-      overflow: 'auto',
-      position: 'relative'
-    },
-    timelineHeaderRow: {
-      display: 'flex',
-      height: `${HEADER_HEIGHT}px`,
-      position: 'sticky', top: 0, zIndex: 15,
-      background: '#f8fafc',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-    },
-    dayCell: (isToday) => ({
-      minWidth: `${CELL_WIDTH}px`,
-      maxWidth: `${CELL_WIDTH}px`,
-      width: `${CELL_WIDTH}px`,         // 1. Width එක ස්ථිර කරන්න
-      flexShrink: 0,                    // 2. Shrink වීම වලක්වන්න
-      boxSizing: 'border-box',          // 3. Border එකත් Width එක ඇතුලට ගන්න (මෙය තමයි ප්‍රධාන විසඳුම)
-      borderRight: '1px solid #f1f5f9',
-      borderBottom: '1px solid #e2e8f0',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: isToday ? '#eff6ff' : 'transparent',
-      color: isToday ? '#2563eb' : '#475569'
-    }),
-    dayName: { fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', opacity: 0.7 },
-    dayNumber: { fontSize: '16px', fontWeight: '700' },
-
-    // Grid Body
-    gridBody: { position: 'relative' },
-    gridRow: {
-      height: `${ROW_HEIGHT}px`,
-      borderBottom: '1px solid #f1f5f9',
-      display: 'flex', position: 'relative',
-      backgroundImage: 'linear-gradient(to right, #f8fafc 1px, transparent 1px)',
-      backgroundSize: `${CELL_WIDTH}px 100%`
-    },
-
-    // Reservation Pill
-    resPill: (start, duration, status) => {
-      const isPending = status === 'PENDING';
-      return {
-        position: 'absolute',
-        top: '12px', height: `${ROW_HEIGHT - 24}px`,
-        left: `${start * CELL_WIDTH + 4}px`,
-        width: `${duration * CELL_WIDTH - 8}px`,
-        
-        // --- මෙන්න මේ property එක add කරන්න ---
-        boxSizing: 'border-box', 
-        // -------------------------------------
-
-        background: isPending 
-            ? 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)' 
-            : 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        color: 'white', fontSize: '12px', fontWeight: '600',
-        display: 'flex', alignItems: 'center', padding: '0 12px',
-        cursor: 'pointer', zIndex: 5, overflow: 'hidden', whiteSpace: 'nowrap',
-        transition: 'transform 0.1s, box-shadow 0.1s',
-      };
-    },
-
-    // Tooltip
-    tooltip: {
-      position: 'fixed', top: cursorPos.y, left: cursorPos.x,
-      background: 'rgba(255, 255, 255, 0.95)',
-      backdropFilter: 'blur(8px)',
-      padding: '16px', borderRadius: '16px',
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e2e8f0', zIndex: 1000, minWidth: '280px', pointerEvents: 'none',
-      animation: 'fadeIn 0.15s ease-out'
-    },
-    tooltipHeader: { fontSize: '14px', fontWeight: '700', color: '#0f172a', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-    tooltipRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' },
-    tooltipLabel: { color: '#64748b' },
-    tooltipVal: { fontWeight: '600', color: '#334155' }
-  };
-
-  if (loading) return <div style={{height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color:'#64748b'}}>Loading Calendar...</div>;
+  if (loading) {
+    return (
+      <div className="rc-loading-container">
+        <Loader2 className="animate-spin" size={40} color="#3b82f6" />
+        <p>Loading Calendar...</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={s.pageContainer}>
-      
+    <div className="rc-container">
       {/* 1. HEADER */}
-      <div style={s.headerBar}>
-        <div style={s.headerLeft}>
-          <div style={s.titleIcon}><CalendarIcon size={24}/></div>
+      <div className="rc-header">
+        <div className="rc-header-left">
+          <div className="rc-title-icon">
+            <CalendarIcon size={24} />
+          </div>
           <div>
-            <h2 style={s.monthTitle}>{format(currentDate, 'MMMM yyyy')}</h2>
-            <div style={s.subTitle}>Booking Overview & Timeline</div>
+            <h2 className="rc-month-title">
+              {format(currentDate, "MMMM yyyy")}
+            </h2>
+            <div className="rc-sub-title">Booking Overview & Timeline</div>
           </div>
         </div>
 
-        {/* --- NEW: SEARCH BAR --- */}
-        <div style={{display:'flex', alignItems:'center'}}>
-            <div style={s.searchWrapper}>
-                <Search size={18} color="#94a3b8"/>
-                <input 
-                    style={s.searchInput} 
-                    placeholder="Search Room or Bed..." 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
+        <div className="rc-controls-wrapper">
+          <div className="rc-search-box">
+            <Search size={18} color="#94a3b8" />
+            <input
+              className="rc-search-input"
+              placeholder="Search Room or Bed..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-            <div style={s.controls}>
-              <button 
-                style={s.navBtn} 
-                onClick={prevMonth}
-                onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <ChevronLeft size={20}/>
-              </button>
-              <button style={s.todayBtn} onClick={goToToday}>Today</button>
-              <button 
-                style={s.navBtn} 
-                onClick={nextMonth}
-                onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <ChevronRight size={20}/>
-              </button>
-            </div>
+          <div className="rc-nav-group">
+            <button className="rc-nav-btn" onClick={prevMonth} title="Previous Month">
+              <ChevronLeft size={20} />
+            </button>
+            <button className="rc-today-btn" onClick={goToToday}>
+              Today
+            </button>
+            <button className="rc-nav-btn" onClick={nextMonth} title="Next Month">
+              <ChevronRight size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 2. CALENDAR GRID */}
-      <div style={s.contentArea}>
-        
-        {/* Left Sidebar (Rooms) */}
-        <div style={s.sidebar} ref={sidebarRef}>
-          <div style={s.sidebarHeaderCell}>Accommodation Unit</div>
-          {/* මෙතන beds වෙනුවට filteredBeds දාන්න */}
-          {filteredBeds.map(bed => (
-            <div key={bed.id} style={s.sidebarRow}>
-              <div style={s.roomText}>{bed.roomNumber}</div>
-              <div style={s.bedText}><BedDouble size={14}/> {bed.bedNumber}</div>
+      <div className="rc-content">
+        {/* Left Sidebar (Fixed Columns) */}
+        <div className="rc-sidebar" ref={sidebarRef}>
+          <div className="rc-sidebar-header">
+             <span style={{fontWeight: 600}}>Unit</span>
+          </div>
+          {filteredBeds.map((bed) => (
+            <div key={bed.id} className="rc-sidebar-row">
+              <div className="rc-room-text">{bed.roomNumber}</div>
+              <div className="rc-bed-text">
+                <BedDouble size={14} /> {bed.bedNumber}
+              </div>
             </div>
           ))}
+          {filteredBeds.length === 0 && (
+             <div style={{padding: '20px', fontSize: '12px', color: '#94a3b8', textAlign: 'center'}}>No beds found</div>
+          )}
         </div>
 
-        {/* Right Timeline */}
-        <div style={s.timelineContainer} ref={timelineRef} onScroll={handleScroll}>
-          <div style={{width: `${daysInMonth.length * CELL_WIDTH}px`}}>
+        {/* Right Timeline (Scrollable) */}
+        <div className="rc-timeline" ref={timelineRef} onScroll={handleScroll}>
+          <div style={{ width: `${daysInMonth.length * CELL_WIDTH}px` }}>
             
             {/* Days Header */}
-            <div style={s.timelineHeaderRow}>
-              {daysInMonth.map(day => {
+            <div className="rc-timeline-header">
+              {daysInMonth.map((day) => {
                 const isToday = isSameDay(day, new Date());
                 return (
-                  <div key={day.toString()} style={s.dayCell(isToday)}>
-                    <span style={s.dayName}>{format(day, 'EEE')}</span>
-                    <span style={s.dayNumber}>{format(day, 'd')}</span>
+                  <div
+                    key={day.toString()}
+                    className={`rc-day-cell ${isToday ? "today" : ""}`}
+                    style={{ width: `${CELL_WIDTH}px` }}
+                  >
+                    <span className="rc-day-name">{format(day, "EEE")}</span>
+                    <span className="rc-day-num">{format(day, "d")}</span>
                   </div>
                 );
               })}
             </div>
 
             {/* Grid Body */}
-            <div style={s.gridBody}>
-              {filteredBeds.map(bed => {
-                const bedRes = getReservationsForBed(bed.bedNumber);
-                
+            <div className="rc-grid-body">
+              {filteredBeds.map((bed) => {
+                const bedRes = getVisibleReservations(bed.bedNumber);
+
                 return (
-                  <div key={bed.id} style={s.gridRow}>
-                    {bedRes.map(res => {
+                  <div key={bed.id} className="rc-grid-row">
+                    {/* Empty Grid Cells for Lines */}
+                    {daysInMonth.map((_, i) => (
+                         <div key={i} className="rc-grid-cell-bg" style={{width: `${CELL_WIDTH}px`, left: `${i * CELL_WIDTH}px`}}></div>
+                    ))}
+
+                    {bedRes.map((res) => {
                       const resStart = parseISO(res.checkIn);
                       const resEnd = parseISO(res.checkOut);
                       const monthStart = startOfMonth(currentDate);
 
-                      // Calculate position relative to the current month view
-                      let startIndex = Math.max(0, (resStart - monthStart) / (1000 * 60 * 60 * 24));
-                      if (resStart < monthStart) startIndex = 0; 
+                      // Calculate Start Position
+                      let startIndex = differenceInCalendarDays(resStart, monthStart);
+                      
+                      // Handle reservations starting before current month
+                      if (startIndex < 0) startIndex = 0;
 
+                      // Calculate Duration (Width)
                       const endOfView = endOfMonth(currentDate) < resEnd ? endOfMonth(currentDate) : resEnd;
                       const startOfView = resStart < monthStart ? monthStart : resStart;
                       
-                      const duration = Math.ceil((endOfView - startOfView) / (1000 * 60 * 60 * 24)) + 1;
+                      const duration = differenceInCalendarDays(endOfView, startOfView) + 1;
 
                       if (duration <= 0) return null;
 
+                      const statusClass = res.status === "PENDING" ? "pending" : "confirmed";
+                      const hoverClass = hoveredRes?.id === res.id ? "hovered" : "";
+
                       return (
-                        <div 
+                        <div
                           key={res.id}
+                          className={`rc-res-pill ${statusClass} ${hoverClass}`}
                           style={{
-                            ...s.resPill(startIndex, duration, res.status),
-                            transform: hoveredRes?.id === res.id ? 'translateY(-2px)' : 'none',
-                            boxShadow: hoveredRes?.id === res.id ? '0 4px 12px rgba(0,0,0,0.15)' : '0 2px 4px rgba(0,0,0,0.1)'
+                            left: `${startIndex * CELL_WIDTH + 4}px`, // +4 for padding
+                            width: `${duration * CELL_WIDTH - 8}px`,   // -8 for gap
                           }}
                           onMouseEnter={(e) => handleMouseEnter(e, res)}
                           onMouseMove={handleMouseMove}
                           onMouseLeave={handleMouseLeave}
                         >
-                          <User size={14} style={{marginRight:'6px', opacity:0.8}}/>
-                          {res.studentName}
+                          <User size={12} className="rc-user-icon" />
+                          <span className="rc-user-name">{res.studentName}</span>
                         </div>
                       );
                     })}
@@ -420,47 +345,12 @@ const ReservationCalendar = () => {
                 );
               })}
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* 3. TOOLTIP */}
-      {hoveredRes && (
-        <div style={s.tooltip}>
-          <div style={s.tooltipHeader}>
-            <span>Reservation Details</span>
-            <span style={{
-                fontSize:'10px', padding:'2px 8px', borderRadius:'10px', 
-                background: hoveredRes.status === 'PENDING' ? '#fffbeb' : '#ecfdf5',
-                color: hoveredRes.status === 'PENDING' ? '#b45309' : '#047857',
-                border: `1px solid ${hoveredRes.status === 'PENDING' ? '#fcd34d' : '#6ee7b7'}`
-            }}>
-                {hoveredRes.status}
-            </span>
-          </div>
-          
-          <div style={s.tooltipRow}><span style={s.tooltipLabel}>Name</span> <span style={s.tooltipVal}>{hoveredRes.studentName}</span></div>
-          <div style={s.tooltipRow}><span style={s.tooltipLabel}>Reg No</span> <span style={s.tooltipVal}>{hoveredRes.studentRegNo || "-"}</span></div>
-          
-          <div style={{margin:'10px 0', borderTop:'1px dashed #e2e8f0'}}></div>
-          
-          <div style={s.tooltipRow}>
-            <span style={s.tooltipLabel}>Check-in</span> 
-            <span style={s.tooltipVal}>{hoveredRes.checkIn}</span>
-          </div>
-          <div style={s.tooltipRow}>
-            <span style={s.tooltipLabel}>Check-out</span> 
-            <span style={s.tooltipVal}>{hoveredRes.checkOut}</span>
-          </div>
-          
-          <div style={{marginTop:'8px', paddingTop:'8px', borderTop:'1px solid #f1f5f9', display:'flex', gap:'6px', alignItems:'center', color:'#4f46e5', fontSize:'12px', fontWeight:'700'}}>
-            <Clock size={14}/>
-            {differenceInCalendarDays(parseISO(hoveredRes.checkOut), parseISO(hoveredRes.checkIn))} Nights Stay
-          </div>
-        </div>
-      )}
-
+      {/* 3. TOOLTIP (Separated Component) */}
+      <CalendarTooltip hoveredRes={hoveredRes} position={cursorPos} />
     </div>
   );
 };

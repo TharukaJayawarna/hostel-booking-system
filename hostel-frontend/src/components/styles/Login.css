@@ -1,0 +1,353 @@
+/* =========================================
+   1. MAIN CONTAINER
+   ========================================= */
+.login-container {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  background-color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden; /* Scroll bar ඉවත් කිරීමට */
+}
+
+/* =========================================
+   2. LEFT SIDE (IMAGE SECTION)
+   ========================================= */
+.login-image-section {
+  flex: 1.2;
+  position: relative;
+  background-color: #1e293b;
+  /* High Quality Hostel Image */
+  background-image: url("https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* Text පහළට ගැනීමට */
+  padding: 60px;
+  color: white;
+}
+
+.login-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  /* Dark Gradient Overlay for readability */
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 100%);
+  z-index: 1;
+}
+
+.login-image-content {
+  position: relative;
+  z-index: 2;
+  max-width: 500px;
+}
+
+/* Brand Logo (Square 'H' Box) */
+.login-brand-logo {
+  width: 50px;
+  height: 50px;
+  background: white;
+  color: #1e293b;
+  font-size: 24px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.brand-title {
+  font-size: 42px;
+  font-weight: 800;
+  margin-bottom: 15px;
+  line-height: 1.1;
+  margin-top: 0;
+  letter-spacing: -1px;
+}
+
+.brand-desc {
+  font-size: 16px;
+  color: #cbd5e1; /* Light Gray text */
+  line-height: 1.6;
+  margin: 0;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+/* =========================================
+   3. RIGHT SIDE (FORM SECTION)
+   ========================================= */
+.login-form-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background-color: white;
+}
+
+.login-form-wrapper {
+  width: 100%;
+  max-width: 400px; /* Form එකේ පළල සීමා කිරීම */
+}
+
+/* Header Text */
+.login-header {
+  margin-bottom: 35px;
+}
+
+.login-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 10px;
+  margin-top: 0;
+  letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* =========================================
+   4. INPUT STYLES (UPDATED)
+   ========================================= */
+.input-group {
+  margin-bottom: 24px;
+}
+
+.input-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Input Wrapper (Container for Icon + Input + EyeBtn) */
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden; /* වැදගත් */
+}
+
+/* Focus State */
+.input-wrapper:focus-within {
+  border-color: #4f46e5;
+  background-color: white;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+/* Error State (Red Border) */
+.input-wrapper.error-border {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.input-wrapper.error-border .input-icon {
+  color: #ef4444;
+}
+
+/* Left Icon (Lock/User) */
+.input-icon {
+  padding-left: 16px;
+  padding-right: 12px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+/* The Actual Input Field */
+.form-input {
+  flex: 1; /* ඉතිරි ඉඩ සම්පූර්ණයෙන්ම ගනී */
+  padding: 14px 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  color: #1e293b;
+  font-weight: 500;
+  min-width: 0; /* Text overflow වැළැක්වීමට */
+}
+
+/* Placeholder Color */
+.form-input::placeholder {
+  color: #cbd5e1;
+}
+
+/* Password Toggle Button (Eye Icon) */
+.password-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+  color: #4f46e5;
+}
+
+/* =========================================
+   5. ACTIONS & BUTTONS
+   ========================================= */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.checkbox-custom {
+  accent-color: #4f46e5;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.forgot-password-link {
+  font-size: 14px;
+  color: #4f46e5;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.forgot-password-link:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+/* Login Button */
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  background-color: #4f46e5; /* Dark Navy */
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-login:hover:not(:disabled) {
+  background-color: #4338ca;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-login:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background-color: #94a3b8;
+}
+
+/* Spinner Animation */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Error Message Box */
+.login-error-msg {
+  background-color: #fef2f2;
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 20px;
+  border: 1px solid #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Footer */
+.login-footer {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.register-link {
+  color: #4f46e5;
+  font-weight: 700;
+  text-decoration: none;
+  margin-left: 5px;
+  transition: color 0.2s;
+}
+
+.register-link:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+/* =========================================
+   6. RESPONSIVE MEDIA QUERIES
+   ========================================= */
+@media (max-width: 900px) {
+  .login-container {
+    flex-direction: column;
+    height: auto;
+    overflow-y: auto;
+  }
+  
+  .login-image-section {
+    display: none; /* Mobile වලදී Image එක සඟවන්න */
+  }
+
+  .login-form-section {
+    padding: 30px 20px;
+    flex: none;
+    min-height: 100vh; /* Screen එක පුරාම Form එක පෙන්වන්න */
+  }
+}

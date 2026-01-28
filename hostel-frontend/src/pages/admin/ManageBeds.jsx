@@ -1,178 +1,236 @@
-import React, { useEffect, useState } from 'react';
-import api from '../../api/axiosConfig';
-import { useNotification } from '../../context/NotificationContext';
-import { BedDouble, Wrench, Trash2, Plus, Search, Filter, CheckCircle2, XCircle } from 'lucide-react';
-import ConfirmModal from '../../components/ConfirmModal';
+import React, { useEffect, useState, useMemo } from "react";
+import { useNotification } from "../../context/NotificationContext";
+import {
+  BedDouble,
+  Wrench,
+  Trash2,
+  Plus,
+  Search,
+  Filter,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
+import ConfirmModal from "../../components/ConfirmModal";
+import "./styles/ManageBeds.css";
+
+// Services import
+import bedService from "../../services/bed.service";
+import roomService from "../../services/room.service";
+import authService from "../../services/auth.service";
 
 const ManageBeds = () => {
   const notify = useNotification();
+  
+  // --- Data States ---
   const [beds, setBeds] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRoom, setFilterRoom] = useState('ALL');
-  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- Filter States ---
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRoom, setFilterRoom] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+
+  // --- Pagination States (NEW) ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // පිටුවක පෙන්වන අයිතම ගණන මෙතනින් වෙනස් කරන්න
+
+  // --- Modal States ---
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ roomId: '', bedNumber: '' });
+  const [formData, setFormData] = useState({ roomId: "", bedNumber: "" });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [bedToDelete, setBedToDelete] = useState(null);
 
-  // Check Role
-  const user = JSON.parse(localStorage.getItem('user'));
-  const isWarden = user?.role === 'WARDEN';
+  const user = authService.getCurrentUser();
+  const isWarden = user?.role === "WARDEN";
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  // Filter වෙනස් වන විට Page 1 ට reset වීම (UX Best Practice)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRoom, filterStatus]);
 
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const [b, r] = await Promise.all([api.get('/beds'), api.get('/rooms')]);
-      if(b.data.status === 'SUCCESS') setBeds(b.data.data);
-      if(r.data.status === 'SUCCESS') setRooms(r.data.data);
-    } catch (e) { notify.error("Failed to load data"); } 
-    finally { setLoading(false); }
+      const [b, r] = await Promise.all([
+        bedService.getAllBeds(),
+        roomService.getAllRooms(),
+      ]);
+
+      if (b.data.status === "SUCCESS") setBeds(b.data.data);
+      if (r.data.status === "SUCCESS") setRooms(r.data.data);
+    } catch (e) {
+      notify.error("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Optimized Filtering (useMemo) ---
+  const filteredBeds = useMemo(() => {
+    return beds.filter((bed) => {
+      const bedNo = bed.bedNumber ? bed.bedNumber.toString() : "";
+      const matchesSearch = bedNo.toLowerCase().includes(searchTerm.toLowerCase().trim());
+      const matchesRoom = filterRoom === "ALL" || bed.roomNumber === filterRoom;
+      
+      let matchesStatus = true;
+      if (filterStatus === "BOOKED") matchesStatus = bed.isBooked;
+      if (filterStatus === "AVAILABLE") matchesStatus = !bed.isBooked && !bed.underMaintenance;
+      if (filterStatus === "MAINTENANCE") matchesStatus = bed.underMaintenance;
+      
+      return matchesSearch && matchesRoom && matchesStatus;
+    });
+  }, [beds, searchTerm, filterRoom, filterStatus]);
+
+  // --- Pagination Logic (NEW) ---
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentBeds = filteredBeds.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredBeds.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if(!formData.roomId || !formData.bedNumber) { notify.warning("Please fill all fields"); return; }
+    if (!formData.roomId || !formData.bedNumber.trim()) {
+      notify.warning("Please fill all fields");
+      return;
+    }
+
     try {
-      await api.post(`/rooms/${formData.roomId}/beds`, { bedNumber: formData.bedNumber });
+      setIsSubmitting(true);
+      await bedService.createBed(formData.roomId, {
+        bedNumber: formData.bedNumber.trim(),
+      });
+
       notify.success("Bed Added Successfully!");
       setIsModalOpen(false);
-      setFormData({ roomId: '', bedNumber: '' });
+      setFormData({ roomId: "", bedNumber: "" });
       fetchAll();
-    } catch (e) { notify.error("Failed to create bed"); }
-  };
-
-  const openDeleteModal = (id) => {
-    setBedToDelete(id);
-    setIsDeleteModalOpen(true);
+    } catch (e) {
+      notify.error(e.response?.data?.message || "Failed to create bed");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const confirmDelete = async () => {
     if (!bedToDelete) return;
-    try { 
-        await api.delete(`/beds/${bedToDelete}`); 
-        notify.success("Bed Deleted Successfully"); 
-        fetchAll(); 
-    } catch (e) { 
-        notify.error("Failed to delete bed"); 
+    try {
+      setIsSubmitting(true);
+      await bedService.deleteBed(bedToDelete);
+      notify.success("Bed Deleted Successfully");
+      
+      // Optimistic Delete (Frontend එකෙන් අයින් කිරීම)
+      setBeds(prev => prev.filter(b => b.id !== bedToDelete));
+    } catch (e) {
+      notify.error("Failed to delete bed");
     } finally {
-        setIsDeleteModalOpen(false);
-        setBedToDelete(null);
+      setIsSubmitting(false);
+      setIsDeleteModalOpen(false);
+      setBedToDelete(null);
     }
   };
 
   const toggleMaintenance = async (bed) => {
-    // Warden ට Maintenance වෙනස් කරන්න බැහැ
     if (isWarden) return;
 
     const previousStatus = bed.underMaintenance;
     const newStatus = !previousStatus;
+
+    // Optimistic UI Update
+    const updatedBeds = beds.map((b) =>
+      b.id === bed.id ? { ...b, underMaintenance: newStatus } : b,
+    );
+    setBeds(updatedBeds);
+
     try {
-        const updatedBeds = beds.map(b => b.id === bed.id ? { ...b, underMaintenance: newStatus } : b);
-        setBeds(updatedBeds);
-        await api.patch(`/beds/${bed.id}/maintenance?status=${newStatus}`);
-        notify.success(`Maintenance Mode: ${newStatus ? 'ON' : 'OFF'}`);
+      await bedService.toggleMaintenance(bed.id, newStatus);
+      notify.success(`Maintenance Mode: ${newStatus ? "ON" : "OFF"}`);
     } catch (e) {
-        const revertedBeds = beds.map(b => b.id === bed.id ? { ...b, underMaintenance: previousStatus } : b);
-        setBeds(revertedBeds);
-        notify.error("Failed to update status");
+      const revertedBeds = beds.map((b) =>
+        b.id === bed.id ? { ...b, underMaintenance: previousStatus } : b,
+      );
+      setBeds(revertedBeds);
+      notify.error("Failed to update status");
     }
   };
 
-  const filteredBeds = beds.filter(bed => {
-    const bedNo = bed.bedNumber ? bed.bedNumber.toString() : "";
-    const matchesSearch = bedNo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRoom = filterRoom === 'ALL' || bed.roomNumber === filterRoom;
-    let matchesStatus = true;
-    if (filterStatus === 'BOOKED') matchesStatus = bed.isBooked;
-    if (filterStatus === 'AVAILABLE') matchesStatus = !bed.isBooked && !bed.underMaintenance;
-    if (filterStatus === 'MAINTENANCE') matchesStatus = bed.underMaintenance;
-    return matchesSearch && matchesRoom && matchesStatus;
-  });
-
+  // Stats Calculation
   const stats = {
     total: beds.length,
-    available: beds.filter(b => !b.isBooked && !b.underMaintenance).length,
-    booked: beds.filter(b => b.isBooked).length,
-    maintenance: beds.filter(b => b.underMaintenance).length
-  };
-
-  const s = {
-    container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px' },
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' },
-    title: { fontSize: '26px', fontWeight: '800', color: '#111827', display: 'flex', alignItems: 'center', gap: '10px' },
-    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
-    statCard: () => ({ background: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '15px', position: 'relative', overflow: 'hidden' }),
-    statIconBox: (bg, col) => ({ width: '50px', height: '50px', borderRadius: '12px', background: bg, color: col, display: 'flex', alignItems: 'center', justifyContent: 'center' }),
-    statValue: { fontSize: '24px', fontWeight: '800', color: '#111827', lineHeight: '1' },
-    statLabel: { fontSize: '13px', color: '#6b7280', fontWeight: '600', marginTop: '4px' },
-    toolbar: { background: 'white', padding: '15px 20px', borderRadius: '16px', border: '1px solid #e5e7eb', marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' },
-    searchBox: { display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb', padding: '8px 15px', borderRadius: '10px', border: '1px solid #e5e7eb', flex: 1 },
-    input: { border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px' },
-    select: { padding: '8px 12px', borderRadius: '10px', border: '1px solid #e5e7eb', background: 'white', fontSize: '14px', color: '#374151', cursor: 'pointer', outline: 'none' },
-    addBtn: { background: '#4f46e5', color: 'white', padding: '10px 20px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(79, 70, 229, 0.2)', transition: '0.2s' },
-    tableContainer: { background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' },
-    table: { width: '100%', borderCollapse: 'collapse' },
-    thead: { background: '#f8fafc', borderBottom: '1px solid #e5e7eb' },
-    th: { padding: '15px 20px', fontSize: '12px', fontWeight: '700', color: '#64748b', textAlign: 'left', textTransform: 'uppercase' },
-    tr: { borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' },
-    td: { padding: '15px 20px', fontSize: '14px', color: '#334155' },
-    toggleContainer: (isActive, disabled) => ({ width: '44px', height: '24px', background: isActive ? '#f59e0b' : '#e2e8f0', borderRadius: '99px', position: 'relative', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'background 0.3s ease', display: 'flex', alignItems: 'center', border: isActive ? '1px solid #d97706' : '1px solid #cbd5e1', opacity: disabled ? 0.6 : 1 }),
-    toggleCircle: (isActive) => ({ width: '18px', height: '18px', background: 'white', borderRadius: '50%', position: 'absolute', left: isActive ? '22px' : '3px', transition: 'left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }),
-    badge: (type) => { let bg='#f1f5f9', col='#475569', border='#e2e8f0', icon=<CheckCircle2 size={12}/>; if(type === 'BOOKED') { bg='#fee2e2'; col='#ef4444'; border='#fecaca'; icon=<XCircle size={12}/>; } if(type === 'MAINTENANCE') { bg='#fef3c7'; col='#d97706'; border='#fde68a'; icon=<Wrench size={12}/>; } if(type === 'AVAILABLE') { bg='#dcfce7'; col='#16a34a'; border='#bbf7d0'; icon=<CheckCircle2 size={12}/>; } return { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', background: bg, color: col, border: `1px solid ${border}` }; },
-    overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
-    modal: { background: 'white', padding: '30px', borderRadius: '20px', width: '400px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }
+    available: beds.filter((b) => !b.isBooked && !b.underMaintenance).length,
+    booked: beds.filter((b) => b.isBooked).length,
+    maintenance: beds.filter((b) => b.underMaintenance).length,
   };
 
   return (
-    <div style={s.container}>
-      <div style={s.header}>
-        <div style={s.title}>
-          <div style={{background:'#e0e7ff', padding:'8px', borderRadius:'10px', color:'#4338ca'}}><BedDouble size={28}/></div>
-          <div>Manage Beds <div style={{fontSize:'14px', color:'#6b7280', fontWeight:'500'}}>Inventory & Maintenance</div></div>
+    <div className="mb-container">
+      <div className="mb-header">
+        <div className="mb-title">
+          <div className="mb-icon-box">
+            <BedDouble size={28} />
+          </div>
+          <div>
+            Manage Beds{" "}
+            <div className="mb-subtitle">Inventory & Maintenance</div>
+          </div>
         </div>
-        {/* Warden ට Add Button නැත */}
         {!isWarden && (
-            <button style={s.addBtn} onClick={() => setIsModalOpen(true)}>
+          <button className="mb-add-btn" onClick={() => setIsModalOpen(true)}>
             <Plus size={18} /> Add Bed
-            </button>
+          </button>
         )}
       </div>
 
-      <div style={s.statsGrid}>
-        <div style={s.statCard()}>
-          <div style={s.statIconBox('#eff6ff', '#2563eb')}><BedDouble size={24}/></div>
-          <div><div style={s.statValue}>{stats.total}</div><div style={s.statLabel}>Total Beds</div></div>
+      <div className="mb-stats-grid">
+        <div className="mb-stat-card">
+          <div className="mb-stat-icon icon-blue"><BedDouble size={24} /></div>
+          <div><div className="mb-stat-value">{stats.total}</div><div className="mb-stat-label">Total Beds</div></div>
         </div>
-        <div style={s.statCard()}>
-          <div style={s.statIconBox('#f0fdf4', '#16a34a')}><CheckCircle2 size={24}/></div>
-          <div><div style={s.statValue}>{stats.available}</div><div style={s.statLabel}>Available</div></div>
+        <div className="mb-stat-card">
+          <div className="mb-stat-icon icon-green"><CheckCircle2 size={24} /></div>
+          <div><div className="mb-stat-value">{stats.available}</div><div className="mb-stat-label">Available</div></div>
         </div>
-        <div style={s.statCard()}>
-          <div style={s.statIconBox('#fef2f2', '#dc2626')}><XCircle size={24}/></div>
-          <div><div style={s.statValue}>{stats.booked}</div><div style={s.statLabel}>Occupied</div></div>
+        <div className="mb-stat-card">
+          <div className="mb-stat-icon icon-red"><XCircle size={24} /></div>
+          <div><div className="mb-stat-value">{stats.booked}</div><div className="mb-stat-label">Occupied</div></div>
         </div>
-        <div style={s.statCard()}>
-          <div style={s.statIconBox('#fffbeb', '#d97706')}><Wrench size={24}/></div>
-          <div><div style={s.statValue}>{stats.maintenance}</div><div style={s.statLabel}>Maintenance</div></div>
+        <div className="mb-stat-card">
+          <div className="mb-stat-icon icon-amber"><Wrench size={24} /></div>
+          <div><div className="mb-stat-value">{stats.maintenance}</div><div className="mb-stat-label">Maintenance</div></div>
         </div>
       </div>
 
-      <div style={s.toolbar}>
-        <div style={s.searchBox}>
-          <Search size={18} color="#9ca3af"/>
-          <input style={s.input} placeholder="Search by Bed Number..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
+      <div className="mb-toolbar">
+        <div className="mb-search-box">
+          <Search size={18} color="#9ca3af" />
+          <input
+            className="mb-search-input"
+            placeholder="Search by Bed Number..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-          <Filter size={18} color="#6b7280"/>
-          <select style={s.select} value={filterRoom} onChange={e => setFilterRoom(e.target.value)}>
+        <div className="mb-filter-group">
+          <Filter size={18} color="#6b7280" />
+          <select className="mb-select" value={filterRoom} onChange={(e) => setFilterRoom(e.target.value)}>
             <option value="ALL">All Rooms</option>
-            {[...new Set(beds.map(b => b.roomNumber))].map(r => <option key={r} value={r}>{r}</option>)}
+            {[...new Set(beds.map((b) => b.roomNumber))].map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
           </select>
-          <select style={s.select} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <select className="mb-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="ALL">All Status</option>
             <option value="AVAILABLE">Available</option>
             <option value="BOOKED">Booked</option>
@@ -181,95 +239,192 @@ const ManageBeds = () => {
         </div>
       </div>
 
-      <div style={s.tableContainer}>
-        <table style={s.table}>
-          <thead style={s.thead}>
+      <div className="mb-table-container">
+        <table className="mb-table">
+          <thead className="mb-thead">
             <tr>
-              <th style={s.th}>Bed Info</th>
-              <th style={s.th}>Room</th>
-              <th style={s.th}>Current Status</th>
-              <th style={s.th}>Maintenance Mode</th>
-              {!isWarden && <th style={{...s.th, textAlign:'right'}}>Actions</th>}
+              <th className="mb-th">Bed Info</th>
+              <th className="mb-th">Room</th>
+              <th className="mb-th">Current Status</th>
+              <th className="mb-th">Maintenance Mode</th>
+              {!isWarden && <th style={{ textAlign: "right" }} className="mb-th">Actions</th>}
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan="5" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>Loading...</td></tr> 
-            : filteredBeds.length === 0 ? <tr><td colSpan="5" style={{padding:'40px', textAlign:'center', color:'#94a3b8'}}>No beds found matching filters.</td></tr>
-            : filteredBeds.map(bed => {
-                let statusType = 'AVAILABLE';
-                let statusText = 'Available';
-                if (bed.underMaintenance) { statusType = 'MAINTENANCE'; statusText = 'Maintenance'; }
-                else if (bed.isBooked) { statusType = 'BOOKED'; statusText = 'Booked'; }
+            {loading ? (
+              <tr><td colSpan="5" className="mb-loading">Loading...</td></tr>
+            ) : filteredBeds.length === 0 ? (
+              <tr><td colSpan="5" className="mb-loading">No beds found matching filters.</td></tr>
+            ) : (
+              // NOTE: We iterate over currentBeds (Paginated data) instead of filteredBeds
+              currentBeds.map((bed) => {
+                let statusClass = "badge-available";
+                let statusText = "Available";
+                let StatusIcon = CheckCircle2;
+
+                if (bed.underMaintenance) {
+                  statusClass = "badge-maintenance";
+                  statusText = "Maintenance";
+                  StatusIcon = Wrench;
+                } else if (bed.isBooked) {
+                  statusClass = "badge-booked";
+                  statusText = "Booked";
+                  StatusIcon = XCircle;
+                }
 
                 return (
-                  <tr key={bed.id} style={s.tr} onMouseOver={e => e.currentTarget.style.background='#f8fafc'} onMouseOut={e => e.currentTarget.style.background='white'}>
-                    <td style={s.td}><div style={{display:'flex', alignItems:'center', gap:'10px'}}><div style={{padding:'8px', background:'#f1f5f9', borderRadius:'8px', color:'#475569'}}><BedDouble size={18}/></div><span style={{fontWeight:'700', color:'#1e293b'}}>{bed.bedNumber}</span></div></td>
-                    <td style={s.td}><span style={{fontWeight:'600', color:'#475569'}}>{bed.roomNumber}</span></td>
-                    <td style={s.td}><span style={s.badge(statusType)}>{statusType === 'MAINTENANCE' && <Wrench size={12}/>}{statusType === 'BOOKED' && <XCircle size={12}/>}{statusType === 'AVAILABLE' && <CheckCircle2 size={12}/>}{statusText}</span></td>
-                    <td style={s.td}>
-                      <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                        <div 
-                            style={s.toggleContainer(bed.underMaintenance, isWarden)} 
-                            onClick={() => toggleMaintenance(bed)}
-                            title={isWarden ? "View Only" : "Toggle Maintenance Mode"}
-                        >
-                            <div style={s.toggleCircle(bed.underMaintenance)}></div>
+                  <tr key={bed.id} className="mb-tr">
+                    <td className="mb-td">
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ padding: "8px", background: "#f1f5f9", borderRadius: "8px", color: "#475569" }}>
+                          <BedDouble size={18} />
                         </div>
-                        <span style={{fontSize:'12px', fontWeight:'600', color: bed.underMaintenance ? '#d97706' : '#94a3b8'}}>
-                            {bed.underMaintenance ? 'Active' : 'Off'}
+                        <span style={{ fontWeight: "700", color: "#1e293b" }}>{bed.bedNumber}</span>
+                      </div>
+                    </td>
+                    <td className="mb-td">
+                      <span style={{ fontWeight: "600", color: "#475569" }}>{bed.roomNumber}</span>
+                    </td>
+                    <td className="mb-td">
+                      <span className={`mb-badge ${statusClass}`}>
+                        <StatusIcon size={12} /> {statusText}
+                      </span>
+                    </td>
+                    <td className="mb-td">
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div
+                          className={`mb-toggle-container ${bed.underMaintenance ? "mb-toggle-active" : "mb-toggle-inactive"} ${isWarden ? "mb-toggle-disabled" : ""}`}
+                          onClick={() => toggleMaintenance(bed)}
+                        >
+                          <div className={`mb-toggle-circle ${bed.underMaintenance ? "circle-active" : "circle-inactive"}`}></div>
+                        </div>
+                        <span style={{ fontSize: "12px", fontWeight: "600", color: bed.underMaintenance ? "#d97706" : "#94a3b8" }}>
+                          {bed.underMaintenance ? "Active" : "Off"}
                         </span>
                       </div>
                     </td>
-                    {!isWarden && (<td style={s.td}>
-                      {/* Warden ට Delete බැහැ */}
-                      
-                          <div style={{display:'flex', justifyContent:'flex-end'}}>
-                            <button onClick={() => openDeleteModal(bed.id)} style={{padding:'8px', borderRadius:'8px', border:'1px solid #fee2e2', background:'white', color:'#ef4444', cursor:'pointer'}} title="Delete Bed"><Trash2 size={16}/></button>
-                          </div>
-                      
-                    </td>
+                    {!isWarden && (
+                      <td className="mb-td">
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                          <button onClick={() => { setBedToDelete(bed.id); setIsDeleteModalOpen(true); }} className="mb-delete-btn">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
                     )}
                   </tr>
                 );
-            })}
+              })
+            )}
           </tbody>
         </table>
+
+        {/* --- Pagination Controls (NEW) --- */}
+        {!loading && filteredBeds.length > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 20px", borderTop: "1px solid #e2e8f0" }}>
+            <div style={{ fontSize: "13px", color: "#64748b" }}>
+              Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredBeds.length)} of {filteredBeds.length} entries
+            </div>
+            <div style={{ display: "flex", gap: "5px" }}>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "6px", borderRadius: "6px", border: "1px solid #e2e8f0",
+                  background: currentPage === 1 ? "#f1f5f9" : "white",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  color: currentPage === 1 ? "#94a3b8" : "#475569"
+                }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              
+              {/* Simple Page Indicator */}
+              <span style={{ display: "flex", alignItems: "center", padding: "0 10px", fontSize: "13px", fontWeight: "600", color: "#475569" }}>
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "6px", borderRadius: "6px", border: "1px solid #e2e8f0",
+                  background: currentPage === totalPages ? "#f1f5f9" : "white",
+                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                  color: currentPage === totalPages ? "#94a3b8" : "#475569"
+                }}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* --- Add Bed Modal --- */}
       {isModalOpen && (
-        <div style={s.overlay} onClick={() => setIsModalOpen(false)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
-            <h3 style={{fontSize:'20px', fontWeight:'700', marginBottom:'5px', color:'#111827'}}>Add New Bed</h3>
-            <p style={{fontSize:'13px', color:'#6b7280', marginBottom:'20px'}}>Manually add a bed to a room.</p>
+        <div className="mb-overlay" onClick={() => !isSubmitting && setIsModalOpen(false)}>
+          <div className="mb-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "5px", color: "#111827", marginTop: 0 }}>
+              Add New Bed
+            </h3>
+            <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "20px" }}>
+              Manually add a bed to a room.
+            </p>
             <form onSubmit={handleCreate}>
-                <div style={{marginBottom:'15px'}}>
-                    <label style={{display:'block', fontSize:'13px', fontWeight:'600', color:'#374151', marginBottom:'5px'}}>Select Room</label>
-                    <select style={{...s.select, width:'100%'}} value={formData.roomId} onChange={e => setFormData({...formData, roomId: e.target.value})} required>
-                        <option value="">-- Select --</option>
-                        {rooms.map(r => <option key={r.id} value={r.id}>{r.roomNumber}</option>)}
-                    </select>
-                </div>
-                <div style={{marginBottom:'25px'}}>
-                    <label style={{display:'block', fontSize:'13px', fontWeight:'600', color:'#374151', marginBottom:'5px'}}>Bed Number</label>
-                    <input style={{...s.input, border:'1px solid #e5e7eb', padding:'10px', borderRadius:'10px', background:'white'}} placeholder="e.g. B-101-1" value={formData.bedNumber} onChange={e => setFormData({...formData, bedNumber: e.target.value})} required />
-                </div>
-                <div style={{display:'flex', justifyContent:'flex-end', gap:'10px'}}>
-                    <button type="button" onClick={() => setIsModalOpen(false)} style={{padding:'10px 20px', borderRadius:'10px', border:'1px solid #e5e7eb', background:'white', fontWeight:'600', color:'#374151', cursor:'pointer'}}>Cancel</button>
-                    <button type="submit" style={s.addBtn}>Save Bed</button>
-                </div>
+              <div className="mb-form-group">
+                <label className="mb-label">Select Room</label>
+                <select
+                  className="mb-select"
+                  style={{ width: "100%" }}
+                  value={formData.roomId}
+                  onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
+                  required
+                  disabled={isSubmitting}
+                >
+                  <option value="">-- Select --</option>
+                  {rooms.map((r) => (
+                    <option key={r.id} value={r.id}>{r.roomNumber}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-form-group">
+                <label className="mb-label">Bed Number</label>
+                <input
+                  className="mb-input"
+                  placeholder="e.g. B-101-1"
+                  value={formData.bedNumber}
+                  onChange={(e) => setFormData({ ...formData, bedNumber: e.target.value })}
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="mb-modal-footer">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="mb-btn-cancel" disabled={isSubmitting}>
+                  Cancel
+                </button>
+                <button type="submit" className="mb-add-btn" disabled={isSubmitting} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {isSubmitting && <Loader2 className="animate-spin" size={16} />}
+                  {isSubmitting ? "Saving..." : "Save Bed"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      <ConfirmModal 
+      {/* --- Delete Confirm Modal --- */}
+      <ConfirmModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        onClose={() => !isSubmitting && setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Delete Bed?"
         message="Are you sure you want to delete this bed? This action cannot be undone."
-        confirmText="Delete Bed"
+        confirmText={isSubmitting ? "Deleting..." : "Delete Bed"}
         isDanger={true}
+        isLoading={isSubmitting}
       />
     </div>
   );

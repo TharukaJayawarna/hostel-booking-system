@@ -11,7 +11,7 @@ import com.hostel.hostel_backend.exception.AppException;
 import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.*;
 import com.hostel.hostel_backend.repository.*;
-import com.hostel.hostel_backend.service.NotificationService; // Notification Service Import
+import com.hostel.hostel_backend.service.NotificationService;
 import com.hostel.hostel_backend.service.ReservationService;
 import com.hostel.hostel_backend.util.PayHereUtil;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +41,11 @@ public class ReservationServiceImpl implements ReservationService {
     private final BedRepository bedRepository;
     private final PaymentRepository paymentRepository;
     private final PayHereUtil payHereUtil;
-    private final NotificationService notificationService; // Notification Service
+    private final NotificationService notificationService;
     private final UserRepository userRepository;
+
+    // UPDATE 1: BlockedDateRepository එක final කර Inject කරගන්න
+    private final BlockedDateRepository blockedDateRepository;
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -53,10 +56,22 @@ public class ReservationServiceImpl implements ReservationService {
     @Value("${payhere.currency}")
     private String currency;
 
+    // UPDATE 2: Blocked Dates Validation Helper Method
+    private void validateDatesNotBlocked(LocalDate startDate, LocalDate endDate) {
+        // මෙය BlockedDateRepository හි ඇති existsOverlappingDate query එක භාවිතා කරයි
+        boolean isBlocked = blockedDateRepository.existsOverlappingDate(startDate, endDate);
+        if (isBlocked) {
+            throw new AppException("Booking failed: Selected dates are blocked by administration (e.g., Maintenance/Holidays).", HttpStatus.BAD_REQUEST);
+        }
+    }
+
     // --- 1. Manual Reservation Create ---
     @Override
     @Transactional
     public void createManualReservation(AdminReservationRequestDTO dto) {
+        // UPDATE 3: Check Blocked Dates
+        validateDatesNotBlocked(dto.getFromDate(), dto.getToDate());
+
         Bed bed = bedRepository.findById(dto.getBedId())
                 .orElseThrow(() -> new AppException("Bed not found", HttpStatus.NOT_FOUND));
 
@@ -108,7 +123,6 @@ public class ReservationServiceImpl implements ReservationService {
         paymentRepository.save(payment);
         reservationRepository.save(reservation);
 
-        // SEND DETAILED NOTIFICATION
         if (linkedUser != null) {
             String title = "Reservation Confirmed ✅";
             String message = generateDetailedBillHtml(reservation, "Your reservation has been successfully created manually by the administration.");
@@ -120,6 +134,9 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional
     public void updateReservationDates(Long reservationId, DateChangeRequestDTO dto) throws ResourceNotFoundException {
+        // UPDATE 4: Check Blocked Dates
+        validateDatesNotBlocked(dto.getNewCheckInDate(), dto.getNewCheckOutDate());
+
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
 
@@ -147,7 +164,6 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setToDate(dto.getNewCheckOutDate());
         reservationRepository.save(reservation);
 
-        // SEND DETAILED NOTIFICATION
         if (reservation.getUser() != null) {
             String title = "Dates Updated Successfully 📅";
             String message = generateDetailedBillHtml(reservation, "Your reservation dates have been updated. Please find the revised details below.");
@@ -175,7 +191,6 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setReservationStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
 
-        // SEND DETAILED NOTIFICATION
         if (reservation.getUser() != null) {
             String title = "Reservation Cancelled 🚫";
             String warningMsg = "<span style='color:red; font-weight:bold;'>IMPORTANT: This reservation includes a non-refundable room policy. Cancellation does not guarantee a refund.</span>";
@@ -204,14 +219,13 @@ public class ReservationServiceImpl implements ReservationService {
         }
     }
 
-    // --- HELPER: GENERATE DETAILED BILL HTML (Updated with Student Details) ---
+    // --- HELPER: GENERATE DETAILED BILL HTML ---
     private String generateDetailedBillHtml(Reservation res, String introMessage) {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
         long nights = ChronoUnit.DAYS.between(res.getFromDate(), res.getToDate());
         Double amount = res.getPayment() != null ? res.getPayment().getPaymentAmount() : 0.00;
         String formattedAmount = String.format("LKR %,.2f", amount);
 
-        // Hostel/Company Info
         String companyInfo =
                 "<div style='font-size:12px; color:#6b7280; line-height:1.4;'>" +
                         "  <strong>NSBM Green University Hostel</strong><br/>" +
@@ -220,7 +234,6 @@ public class ReservationServiceImpl implements ReservationService {
                         "  Email: support@hostel.nsbm.ac.lk" +
                         "</div>";
 
-        // Reservation Summary Table
         String bookingTable =
                 "<div style='margin-top:20px; font-size:14px; font-weight:700; color:#111827; border-bottom:1px solid #e5e7eb; padding-bottom:5px;'>Reservation Details</div>" +
                         "<table style='width:100%; margin-top:10px; border-collapse:collapse; font-size:14px; border:1px solid #e5e7eb;'>" +
@@ -250,7 +263,6 @@ public class ReservationServiceImpl implements ReservationService {
                         "  </tr>" +
                         "</table>";
 
-        // --- NEW: Student Details Table ---
         String studentTable =
                 "<div style='margin-top:25px; font-size:14px; font-weight:700; color:#111827; border-bottom:1px solid #e5e7eb; padding-bottom:5px;'>Student Information</div>" +
                         "<table style='width:100%; margin-top:10px; border-collapse:collapse; font-size:14px; border:1px solid #e5e7eb;'>" +
@@ -272,7 +284,6 @@ public class ReservationServiceImpl implements ReservationService {
                         "  </tr>" +
                         "</table>";
 
-        // Cost Breakdown Section
         String costSection =
                 "<div style='margin-top:20px; background-color:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:15px;'>" +
                         "  <div style='display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; color:#166534;'>" +
@@ -285,21 +296,19 @@ public class ReservationServiceImpl implements ReservationService {
                         "  </div>" +
                         "</div>";
 
-        // Footer Policy
         String policy =
                 "<div style='margin-top:20px; font-size:11px; color:#9ca3af; text-align:center;'>" +
                         "  * This reservation includes a non-cancellable and non-refundable room policy.<br/>" +
                         "  Generated on " + LocalDate.now().format(dateFormatter) +
                         "</div>";
 
-        // Combine All
         return "<div style='font-family: sans-serif; color:#1f2937;'>" +
                 "  <p style='font-size:15px;'>Hello <strong>" + res.getStudentName() + "</strong>,</p>" +
                 "  <p style='font-size:14px; color:#4b5563;'>" + introMessage + "</p>" +
                 "  <hr style='border:none; border-top:1px solid #e5e7eb; margin:20px 0;'/>" +
                 companyInfo +
                 bookingTable +
-                studentTable + // Student Table එක Reservation Table එකට යටින් එක් කරන ලදී
+                studentTable +
                 costSection +
                 policy +
                 "</div>";
@@ -307,7 +316,9 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Transactional(rollbackFor = Exception.class)
     public PayHereInitResponseDTO initiateReservation(CreateReservationRequestDTO dto) {
-        // ... (පරණ කේතයම) ...
+        // UPDATE 5: Check Blocked Dates
+        validateDatesNotBlocked(dto.getFromDate(), dto.getToDate());
+
         try {
             Bed bed = bedRepository.findById(dto.getBedId())
                     .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id: " + dto.getBedId()));
@@ -384,7 +395,6 @@ public class ReservationServiceImpl implements ReservationService {
 
         Room room = bed.getRoom();
 
-        // මිල ගණන් set කර ඇත්දැයි පරීක්ෂා කිරීම
         if (room.getMonthlyPrice() == null) {
             throw new AppException("Room monthly price is not set!", HttpStatus.CONFLICT);
         }
@@ -397,34 +407,21 @@ public class ReservationServiceImpl implements ReservationService {
         double totalAmount = 0.0;
 
         if (room.getReservationPeriod() == com.hostel.hostel_backend.model.ReservationPeriod.MONTHLY) {
-            // --- MONTHLY Logic ---
-            // මාසික කාමර සඳහා දින 30, 60, හෝ 90 විය යුතුය.
-            // මාස ගණන ගණනය කිරීම (පූර්ණ මාස ලෙස සලකයි)
             long months = totalDays / 30;
-
-            // Monthly Price එකෙන් ගුණ කිරීම
             totalAmount = months * room.getMonthlyPrice();
-
         } else {
-            // --- DEFAULT Logic (Tiered Pricing) ---
-            // මුලින්ම මාස ගණන (30 days blocks)
             long months = totalDays / 30;
             long remainingDaysAfterMonths = totalDays % 30;
-
-            // ඉතිරි දින වලින් සති ගණන (7 days blocks)
             long weeks = remainingDaysAfterMonths / 7;
-            long finalDays = remainingDaysAfterMonths % 7; // ඉතිරි දින
+            long finalDays = remainingDaysAfterMonths % 7;
 
-            // මිල ගණන් ලබා ගැනීම (null නම් 0 ලෙස සලකයි)
             double mPrice = room.getMonthlyPrice();
             double wPrice = room.getWeeklyPrice() != null ? room.getWeeklyPrice() : 0.0;
             double dPrice = room.getDailyPrice() != null ? room.getDailyPrice() : 0.0;
 
-            // එකතුව ගණනය කිරීම
             totalAmount = (months * mPrice) + (weeks * wPrice) + (finalDays * dPrice);
         }
 
-        // දශම ස්ථාන දෙකකට වටයන්න (Round to 2 decimal places)
         return Math.round(totalAmount * 100.0) / 100.0;
     }
 
@@ -456,7 +453,6 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setReservationStatus(ReservationStatus.APPROVED);
         reservationRepository.save(reservation);
 
-        // SEND NOTIFICATION
         if (reservation.getUser() != null) {
             String title = "Booking Reactivated 🔄";
             String message = generateDetailedBillHtml(reservation, "Your booking has been manually reactivated by the administration.");
@@ -470,40 +466,29 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found with id "+reservationId));
 
-        // --- NEW VALIDATION: Payment Status Check ---
-        // Payment එකක් තිබිය යුතුයි සහ එය APPROVED විය යුතුයි.
         if (reservation.getPayment() == null || reservation.getPayment().getPaymentStatus() != PaymentStatus.APPROVED) {
             throw new AppException("Cannot assign new bed! Payment is not verified or approved.", HttpStatus.BAD_REQUEST);
         }
-        // --------------------------------------------
 
         Bed newBed = bedRepository.findById(newBedId)
                 .orElseThrow(() -> new ResourceNotFoundException("New Bed not found with id "+newBedId));
 
-        // අලුත් Bed එක දැනටමත් Book වී ඇත්දැයි බැලීම (Optional safety check)
         if (Boolean.TRUE.equals(newBed.getIsBooked())) {
             throw new AppException("The selected new bed is already occupied!", HttpStatus.CONFLICT);
         }
 
-        // පරණ Bed එකක් තිබුනා නම් එය නිදහස් කිරීම (Safety cleanup)
         if (reservation.getBed() != null) {
             Bed oldBed = reservation.getBed();
-            // Reservation එක REJECTED/CANCELLED වෙලා තිබුනා නම් Bed එක දැනටමත් free වෙලා ඇති,
-            // නමුත් තවම Link වී ඇත්නම් එය අයින් කරමු.
-            // (මෙය අවශ්‍ය වන්නේ පරණ bed එක තාම මේ reservation එකටම lock වී ඇත්නම් පමණි)
             oldBed.setIsBooked(false);
         }
 
-        // අලුත් Bed එක Book කිරීම
         newBed.setIsBooked(true);
         bedRepository.save(newBed);
 
-        // Reservation එකට අලුත් Bed එක set කිරීම සහ Status එක APPROVED කිරීම
         reservation.setBed(newBed);
         reservation.setReservationStatus(ReservationStatus.APPROVED);
         reservationRepository.save(reservation);
 
-        // Notification යැවීම
         if (reservation.getUser() != null) {
             String title = "New Bed Assigned 🛏️";
             String message = generateDetailedBillHtml(reservation, "Since your original bed was unavailable due to late payment verification, we have assigned you a new matching bed.");
@@ -552,17 +537,14 @@ public class ReservationServiceImpl implements ReservationService {
         Double originalMonthlyPrice = originalRoom.getMonthlyPrice();
         var originalPeriod = originalRoom.getReservationPeriod();
 
-        // 1. මුලින්ම Monthly Price එක සමාන, Book නොවූ ඇඳන් සොයන්න (Repository method එක එලෙසම පාවිච්චි කළ හැක)
         List<Bed> matchingBeds = bedRepository.findByIsBookedFalseAndRoomMonthlyPrice(originalMonthlyPrice);
 
-        // 2. ඉන්පසු Reservation Period එක (DEFAULT ද MONTHLY ද යන්න) ගැලපෙන ඒවා පමණක් ෆිල්ටර් කරන්න
         return matchingBeds.stream()
                 .filter(bed -> bed.getRoom().getReservationPeriod() == originalPeriod)
                 .map(bed -> AvailableBedDTO.builder()
                         .id(bed.getId())
                         .bedNumber(bed.getBedNumber())
-                        // මෙතැන අවශ්‍ය නම් weekly/daily price යැවීමට DTO එක update කළ හැක
-                        .price(bed.getRoom().getMonthlyPrice()) // Monthly Price
+                        .price(bed.getRoom().getMonthlyPrice())
                         .floorNumber(bed.getRoom().getFloor().getFloorNumber())
                         .hubNumber(bed.getRoom().getFloor().getHub().getHubNumber())
                         .roomNumber(bed.getRoom().getRoomNumber())

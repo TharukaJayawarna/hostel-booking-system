@@ -1,0 +1,292 @@
+/* Container */
+.booking-success-container {
+  min-height: 100vh;
+  background-color: #f3f4f6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bs-bg-pattern {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+.bs-main-wrapper {
+  z-index: 1;
+  width: 100%;
+  max-width: 450px;
+}
+
+/* Receipt Card */
+.bs-receipt-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 25px;
+}
+
+/* Success Banner */
+.bs-success-banner {
+  background: #10b981;
+  color: white;
+  padding: 30px 20px;
+  text-align: center;
+  position: relative;
+}
+
+.bs-icon-pulse {
+  margin-bottom: 10px;
+  animation: pulse 2s infinite;
+}
+
+.bs-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.bs-subtitle {
+  margin: 5px 0 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+/* Receipt Body */
+.bs-receipt-body {
+  padding: 25px;
+}
+
+/* Reference Row */
+.bs-ref-row {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.bs-ref-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.bs-ref-value {
+  font-family: monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.bs-ref-value.clickable {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.bs-ref-value.clickable:hover {
+  opacity: 0.7;
+}
+
+.bs-ref-time {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Divider */
+.bs-divider {
+  border-bottom: 2px dashed #e2e8f0;
+  margin: 0 0 20px 0;
+}
+
+/* Timeline */
+.bs-timeline-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.bs-timeline-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-timeline-box.right {
+  align-items: flex-end;
+}
+
+.bs-t-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.bs-t-date {
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+  margin-top: 2px;
+}
+
+/* Grid Details */
+.bs-grid-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.bs-grid-item {
+  display: flex;
+  gap: 10px;
+}
+
+.bs-grid-icon {
+  width: 32px;
+  height: 32px;
+  background: #eff6ff;
+  color: #3b82f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bs-grid-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-g-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.bs-g-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.bs-g-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Contact Mini */
+.bs-contact-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 20px;
+    align-items: center;
+}
+.bs-contact-mini span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Total Box */
+.bs-total-box {
+  background: #1e293b;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bs-total-text {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.bs-total-amount {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Receipt Footer */
+.bs-receipt-footer {
+  background: #f8fafc;
+  padding: 12px;
+  text-align: center;
+  font-size: 10px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Action Buttons */
+.bs-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.bs-btn-primary, .bs-btn-secondary {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.bs-btn-primary {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.bs-btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+.bs-btn-secondary {
+  background: white;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.bs-btn-secondary:hover {
+  background: #f8fafc;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}

@@ -1,37 +1,101 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import api from '../../api/axiosConfig';
-import { useNotification } from '../../context/NotificationContext';
-import { User, Mail, Phone, Lock, Type, ArrowRight, Loader2, CheckCircle, Wifi, ShieldCheck, Coffee } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useNotification } from "../../context/NotificationContext";
+import {
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Type,
+  ArrowRight,
+  Loader2,
+  Wifi,
+  ShieldCheck,
+  Coffee,
+  Eye,
+  EyeOff,
+  AlertCircle
+} from "lucide-react";
+import "../../components/styles/Signup.css";
+
+// Service import
+import authService from "../../services/auth.service";
 
 const Signup = () => {
   const navigate = useNavigate();
   const notify = useNotification();
+  
   const [loading, setLoading] = useState(false);
-  const [focusedInput, setFocusedInput] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    contactNumber: '',
-    username: '',
-    password: '',
-    role: 'STUDENT'
+    firstName: "",
+    lastName: "",
+    email: "",
+    contactNumber: "",
+    username: "",
+    password: "",
+    role: "STUDENT",
   });
 
+  // --- Validation Logic ---
+  const validate = () => {
+    let tempErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(?:0|94|\+94)?(?:7\d{8})$/; // Sri Lankan Mobile Format (07xxxxxxxx)
+
+    if (!formData.firstName.trim()) tempErrors.firstName = "First name is required";
+    if (!formData.lastName.trim()) tempErrors.lastName = "Last name is required";
+    
+    if (!formData.email) {
+      tempErrors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email)) {
+      tempErrors.email = "Invalid email format";
+    }
+
+    if (!formData.contactNumber) {
+      tempErrors.contactNumber = "Phone number is required";
+    } else if (!phoneRegex.test(formData.contactNumber)) {
+      tempErrors.contactNumber = "Invalid phone number (e.g., 0771234567)";
+    }
+
+    if (!formData.username.trim()) tempErrors.username = "Username is required";
+    
+    if (!formData.password) {
+      tempErrors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      tempErrors.password = "Password must be at least 8 characters";
+    }
+
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validate()) {
+      notify.error("Please fix the errors in the form.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await api.post('/auth/register', formData);
+      await authService.register(formData);
       notify.success("Registration Successful! Please login.");
-      navigate('/login');
+      navigate("/login");
     } catch (error) {
       notify.error(error.response?.data?.message || "Registration failed.");
     } finally {
@@ -39,150 +103,48 @@ const Signup = () => {
     }
   };
 
-  // --- STYLES ---
-  const s = {
-    container: {
-      minHeight: '100vh',
-      display: 'flex',
-      backgroundColor: 'white',
-      fontFamily: "'Inter', sans-serif",
-    },
-    // --- LEFT SIDE (Updated) ---
-    imageSection: {
-      flex: '1',
-      position: 'relative',
-      backgroundColor: '#0f172a', // Darker slate
-      // Modern clean interior image
-      backgroundImage: 'url("https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80")', 
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      padding: '60px',
-      color: 'white',
-    },
-    overlay: {
-      position: 'absolute',
-      top: 0, left: 0, right: 0, bottom: 0,
-      background: 'linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.7) 100%)', // Dark overlay
-      zIndex: 1
-    },
-    imageContent: {
-      position: 'relative',
-      zIndex: 2,
-    },
-    
-    // New Feature List Styles
-    featureList: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '30px',
-      marginTop: 'auto'
-    },
-    featureItem: {
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: '15px'
-    },
-    featureIconBox: {
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      padding: '12px',
-      borderRadius: '12px',
-      color: '#818cf8', // Indigo light
-      display: 'flex', alignItems: 'center', justifyContent: 'center'
-    },
-    featureText: {
-      display: 'flex', flexDirection: 'column', gap: '4px'
-    },
-    featureTitle: { fontSize: '16px', fontWeight: '700', color: 'white' },
-    featureDesc: { fontSize: '13px', color: '#94a3b8', lineHeight: '1.4' },
-
-    // --- RIGHT SIDE (Form) ---
-    formSection: {
-      flex: '1.2',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '40px',
-      backgroundColor: 'white',
-      overflowY: 'auto'
-    },
-    formWrapper: { width: '100%', maxWidth: '520px' },
-    header: { marginBottom: '30px' },
-    title: { fontSize: '32px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' },
-    subTitle: { fontSize: '15px', color: '#64748b' },
-    gridRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
-    inputGroup: { marginBottom: '18px' },
-    label: { display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: '600', color: '#334155' },
-    inputContainer: (isFocused) => ({
-      display: 'flex',
-      alignItems: 'center',
-      border: `1.5px solid ${isFocused ? '#4f46e5' : '#e2e8f0'}`,
-      borderRadius: '10px',
-      backgroundColor: isFocused ? 'white' : '#f8fafc',
-      transition: 'all 0.2s ease',
-      boxShadow: isFocused ? '0 0 0 4px rgba(79, 70, 229, 0.1)' : 'none'
-    }),
-    iconBox: { padding: '0 14px', color: '#64748b', display: 'flex', alignItems: 'center' },
-    input: { width: '100%', padding: '12px 14px 12px 0', border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', color: '#1e293b', fontWeight: '500' },
-    button: {
-      width: '100%', padding: '14px', backgroundColor: '#4f46e5', color: 'white',
-      border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '700',
-      cursor: 'pointer', marginTop: '15px', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', gap: '8px', transition: 'background-color 0.2s',
-      boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
-    },
-    footer: { marginTop: '25px', textAlign: 'center', fontSize: '14px', color: '#64748b' },
-    link: { color: '#4f46e5', fontWeight: '700', textDecoration: 'none', marginLeft: '5px' }
-  };
-
   return (
-    <div style={s.container}>
-      
+    <div className="signup-container">
       {/* LEFT SIDE - Features Section */}
-      <div style={s.imageSection} className="hidden-on-mobile">
-        <div style={s.overlay}></div>
-        
+      <div className="signup-image-section">
+        <div className="signup-overlay"></div>
+
         {/* Brand Top Left */}
-        <div style={s.imageContent}>
-          <div style={{fontSize: '24px', fontWeight: 'bold', display:'flex', alignItems:'center', gap:'10px'}}>
-             <div style={{width:'32px', height:'32px', background:'#4f46e5', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', color:'white'}}>H</div>
-             Hostel PMS
-          </div>
+        <div className="signup-brand-content">
+          <div className="brand-logo-box">H</div>
+          Hostel PMS
         </div>
-        
+
         {/* Features List Bottom Left */}
-        <div style={{...s.imageContent, marginTop:'auto'}}>
-          <h2 style={{fontSize:'28px', fontWeight:'800', marginBottom:'30px', lineHeight:'1.2'}}>
-            More than just a place<br/>to sleep.
+        <div className="signup-features-content">
+          <h2 className="features-title">
+            More than just a place
+            <br />
+            to sleep.
           </h2>
-          
-          <div style={s.featureList}>
-            {/* Feature 1 */}
-            <div style={s.featureItem}>
-              <div style={s.featureIconBox}><Wifi size={20}/></div>
-              <div style={s.featureText}>
-                <span style={s.featureTitle}>High-Speed WiFi</span>
-                <span style={s.featureDesc}>Stay connected with fiber internet access in all rooms and study areas.</span>
+
+          <div className="feature-list">
+            <div className="feature-item">
+              <div className="feature-icon-box"><Wifi size={20} /></div>
+              <div className="feature-text">
+                <span className="feature-item-title">High-Speed WiFi</span>
+                <span className="feature-desc">Fiber internet access in all rooms and study areas.</span>
               </div>
             </div>
 
-            {/* Feature 2 */}
-            <div style={s.featureItem}>
-              <div style={s.featureIconBox}><ShieldCheck size={20}/></div>
-              <div style={s.featureText}>
-                <span style={s.featureTitle}>24/7 Security</span>
-                <span style={s.featureDesc}>Your safety is our priority with round-the-clock surveillance and support.</span>
+            <div className="feature-item">
+              <div className="feature-icon-box"><ShieldCheck size={20} /></div>
+              <div className="feature-text">
+                <span className="feature-item-title">24/7 Security</span>
+                <span className="feature-desc">Round-the-clock surveillance and support.</span>
               </div>
             </div>
 
-            {/* Feature 3 */}
-            <div style={s.featureItem}>
-              <div style={s.featureIconBox}><Coffee size={20}/></div>
-              <div style={s.featureText}>
-                <span style={s.featureTitle}>Modern Common Areas</span>
-                <span style={s.featureDesc}>Spacious lounges and study rooms designed for student life.</span>
+            <div className="feature-item">
+              <div className="feature-icon-box"><Coffee size={20} /></div>
+              <div className="feature-text">
+                <span className="feature-item-title">Modern Common Areas</span>
+                <span className="feature-desc">Spacious lounges and study rooms.</span>
               </div>
             </div>
           </div>
@@ -190,78 +152,138 @@ const Signup = () => {
       </div>
 
       {/* RIGHT SIDE - Signup Form */}
-      <div style={s.formSection}>
-        <div style={s.formWrapper}>
-          
-          <div style={s.header}>
-            <h2 style={s.title}>Create an account</h2>
-            <p style={s.subTitle}>Join the community today! Enter your details below.</p>
+      <div className="signup-form-section">
+        <div className="signup-form-wrapper">
+          <div className="signup-header">
+            <h2 className="signup-title">Create an account</h2>
+            <p className="signup-subtitle">
+              Join the community today! Enter your details below.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div style={s.gridRow}>
-                <div style={s.inputGroup}>
-                    <label style={s.label}>First Name</label>
-                    <div style={s.inputContainer(focusedInput === 'firstName')}>
-                        <div style={s.iconBox}><Type size={18}/></div>
-                        <input name="firstName" style={s.input} placeholder="John" onChange={handleChange} onFocus={() => setFocusedInput('firstName')} onBlur={() => setFocusedInput(null)} required />
-                    </div>
+            <div className="form-grid-row">
+              <div className="input-group">
+                <label className="input-label">First Name</label>
+                <div className={`input-container ${errors.firstName ? 'error' : ''}`}>
+                  <div className="input-icon"><Type size={18} /></div>
+                  <input
+                    name="firstName"
+                    className="form-input"
+                    placeholder="John"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                  />
                 </div>
-                <div style={s.inputGroup}>
-                    <label style={s.label}>Last Name</label>
-                    <div style={s.inputContainer(focusedInput === 'lastName')}>
-                        <div style={s.iconBox}><Type size={18}/></div>
-                        <input name="lastName" style={s.input} placeholder="Doe" onChange={handleChange} onFocus={() => setFocusedInput('lastName')} onBlur={() => setFocusedInput(null)} required />
-                    </div>
-                </div>
-            </div>
+                {errors.firstName && <span className="error-text">{errors.firstName}</span>}
+              </div>
 
-            <div style={s.inputGroup}>
-              <label style={s.label}>Email Address</label>
-              <div style={s.inputContainer(focusedInput === 'email')}>
-                <div style={s.iconBox}><Mail size={18} /></div>
-                <input type="email" name="email" style={s.input} placeholder="john.doe@university.edu" onChange={handleChange} onFocus={() => setFocusedInput('email')} onBlur={() => setFocusedInput(null)} required />
+              <div className="input-group">
+                <label className="input-label">Last Name</label>
+                <div className={`input-container ${errors.lastName ? 'error' : ''}`}>
+                  <div className="input-icon"><Type size={18} /></div>
+                  <input
+                    name="lastName"
+                    className="form-input"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                  />
+                </div>
+                {errors.lastName && <span className="error-text">{errors.lastName}</span>}
               </div>
             </div>
 
-            <div style={s.gridRow}>
-                <div style={s.inputGroup}>
-                    <label style={s.label}>Phone Number</label>
-                    <div style={s.inputContainer(focusedInput === 'contactNumber')}>
-                        <div style={s.iconBox}><Phone size={18}/></div>
-                        <input name="contactNumber" style={s.input} placeholder="0771234567" onChange={handleChange} onFocus={() => setFocusedInput('phone')} onBlur={() => setFocusedInput(null)} required />
-                    </div>
-                </div>
-                <div style={s.inputGroup}>
-                    <label style={s.label}>Username</label>
-                    <div style={s.inputContainer(focusedInput === 'username')}>
-                        <div style={s.iconBox}><User size={18}/></div>
-                        <input name="username" style={s.input} placeholder="johndoe" onChange={handleChange} onFocus={() => setFocusedInput('username')} onBlur={() => setFocusedInput(null)} required />
-                    </div>
-                </div>
-            </div>
-
-            <div style={s.inputGroup}>
-              <label style={s.label}>Password</label>
-              <div style={s.inputContainer(focusedInput === 'password')}>
-                <div style={s.iconBox}><Lock size={18} /></div>
-                <input type="password" name="password" style={s.input} placeholder="••••••••" onChange={handleChange} onFocus={() => setFocusedInput('password')} onBlur={() => setFocusedInput(null)} required />
+            <div className="input-group">
+              <label className="input-label">Email Address</label>
+              <div className={`input-container ${errors.email ? 'error' : ''}`}>
+                <div className="input-icon"><Mail size={18} /></div>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-input"
+                  placeholder="john.doe@university.edu"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
               </div>
-              <p style={{fontSize:'11px', color:'#94a3b8', marginTop:'5px'}}>Must be at least 8 characters long.</p>
+              {errors.email && <span className="error-text">{errors.email}</span>}
             </div>
 
-            <button type="submit" style={{...s.button, opacity: loading ? 0.7 : 1}} disabled={loading} onMouseOver={(e) => !loading && (e.currentTarget.style.backgroundColor = '#4338ca')} onMouseOut={(e) => !loading && (e.currentTarget.style.backgroundColor = '#4f46e5')}>
-              {loading ? <Loader2 className="animate-spin" size={20}/> : <>Create Account <ArrowRight size={18}/></>}
+            <div className="form-grid-row">
+              <div className="input-group">
+                <label className="input-label">Phone Number</label>
+                <div className={`input-container ${errors.contactNumber ? 'error' : ''}`}>
+                  <div className="input-icon"><Phone size={18} /></div>
+                  <input
+                    name="contactNumber"
+                    className="form-input"
+                    placeholder="0771234567"
+                    value={formData.contactNumber}
+                    onChange={handleChange}
+                    maxLength={10}
+                  />
+                </div>
+                {errors.contactNumber && <span className="error-text">{errors.contactNumber}</span>}
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Username</label>
+                <div className={`input-container ${errors.username ? 'error' : ''}`}>
+                  <div className="input-icon"><User size={18} /></div>
+                  <input
+                    name="username"
+                    className="form-input"
+                    placeholder="johndoe"
+                    value={formData.username}
+                    onChange={handleChange}
+                  />
+                </div>
+                {errors.username && <span className="error-text">{errors.username}</span>}
+              </div>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Password</label>
+              <div className={`input-container ${errors.password ? 'error' : ''}`}>
+                <div className="input-icon"><Lock size={18} /></div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  className="form-input"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.password ? (
+                <span className="error-text">{errors.password}</span>
+              ) : (
+                <p className="password-hint">Must be at least 8 characters long.</p>
+              )}
+            </div>
+
+            <button type="submit" className="btn-signup" disabled={loading}>
+              {loading ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>Create Account <ArrowRight size={18} /></>
+              )}
             </button>
 
-            <div style={s.footer}>
-              Already have an account? <Link to="/login" style={s.link}>Log in</Link>
+            <div className="signup-footer">
+              Already have an account? <Link to="/login" className="login-link">Log in</Link>
             </div>
           </form>
         </div>
       </div>
-
-      <style>{`@media (max-width: 900px) { .hidden-on-mobile { display: none !important; } }`}</style>
     </div>
   );
 };

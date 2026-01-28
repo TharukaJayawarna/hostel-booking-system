@@ -1,40 +1,49 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import api from '../../api/axiosConfig';
-import { useNotification } from '../../context/NotificationContext';
-import { 
-  BedDouble, 
-  CheckCircle2, 
-  XCircle, 
-  CalendarDays, 
+import React, { useEffect, useState, useMemo } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useNotification } from "../../context/NotificationContext";
+import {
+  BedDouble,
+  CheckCircle2,
+  XCircle,
+  CalendarDays,
   DoorOpen,
-  ArrowLeft
-} from 'lucide-react';
+  ArrowLeft,
+  Loader2,
+  Wrench, // Maintenance Icon
+} from "lucide-react";
+import "./styles/BedSelection.css";
+
+// roomService import
+import roomService from "../../services/room.service";
 
 const BedSelection = () => {
   const notify = useNotification();
   const { roomId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  // Extract reservedFor from location state
-  const { checkIn, checkOut, reservedFor } = location.state || {}; 
+
+  // Extract params from location state
+  const { checkIn, checkOut, reservedFor } = location.state || {};
+  
   const [beds, setBeds] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Validation: දින තෝරා නොමැති නම් Redirect කිරීම
     if (!checkIn || !checkOut) {
-      notify.error("Please select dates first.");
-      navigate('/'); 
+      notify.error("Session expired or invalid dates. Please start over.");
+      navigate("/");
       return;
     }
     fetchBeds();
-  }, [roomId]);
+  }, [roomId, navigate, checkIn, checkOut, notify]);
 
   const fetchBeds = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/rooms/${roomId}/beds`);
-      if (response.data.status === 'SUCCESS') {
+      const response = await roomService.getBedsByRoom(roomId);
+
+      if (response.data.status === "SUCCESS") {
         setBeds(response.data.data);
       }
     } catch (error) {
@@ -45,183 +54,106 @@ const BedSelection = () => {
     }
   };
 
-  const handleBedSelect = (bed) => {
-    if (bed.isBooked) return; // Cannot select booked beds
+  // --- Optimization: Sort Beds Numerically ---
+  // B-1, B-2, B-10 ආකාරයට නිවැරදිව Sort කිරීම
+  const sortedBeds = useMemo(() => {
+    return [...beds].sort((a, b) => 
+      a.bedNumber.localeCompare(b.bedNumber, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }, [beds]);
 
-    // Pass all reservation details including reservedFor to the reservation page
-    navigate('/reserve', { 
-      state: { 
-        bedId: bed.id, 
+  const handleBedSelect = (bed) => {
+    // Validation: Booked හෝ Maintenance නම් Click කිරීම වැළැක්වීම
+    if (bed.isBooked || bed.underMaintenance) return;
+
+    navigate("/reserve", {
+      state: {
+        bedId: bed.id,
         bedNumber: bed.bedNumber,
-        roomNumber: bed.roomNumber, 
-        checkIn: checkIn,   
-        checkOut: checkOut,
-        reservedFor: reservedFor // <--- Added: Pass room gender restriction
-      } 
+        roomNumber: bed.roomNumber,
+        checkIn,
+        checkOut,
+        reservedFor,
+      },
     });
   };
 
-  // --- STYLES ---
-  const s = {
-    pageContainer: {
-      minHeight: '100vh',
-      backgroundColor: '#f3f4f6',
-      fontFamily: "'Inter', sans-serif",
-      padding: '45px 20px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center'
-    },
-    innerContainer: { width: '100%', maxWidth: '1000px' },
-    
-    // Header
-    headerSection: { 
-      textAlign: 'center', 
-      marginBottom: '50px',
-      position: 'relative'
-    },
-    backBtn: {
-      position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
-      display: 'flex', alignItems: 'center', gap: '6px',
-      color: '#64748b', fontSize: '14px', fontWeight: '600',
-      background: 'transparent', border: 'none', cursor: 'pointer',
-      padding: '8px 12px', borderRadius: '8px', transition: 'background 0.2s',
-      ':hover': { background: '#f1f5f9' }
-    },
-    title: { fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' },
-    subtitle: { 
-      fontSize: '16px', color: '#64748b', 
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' 
-    },
-    dateBadge: {
-      background: '#e0e7ff', color: '#4338ca', padding: '4px 12px',
-      borderRadius: '20px', fontSize: '14px', fontWeight: '600'
-    },
-
-    // Grid
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-      gap: '25px',
-      paddingBottom: '40px'
-    },
-
-    // Bed Card
-    card: (isBooked) => ({
-      backgroundColor: 'white',
-      borderRadius: '20px',
-      border: '1px solid #e2e8f0',
-      padding: '25px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      cursor: isBooked ? 'not-allowed' : 'pointer',
-      transition: 'all 0.2s ease',
-      opacity: isBooked ? 0.6 : 1,
-      boxShadow: isBooked ? 'none' : '0 4px 6px -1px rgba(0,0,0,0.05)',
-      position: 'relative',
-      overflow: 'hidden'
-    }),
-    cardHover: {
-      transform: 'translateY(-5px)',
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-      borderColor: '#4f46e5'
-    },
-
-    iconBox: (isBooked) => ({
-      width: '60px', height: '60px', borderRadius: '50%',
-      background: isBooked ? '#f1f5f9' : '#ecfdf5',
-      color: isBooked ? '#94a3b8' : '#10b981',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      marginBottom: '15px',
-      fontSize: '24px'
-    }),
-
-    bedTitle: { fontSize: '18px', fontWeight: '700', color: '#1e293b', marginBottom: '5px' },
-    roomLabel: { fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' },
-    
-    statusBadge: (isBooked) => ({
-      marginTop: '15px',
-      padding: '6px 14px', borderRadius: '20px',
-      fontSize: '12px', fontWeight: '700', textTransform: 'uppercase',
-      letterSpacing: '0.5px',
-      backgroundColor: isBooked ? '#fef2f2' : '#f0fdf4',
-      color: isBooked ? '#ef4444' : '#15803d',
-      display: 'flex', alignItems: 'center', gap: '6px'
-    }),
-
-    // Empty/Loading
-    centerMessage: { textAlign: 'center', color: '#94a3b8', marginTop: '60px' }
+  // Helper function to determine bed status styles
+  const getBedStatus = (bed) => {
+    if (bed.underMaintenance) return { class: "maintenance", label: "Maintenance", icon: Wrench };
+    if (bed.isBooked) return { class: "booked", label: "Occupied", icon: XCircle };
+    return { class: "available", label: "Available", icon: CheckCircle2 };
   };
 
-  if (loading) return (
-    <div style={{height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color:'#64748b', fontFamily:"'Inter', sans-serif"}}>
-      <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'15px'}}>
-        <div style={{width:'40px', height:'40px', border:'3px solid #e2e8f0', borderTop:'3px solid #4f46e5', borderRadius:'50%', animation:'spin 1s linear infinite'}}></div>
-        <span>Loading Beds...</span>
+  if (loading) {
+    return (
+      <div className="bs-loading-container">
+        <Loader2 className="animate-spin" size={40} color="#4f46e5" />
+        <span style={{ marginTop: "10px", color: "#64748b", fontWeight: 500 }}>Checking availability...</span>
       </div>
-      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div style={s.pageContainer}>
-      <div style={s.innerContainer}>
-        
+    <div className="bed-selection-container">
+      <div className="bs-inner-container">
         {/* Header */}
-        <div style={s.headerSection}>
-          <button 
-            style={s.backBtn} 
-            onClick={() => navigate(-1)}
-            onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-          >
-            <ArrowLeft size={18}/> Back
+        <div className="bs-header-section">
+          <button className="bs-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={18} /> Back
           </button>
-          
-          <h1 style={s.title}>Choose Your Bed</h1>
-          <div style={s.subtitle}>
-            <CalendarDays size={16}/>
-            Booking for <span style={s.dateBadge}>{checkIn}</span> to <span style={s.dateBadge}>{checkOut}</span>
+
+          <h1 className="bs-title">Choose Your Bed</h1>
+          <div className="bs-subtitle">
+            <CalendarDays size={16} />
+            Booking for <span className="bs-date-badge">{checkIn}</span> to{" "}
+            <span className="bs-date-badge">{checkOut}</span>
           </div>
         </div>
 
         {/* Beds Grid */}
-        <div style={s.grid}>
-          {beds.length === 0 ? (
-            <div style={{gridColumn: '1 / -1', ...s.centerMessage}}>
-              <BedDouble size={48} style={{opacity: 0.3, marginBottom:'15px', margin: '0 auto'}}/>
+        <div className="bs-grid">
+          {sortedBeds.length === 0 ? (
+            <div className="bs-center-message">
+              <BedDouble size={48} className="bs-empty-icon" />
               <h3>No beds found in this room.</h3>
               <p>Please try selecting a different room.</p>
             </div>
           ) : (
-            beds.map(bed => (
-              <div 
-                key={bed.id} 
-                style={s.card(bed.isBooked)}
-                onClick={() => handleBedSelect(bed)}
-                onMouseEnter={(e) => !bed.isBooked && Object.assign(e.currentTarget.style, s.cardHover)}
-                onMouseLeave={(e) => !bed.isBooked && Object.assign(e.currentTarget.style, s.card(false))}
-              >
-                {/* Icon */}
-                <div style={s.iconBox(bed.isBooked)}>
-                  <BedDouble size={28} strokeWidth={1.5} />
-                </div>
+            sortedBeds.map((bed) => {
+              const status = getBedStatus(bed);
+              const StatusIcon = status.icon;
 
-                {/* Info */}
-                <div style={s.bedTitle}>{bed.bedNumber}</div>
-                <div style={s.roomLabel}>
-                    <DoorOpen size={12}/> {bed.roomNumber || "Room"}
-                </div>
+              return (
+                <div
+                  key={bed.id}
+                  className={`bs-card ${status.class}`}
+                  onClick={() => handleBedSelect(bed)}
+                  role="button"
+                  tabIndex={status.class === "available" ? 0 : -1} // Accessibility
+                  aria-disabled={status.class !== "available"}
+                >
+                  {/* Icon Box */}
+                  <div className={`bs-icon-box ${status.class}`}>
+                    <BedDouble size={28} strokeWidth={1.5} />
+                  </div>
 
-                {/* Status */}
-                <div style={s.statusBadge(bed.isBooked)}>
-                  {bed.isBooked ? <XCircle size={14}/> : <CheckCircle2 size={14}/>}
-                  {bed.isBooked ? 'Occupied' : 'Available'}
+                  {/* Bed Info */}
+                  <div className="bs-bed-title">{bed.bedNumber}</div>
+                  <div className="bs-room-label">
+                    <DoorOpen size={12} /> {bed.roomNumber || "Room"}
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className={`bs-status-badge ${status.class}`}>
+                    <StatusIcon size={14} />
+                    {status.label}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
-
       </div>
     </div>
   );

@@ -1,47 +1,141 @@
-import React, { useEffect, useState } from 'react';
-import api from '../../api/axiosConfig';
-import { useNotification } from '../../context/NotificationContext';
-import ConfirmModal from '../../components/ConfirmModal';
-import { Layers, Building2, DoorOpen, Plus, Trash2, X, Search, LayoutGrid, Filter } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from "react";
+import { useNotification } from "../../context/NotificationContext";
+import ConfirmModal from "../../components/ConfirmModal";
+import {
+  Layers,
+  Building2,
+  DoorOpen,
+  Plus,
+  Trash2,
+  X,
+  Search,
+  LayoutGrid,
+  Filter,
+  Loader2, // Loading animation සදහා
+  ChevronLeft, // Pagination සදහා
+  ChevronRight, // Pagination සදහා
+} from "lucide-react";
+import "./styles/ManageFloors.css";
+import floorService from "../../services/floor.service";
+import hubService from "../../services/hub.service";
+import authService from "../../services/auth.service";
+
+// --- Sub-Component: Stat Card (Code එක පිරිසිදු තබා ගැනීමට) ---
+const StatCard = ({ icon: Icon, colorClass, value, label }) => (
+  <div className="mf-stat-card">
+    <div className={`mf-stat-icon-box ${colorClass}`}>
+      <Icon size={24} />
+    </div>
+    <div>
+      <div className="mf-stat-value">{value}</div>
+      <div className="mf-stat-label">{label}</div>
+    </div>
+  </div>
+);
 
 const ManageFloors = () => {
   const notify = useNotification();
+
+  // --- Data States ---
   const [floors, setFloors] = useState([]);
   const [hubs, setHubs] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ hubId: '', floorNumber: '' });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterHub, setFilterHub] = useState('ALL');
+
+  // --- UI States ---
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Button disable කිරීමට
+
+  // --- Filter States ---
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterHub, setFilterHub] = useState("ALL");
+
+  // --- Pagination States (NEW) ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // පිටුවක පෙන්වන අයිතම ගණන
+
+  // --- Modal States ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ hubId: "", floorNumber: "" });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [floorToDelete, setFloorToDelete] = useState(null);
 
-  // Check Role
-  const user = JSON.parse(localStorage.getItem('user'));
-  const isWarden = user?.role === 'WARDEN';
+  // authService හරහා user ලබා ගැනීම
+  const user = authService.getCurrentUser();
+  const isWarden = user?.role === "WARDEN";
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  // Filter වෙනස් වන විට Page 1 ට reset වීම (UX Best Practice)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterHub]);
 
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const [f, h] = await Promise.all([api.get('/floors'), api.get('/hubs')]);
-      if(f.data.status === 'SUCCESS') setFloors(f.data.data);
-      if(h.data.status === 'SUCCESS') setHubs(h.data.data);
-    } catch (error) { notify.error("Failed to load data"); } 
-    finally { setLoading(false); }
+      const [f, h] = await Promise.all([
+        floorService.getAllFloors(),
+        hubService.getAllHubs(),
+      ]);
+
+      if (f.data.status === "SUCCESS") setFloors(f.data.data);
+      if (h.data.status === "SUCCESS") setHubs(h.data.data);
+    } catch (error) {
+      notify.error("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Optimized Filtering (useMemo) ---
+  const filteredFloors = useMemo(() => {
+    return floors.filter((floor) => {
+      const matchesSearch =
+        floor.floorNumber
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase().trim()) ||
+        (floor.hubNumber &&
+          floor.hubNumber
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase().trim()));
+      const matchesHub = filterHub === "ALL" || floor.hubNumber === filterHub;
+      return matchesSearch && matchesHub;
+    });
+  }, [floors, searchTerm, filterHub]);
+
+  // --- Pagination Logic (NEW) ---
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentFloors = filteredFloors.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredFloors.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!formData.hubId || !formData.floorNumber) return notify.warning("Please fill all fields");
+
+    // Validation
+    if (!formData.hubId || !formData.floorNumber.trim())
+      return notify.warning("Please fill all fields");
+
     try {
-      await api.post(`/hubs/${formData.hubId}/floors`, { floorNumber: formData.floorNumber });
+      setIsSubmitting(true);
+      await floorService.createFloor(formData.hubId, {
+        floorNumber: formData.floorNumber.trim(),
+      });
+
       notify.success("Floor Created Successfully!");
       setIsModalOpen(false);
-      setFormData({ hubId: '', floorNumber: '' });
+      setFormData({ hubId: "", floorNumber: "" });
       fetchAll();
-    } catch (e) { notify.error("Failed to create floor"); }
+    } catch (e) {
+      notify.error(e.response?.data?.message || "Failed to create floor");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openDeleteModal = (id) => {
@@ -51,190 +145,324 @@ const ManageFloors = () => {
 
   const confirmDelete = async () => {
     if (!floorToDelete) return;
-    try { 
-        await api.delete(`/floors/${floorToDelete}`); 
-        notify.success("Floor Deleted Successfully"); 
-        fetchAll(); 
-    } catch (e) { 
-        notify.error("Failed to delete floor"); 
+    try {
+      setIsSubmitting(true);
+      await floorService.deleteFloor(floorToDelete);
+
+      notify.success("Floor Deleted Successfully");
+
+      // Optimistic Delete (Frontend එකෙන් ඉක්මනින් ඉවත් කිරීම)
+      setFloors((prev) => prev.filter((f) => f.id !== floorToDelete));
+    } catch (e) {
+      notify.error("Failed to delete floor");
     } finally {
-        setIsDeleteModalOpen(false);
-        setFloorToDelete(null);
+      setIsSubmitting(false);
+      setIsDeleteModalOpen(false);
+      setFloorToDelete(null);
     }
   };
 
-  const filteredFloors = floors.filter(floor => {
-    const matchesSearch = floor.floorNumber.toLowerCase().includes(searchTerm.toLowerCase()) || (floor.hubNumber && floor.hubNumber.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesHub = filterHub === 'ALL' || floor.hubNumber === filterHub;
-    return matchesSearch && matchesHub;
-  });
-
-  const s = {
-    container: { fontFamily: "'Inter', sans-serif", color: '#1f2937', paddingBottom: '40px' },
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
-    titleGroup: { display: 'flex', flexDirection: 'column' },
-    title: { fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' },
-    subTitle: { fontSize: '14px', color: '#6b7280', marginTop: '5px' },
-    addBtn: { background: '#4f46e5', color: 'white', padding: '12px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(79, 70, 229, 0.2)', transition: 'transform 0.2s', fontSize: '14px' },
-    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
-    statCard: { background: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '15px' },
-    statIconBox: (bg, col) => ({ width: '50px', height: '50px', borderRadius: '12px', background: bg, color: col, display: 'flex', alignItems: 'center', justifyContent: 'center' }),
-    statValue: { fontSize: '24px', fontWeight: '800', color: '#111827', lineHeight: '1' },
-    statLabel: { fontSize: '13px', color: '#6b7280', fontWeight: '600', marginTop: '4px' },
-    toolbar: { background: 'white', padding: '15px 20px', borderRadius: '16px', border: '1px solid #e5e7eb', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' },
-    searchBox: { display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb', padding: '10px 15px', borderRadius: '10px', border: '1px solid #e5e7eb', flex: 1, minWidth: '250px' },
-    searchInput: { border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px', color: '#374151' },
-    filterSelect: { padding: '10px 15px', borderRadius: '10px', border: '1px solid #e5e7eb', background: 'white', fontSize: '14px', color: '#374151', cursor: 'pointer', outline: 'none', minWidth: '180px' },
-    tableContainer: { background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)', overflow: 'hidden' },
-    table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
-    thead: { backgroundColor: '#f8fafc', borderBottom: '1px solid #e5e7eb' },
-    th: { padding: '16px 24px', fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' },
-    tr: { borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.2s' },
-    td: { padding: '16px 24px', fontSize: '14px', color: '#334155', verticalAlign: 'middle' },
-    badge: (type) => ({ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '9999px', fontSize: '12px', fontWeight: '600', backgroundColor: type === 'hub' ? '#eff6ff' : '#f0fdf4', color: type === 'hub' ? '#2563eb' : '#16a34a', border: `1px solid ${type === 'hub' ? '#bfdbfe' : '#bbf7d0'}` }),
-    actionBtn: { background: 'white', border: '1px solid #e2e8f0', color: '#ef4444', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' },
-    overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
-    modal: { background: 'white', padding: '0', borderRadius: '24px', width: '450px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden', animation: 'fadeIn 0.2s ease-out' },
-    modalHeader: { padding: '24px 32px', borderBottom: '1px solid #f1f5f9', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-    modalTitle: { fontSize: '20px', fontWeight: '800', color: '#0f172a' },
-    modalBody: { padding: '32px', background: '#f8fafc' },
-    modalFooter: { padding: '20px 32px', background: 'white', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '12px' },
-    inputLabel: { display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: '#475569' },
-    input: { width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', backgroundColor: 'white', color: '#1e293b' },
-    select: { width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', backgroundColor: 'white', cursor: 'pointer' },
-    cancelBtn: { padding: '10px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: '600', cursor: 'pointer' },
-    saveBtn: { padding: '10px 20px', borderRadius: '10px', border: 'none', background: '#4f46e5', color: 'white', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)' }
-  };
-
   return (
-    <div style={s.container}>
-      <div style={s.header}>
-        <div style={s.titleGroup}>
-          <div style={s.title}>
-            <div style={{background:'#e0e7ff', padding:'10px', borderRadius:'12px', color:'#4338ca'}}><Layers size={28}/></div>
+    <div className="mf-container">
+      <div className="mf-header">
+        <div className="mf-title-group">
+          <div className="mf-title">
+            <div className="mf-title-icon">
+              <Layers size={28} />
+            </div>
             Manage Floors
           </div>
-          <p style={s.subTitle}>Organize and manage floors.</p>
+          <p className="mf-sub-title">Organize and manage floors.</p>
         </div>
         {!isWarden && (
-            <button style={s.addBtn} onClick={() => setIsModalOpen(true)}>
-                <Plus size={18} /> Add New Floor
-            </button>
+          <button className="mf-add-btn" onClick={() => setIsModalOpen(true)}>
+            <Plus size={18} /> Add New Floor
+          </button>
         )}
       </div>
 
-<div style={s.statsGrid}>
-  {/* Total Floors */}
-  <div style={s.statCard}>
-    <div style={s.statIconBox('#eff6ff', '#2563eb')}><Layers size={24}/></div>
-    <div>
-      <div style={s.statValue}>{floors.length}</div>
-      <div style={s.statLabel}>Total Floors</div>
-    </div>
-  </div>
+      <div className="mf-stats-grid">
+        <StatCard
+          icon={Layers}
+          colorClass="icon-blue"
+          value={floors.length}
+          label="Total Floors"
+        />
+        <StatCard
+          icon={LayoutGrid}
+          colorClass="icon-red"
+          value={floors.reduce((sum, f) => sum + (f.noOfRooms || 0), 0)}
+          label="Total Rooms"
+        />
+      </div>
 
-  {/* Total Rooms */}
-  <div style={s.statCard}>
-    <div style={s.statIconBox('#fef2f2', '#dc2626')}><LayoutGrid size={24}/></div>
-    <div>
-      <div style={s.statValue}>{floors.reduce((sum, f) => sum + (f.noOfRooms || 0), 0)}</div>
-      <div style={s.statLabel}>Total Rooms</div>
-    </div>
-  </div>
-</div>
-
-      <div style={s.toolbar}>
-        <div style={s.searchBox}>
-          <Search size={18} color="#9ca3af"/>
-          <input style={s.searchInput} placeholder="Search floors..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
+      <div className="mf-toolbar">
+        <div className="mf-search-box">
+          <Search size={18} color="#9ca3af" />
+          <input
+            className="mf-search-input"
+            placeholder="Search floors..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-            <Filter size={18} color="#6b7280"/>
-            <select style={s.filterSelect} value={filterHub} onChange={(e) => setFilterHub(e.target.value)}>
-                <option value="ALL">All Hubs</option>
-                {hubs.map(h => <option key={h.id} value={h.hubNumber}>{h.hubNumber}</option>)}
-            </select>
+        <div className="mf-filter-group">
+          <Filter size={18} color="#6b7280" />
+          <select
+            className="mf-filter-select"
+            value={filterHub}
+            onChange={(e) => setFilterHub(e.target.value)}
+          >
+            <option value="ALL">All Hubs</option>
+            {hubs.map((h) => (
+              <option key={h.id} value={h.hubNumber}>
+                {h.hubNumber}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div style={s.tableContainer}>
-        <table style={s.table}>
-          <thead style={s.thead}>
+      <div className="mf-table-container">
+        <table className="mf-table">
+          <thead className="mf-thead">
             <tr>
-              <th style={s.th}>Floor Details</th>
-              <th style={s.th}>Parent Hub</th>
-              <th style={s.th}>Capacity</th>
-              {!isWarden &&<th style={{...s.th, textAlign:'right'}}>Actions</th>}
+              <th className="mf-th">Floor Details</th>
+              <th className="mf-th">Parent Hub</th>
+              <th className="mf-th">Capacity</th>
+              {!isWarden && (
+                <th style={{ textAlign: "right" }} className="mf-th">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-                <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>Loading data...</td></tr>
+              <tr>
+                <td colSpan="4" className="mf-loading">
+                  Loading data...
+                </td>
+              </tr>
             ) : filteredFloors.length === 0 ? (
-               <tr><td colSpan="4" style={{textAlign:'center', padding:'40px', color:'#9ca3af'}}>No floors found.</td></tr>
+              <tr>
+                <td colSpan="4" className="mf-loading">
+                  No floors found.
+                </td>
+              </tr>
             ) : (
-                filteredFloors.map(f => (
-                <tr key={f.id} style={s.tr} onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.background = 'white'}>
-                    <td style={s.td}>
-                        <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                            <div style={{width:'40px', height:'40px', borderRadius:'10px', background:'#f1f5f9', color:'#475569', display:'flex', alignItems:'center', justifyContent:'center'}}><Layers size={20}/></div>
-                            <div><div style={{fontWeight:'700', color:'#1e293b'}}>{f.floorNumber}</div><div style={{fontSize:'12px', color:'#94a3b8'}}>ID: #{f.id}</div></div>
-                        </div>
+              // Pagination: currentFloors භාවිතා කිරීම
+              currentFloors.map((f) => (
+                <tr key={f.id} className="mf-tr">
+                  <td className="mf-td">
+                    <div className="mf-floor-info">
+                      <div className="mf-floor-icon">
+                        <Layers size={20} />
+                      </div>
+                      <div>
+                        <div className="mf-floor-name">{f.floorNumber}</div>
+                        <div className="mf-floor-id">ID: #{f.id}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="mf-td">
+                    <span className="mf-badge badge-hub">
+                      <Building2 size={12} /> {f.hubNumber || "Unassigned"}
+                    </span>
+                  </td>
+                  <td className="mf-td">
+                    <span className="mf-badge badge-room">
+                      <DoorOpen size={12} /> {f.noOfRooms} Rooms
+                    </span>
+                  </td>
+                  {!isWarden && (
+                    <td className="mf-td">
+                      <div
+                        style={{ display: "flex", justifyContent: "flex-end" }}
+                      >
+                        <button
+                          className="mf-action-btn"
+                          onClick={() => openDeleteModal(f.id)}
+                          disabled={isSubmitting}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
-                    <td style={s.td}><span style={s.badge('hub')}><Building2 size={12}/> {f.hubNumber || 'Unassigned'}</span></td>
-                    <td style={s.td}><span style={s.badge('room')}><DoorOpen size={12}/> {f.noOfRooms} Rooms</span></td>
-                   {!isWarden && ( <td style={s.td}>
-                        
-                            <div style={{display:'flex', justifyContent:'flex-end'}}>
-                                <button style={s.actionBtn} onClick={() => openDeleteModal(f.id)}><Trash2 size={16}/></button>
-                            </div>
-                        
-                    </td>)}
+                  )}
                 </tr>
-                ))
+              ))
             )}
           </tbody>
         </table>
+
+        {/* --- Pagination Controls (NEW) --- */}
+        {!loading && filteredFloors.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "15px 20px",
+              borderTop: "1px solid #e2e8f0",
+            }}
+          >
+            <div style={{ fontSize: "13px", color: "#64748b" }}>
+              Showing {indexOfFirstItem + 1} to{" "}
+              {Math.min(indexOfLastItem, filteredFloors.length)} of{" "}
+              {filteredFloors.length} entries
+            </div>
+            <div style={{ display: "flex", gap: "5px" }}>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px",
+                  borderRadius: "6px",
+                  border: "1px solid #e2e8f0",
+                  background: currentPage === 1 ? "#f1f5f9" : "white",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  color: currentPage === 1 ? "#94a3b8" : "#475569",
+                }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 10px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  color: "#475569",
+                }}
+              >
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px",
+                  borderRadius: "6px",
+                  border: "1px solid #e2e8f0",
+                  background: currentPage === totalPages ? "#f1f5f9" : "white",
+                  cursor:
+                    currentPage === totalPages ? "not-allowed" : "pointer",
+                  color: currentPage === totalPages ? "#94a3b8" : "#475569",
+                }}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (
-        <div style={s.overlay} onClick={() => setIsModalOpen(false)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
-            <div style={s.modalHeader}>
-                <div><h3 style={s.modalTitle}>Add New Floor</h3><p style={{margin: '2px 0 0', fontSize: '13px', color: '#64748b'}}>Select a hub and assign a floor number.</p></div>
-                <button onClick={() => setIsModalOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'#94a3b8'}}><X size={24}/></button>
+        <div
+          className="mf-overlay"
+          onClick={() => !isSubmitting && setIsModalOpen(false)}
+        >
+          <div className="mf-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="mf-modal-header">
+              <div>
+                <h3 className="mf-modal-title">Add New Floor</h3>
+                <p className="mf-modal-desc">
+                  Select a hub and assign a floor number.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="mf-close-btn"
+                disabled={isSubmitting}
+              >
+                <X size={24} />
+              </button>
             </div>
             <form onSubmit={handleCreate}>
-                <div style={s.modalBody}>
-                    <div style={s.inputGroup}>
-                        <label style={s.inputLabel}>Select Hub</label>
-                        <select style={s.select} value={formData.hubId} onChange={e => setFormData({...formData, hubId: e.target.value})} required>
-                            <option value="">-- Choose a Hub --</option>
-                            {hubs.map(h => <option key={h.id} value={h.id}>{h.hubNumber}</option>)}
-                        </select>
-                    </div>
-                    <div style={s.inputGroup}>
-                        <label style={s.inputLabel}>Floor Name / Number</label>
-                        <input style={s.input} value={formData.floorNumber} onChange={e => setFormData({...formData, floorNumber: e.target.value})} placeholder="e.g. 1st Floor" required />
-                    </div>
+              <div className="mf-modal-body">
+                <div className="mf-input-group">
+                  <label className="mf-input-label">Select Hub</label>
+                  <select
+                    className="mf-select"
+                    value={formData.hubId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, hubId: e.target.value })
+                    }
+                    required
+                    disabled={isSubmitting}
+                  >
+                    <option value="">-- Choose a Hub --</option>
+                    {hubs.map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.hubNumber}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div style={s.modalFooter}>
-                    <button type="button" onClick={() => setIsModalOpen(false)} style={s.cancelBtn}>Cancel</button>
-                    <button type="submit" style={s.saveBtn}>Create Floor</button>
+                <div className="mf-input-group">
+                  <label className="mf-input-label">Floor Name / Number</label>
+                  <input
+                    className="mf-input"
+                    value={formData.floorNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, floorNumber: e.target.value })
+                    }
+                    placeholder="e.g. 1st Floor"
+                    required
+                    disabled={isSubmitting}
+                  />
                 </div>
+              </div>
+              <div className="mf-modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="mf-cancel-btn"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="mf-save-btn"
+                  disabled={isSubmitting}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    justifyContent: "center",
+                  }}
+                >
+                  {isSubmitting && (
+                    <Loader2 className="animate-spin" size={16} />
+                  )}
+                  {isSubmitting ? "Creating..." : "Create Floor"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        onClose={() => !isSubmitting && setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Delete Floor?"
         message="Are you sure you want to delete this floor? All rooms inside will be removed."
-        confirmText="Delete Floor"
+        confirmText={isSubmitting ? "Deleting..." : "Delete Floor"}
         isDanger={true}
+        isLoading={isSubmitting}
       />
     </div>
   );

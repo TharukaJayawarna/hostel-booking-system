@@ -1,0 +1,42 @@
+/* Layout Container */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f3f4f6; /* වඩාත් පිරිසිදු ලා අළු පැහැයක් (Standard Dashboard BG) */
+  font-family: 'Inter', sans-serif;
+  position: relative;
+}
+
+/* Main Content Wrapper */
+.admin-main {
+  margin-left: 280px; /* Sidebar එකේ පළලට සමාන විය යුතුයි */
+  width: calc(100% - 280px);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+/* Inner Content Area */
+.admin-content-wrapper {
+  flex: 1;
+  padding: 40px;
+  width: 100%;
+  max-width: 1600px; /* Ultra-wide screens සඳහා */
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Optional Top Decoration */
+.admin-top-decor {
+  height: 200px;
+  background: linear-gradient(180deg, #e5e7eb 0%, rgba(243, 244, 246, 0) 100%);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: -1; /* Content එකට පිටුපසින් තැබීමට */
+  pointer-events: none;
+}

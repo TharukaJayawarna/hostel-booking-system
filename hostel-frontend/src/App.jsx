@@ -1,59 +1,65 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import 'react-date-range/dist/styles.css';
-import 'react-date-range/dist/theme/default.css';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 
-import { NotificationProvider } from './context/NotificationContext';
+import { NotificationProvider } from "./context/NotificationContext";
 
 // Layouts
-import StudentLayout from './layouts/StudentLayout';
-import AdminLayout from './layouts/AdminLayout'; 
-import ProtectedRoute from './components/ProtectedRoute'; 
+import StudentLayout from "./layouts/StudentLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Student Pages
-import Home from './pages/student/Home';
-import FloorSelection from './pages/student/FloorSelection';
-import BedSelection from './pages/student/BedSelection';
-import Reservation from './pages/student/Reservation'; 
-import PaymentSuccess from './pages/student/PaymentSuccess';
-import PaymentCancel from './pages/student/PaymentCancel';
-import Contact from './pages/student/Contact';
-import BookingSuccess from './pages/student/BookingSuccess';
-import IssueForm from './pages/student/IssueForm';
-import MyBookings from './pages/student/MyBookings';
+import Home from "./pages/student/Home";
+import FloorSelection from "./pages/student/FloorSelection";
+import BedSelection from "./pages/student/BedSelection";
+import Reservation from "./pages/student/Reservation";
+import PaymentSuccess from "./pages/student/PaymentSuccess";
+import PaymentCancel from "./pages/student/PaymentCancel";
+import Contact from "./pages/student/Contact";
+import BookingSuccess from "./pages/student/BookingSuccess";
+import IssueForm from "./pages/student/IssueForm";
+import MyBookings from "./pages/student/MyBookings";
 
 // Auth Pages
-import Login from './pages/auth/Login';
-import Signup from './pages/auth/Signup';
-import ForgotPassword from './pages/auth/ForgotPassword';
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 
 // Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import ManageRooms from './pages/admin/ManageRooms';
-import ManageReservations from './pages/admin/ManageReservations';
-import ManageHubs from './pages/admin/ManageHubs';
-import ManageFloors from './pages/admin/ManageFloors';
-import ManageBeds from './pages/admin/ManageBeds';
-import ReservationCalendar from './pages/admin/ReservationCalendar';
-import ManageUsers from './pages/admin/ManageUsers';
-import SystemSettings from './pages/admin/SystemSettings';
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import ManageRooms from "./pages/admin/ManageRooms";
+import ManageReservations from "./pages/admin/ManageReservations";
+import ManageHubs from "./pages/admin/ManageHubs";
+import ManageFloors from "./pages/admin/ManageFloors";
+import ManageBeds from "./pages/admin/ManageBeds";
+import ReservationCalendar from "./pages/admin/ReservationCalendar";
+import ManageUsers from "./pages/admin/ManageUsers";
+import SystemSettings from "./pages/admin/SystemSettings";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
     <NotificationProvider>
-    <Router>
-      
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* === STUDENT ROUTES (Only STUDENT) === */}
-        <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
+          {/* === STUDENT ROUTES (Only STUDENT) === */}
+          <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
             <Route path="/" element={<StudentLayout />}>
               <Route index element={<Home />} />
-              <Route path="hubs/:hubId/floors" element={<FloorSelection />} /> 
+              <Route path="hubs/:hubId/floors" element={<FloorSelection />} />
               <Route path="rooms/:roomId/beds" element={<BedSelection />} />
-              <Route path="reserve" element={<Reservation />} /> 
+              <Route path="reserve" element={<Reservation />} />
               <Route path="booking-success" element={<BookingSuccess />} />
               <Route path="payment-success" element={<PaymentSuccess />} />
               <Route path="payment-cancel" element={<PaymentCancel />} />
@@ -61,10 +67,12 @@ function App() {
               <Route path="contact" element={<Contact />} />
               <Route path="my-bookings" element={<MyBookings />} />
             </Route>
-        </Route>
-        
-        {/* === ADMIN & WARDEN ROUTES === */}
-        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'WARDEN']} />}>
+          </Route>
+
+          {/* === ADMIN & WARDEN ROUTES === */}
+          <Route
+            element={<ProtectedRoute allowedRoles={["ADMIN", "WARDEN"]} />}
+          >
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
@@ -74,18 +82,18 @@ function App() {
               <Route path="beds" element={<ManageBeds />} />
               <Route path="reservations" element={<ManageReservations />} />
               <Route path="calendar" element={<ReservationCalendar />} />
-            </Route> 
-        </Route>
+            </Route>
+          </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-    <Route path="/admin" element={<AdminLayout />}>
-        <Route path="settings" element={<SystemSettings />} /> {/* මෙතනට දාන්න */}
-        <Route path="users" element={<ManageUsers />} />
-    </Route>
-</Route>
-
-      </Routes>
-    </Router>
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="settings" element={<SystemSettings />} />{" "}
+              {/* මෙතනට දාන්න */}
+              <Route path="users" element={<ManageUsers />} />
+            </Route>
+          </Route>
+        </Routes>
+      </Router>
     </NotificationProvider>
   );
 }

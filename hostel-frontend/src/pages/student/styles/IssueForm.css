@@ -1,0 +1,255 @@
+/* Page Container */
+.issue-page-container {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+  padding: 60px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.issue-inner-wrapper {
+  max-width: 850px;
+  width: 100%;
+}
+
+/* Header Section */
+.issue-header {
+  margin-bottom: 5px;
+  margin-top: 5px;
+  text-align: center;
+  position: relative;
+}
+
+.issue-back-btn {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.issue-back-btn:hover {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.issue-title-box {
+  display: inline-block;
+}
+
+.issue-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+  margin-top: 0;
+}
+
+.issue-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Form Card */
+.issue-card {
+  background-color: white;
+  border-radius: 24px;
+  padding: 40px 50px;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  margin-top: 30px;
+}
+
+.issue-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.issue-section-icon {
+  color: #4f46e5;
+}
+
+.issue-section-icon.danger {
+  color: #ef4444;
+}
+
+/* Form Grid & Inputs */
+.issue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.issue-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.issue-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.issue-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.issue-input-icon {
+  position: absolute;
+  left: 16px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.issue-input {
+  width: 100%;
+  padding: 12px 16px 12px 45px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s;
+  background-color: #f8fafc;
+  box-sizing: border-box;
+}
+
+.issue-input:focus {
+  border-color: #4f46e5;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.issue-select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  color: #1e293b;
+  outline: none;
+  background-color: #f8fafc;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.issue-select:focus {
+  border-color: #4f46e5;
+}
+
+.issue-textarea {
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  color: #1e293b;
+  outline: none;
+  background-color: #f8fafc;
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.issue-textarea:focus {
+  border-color: #ef4444; /* Danger color focused for issue description */
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.monospace-input {
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+/* Buttons */
+.issue-btn-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.issue-submit-btn {
+  padding: 14px 32px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.issue-submit-btn:hover:not(:disabled) {
+  background-color: #4338ca;
+  transform: translateY(-2px);
+}
+
+.issue-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.issue-cancel-btn {
+  padding: 14px 24px;
+  background: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.issue-cancel-btn:hover {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .issue-card {
+    padding: 30px 20px;
+  }
+  .issue-back-btn {
+    position: static;
+    margin-bottom: 15px;
+  }
+}

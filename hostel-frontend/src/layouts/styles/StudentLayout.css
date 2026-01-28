@@ -1,0 +1,39 @@
+/* Layout Container */
+.student-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc; /* Modern Light Background */
+  color: #1f2937;
+}
+
+/* Main Content Area */
+.student-main {
+  flex: 1; /* ඉතිරි ඉඩ සියල්ල ලබා ගනී */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Gradient Decoration */
+.student-top-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(180deg, #e0e7ff 0%, rgba(248, 250, 252, 0) 100%); /* Indigo Tint Fade */
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Content Wrapper */
+.student-content-wrapper {
+  z-index: 1; /* Gradient එකට උඩින් Content පෙන්වීමට */
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}

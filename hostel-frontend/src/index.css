@@ -5,7 +5,7 @@
 
   color-scheme: light;
   color: #1f2937;
-  background-color: #f2f6f9; /* <--- Light Blue-Gray Background */
+  background-color: #f2f6f9; 
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -26,7 +26,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f2f6f9; /* <--- Ensure body has the color */
+  background-color: #f2f6f9; 
 }
 
 h1 {

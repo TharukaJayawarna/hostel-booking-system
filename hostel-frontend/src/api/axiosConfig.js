@@ -1,34 +1,40 @@
 import axios from 'axios';
+import { performLogout } from '../utils/authUtils';
+
+const BASE_URL = import.meta.env.VITE_API_URL
 
 const api = axios.create({
-    baseURL: 'http://localhost:8080', 
+    baseURL: BASE_URL, 
     headers: {
         'Content-Type': 'application/json',
         'X-Api-Version': 'v1' 
     }
 });
 
-// Request Interceptor එක
+// Request Interceptor
 api.interceptors.request.use((config) => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user && user.token) {
-            config.headers.Authorization = `Bearer ${user.token}`;
+        try {
+            const user = JSON.parse(userStr);
+            if (user?.token) {
+                config.headers.Authorization = `Bearer ${user.token}`;
+            }
+        } catch (e) {
+            console.error("Error parsing user token", e);
         }
     }
     return config;
-}, (error) => {
-    return Promise.reject(error);
-});
+}, (error) => Promise.reject(error));
 
-// Response Interceptor (Error Handling)
+// Response Interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 403) {
-      // Token එක වැඩ නැත්නම් Login එකට යවන්න (Optional)
-      console.error("Access Denied: Invalid Token");
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.error("Session Expired or Access Denied. Logging out...");
+      
+      performLogout();
     }
     return Promise.reject(error);
   }

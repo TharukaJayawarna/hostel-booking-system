@@ -1,16 +1,16 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import React from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import authService from "../services/auth.service";
 
 const ProtectedRoute = ({ allowedRoles }) => {
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  const location = useLocation();
 
-  // ලොග් වී නැත්නම් Login එකට
+  const user = authService.getCurrentUser();
+
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // අදාල Role එක නැත්නම් Home එකට
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }

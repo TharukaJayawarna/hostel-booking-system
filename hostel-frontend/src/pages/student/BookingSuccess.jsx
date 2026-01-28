@@ -1,59 +1,63 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useNotification } from '../../context/NotificationContext';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { 
-  CheckCircle, 
-  Copy, 
-  Home, 
-  Calendar, 
-  MapPin, 
-  User, 
-  CreditCard, 
+import React, { useEffect, useState, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useNotification } from "../../context/NotificationContext";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import {
+  CheckCircle,
+  Copy,
+  Home,
+  MapPin,
+  User,
   Download,
   Loader2,
   Clock,
-  ArrowRight
-} from 'lucide-react';
+  ArrowRight,
+  Receipt,
+  Mail,
+  Phone
+} from "lucide-react";
+import "./styles/BookingSuccess.css";
 
 const BookingSuccess = () => {
   const notify = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
+  const receiptRef = useRef(null);
+
   const [isCopied, setIsCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const receiptRef = useRef(null); 
-  
-  // location.state වෙතින් දත්ත ලබා ගැනීම (email සහ phone එකතු කර ඇත)
-  const { 
-    orderId, 
-    studentName, 
-    studentId, 
-    studentEmail, // අලුතින් එක් කරන ලදී
-    studentPhone, // අලුතින් එක් කරන ලදී
-    bedNumber, 
-    roomNumber, 
-    checkIn, 
-    checkOut, 
-    amount 
+
+  // Destructure Data
+  const {
+    orderId,
+    studentName,
+    studentId,
+    studentEmail,
+    studentPhone,
+    bedNumber,
+    roomNumber,
+    checkIn,
+    checkOut,
+    amount,
   } = location.state || {};
 
-  const [paymentTime] = useState(new Date().toLocaleString('en-US', { 
-    year: 'numeric', month: 'short', day: 'numeric', 
-    hour: '2-digit', minute: '2-digit' 
+  // Current Timestamp for Receipt
+  const [paymentTime] = useState(new Date().toLocaleString("en-US", {
+    year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
   }));
 
   useEffect(() => {
     if (!orderId) {
-      navigate('/'); 
+      navigate("/"); // Redirect if accessed directly
     }
   }, [orderId, navigate]);
 
   const handleCopy = () => {
+    if (!orderId) return;
     navigator.clipboard.writeText(orderId);
     setIsCopied(true);
-    notify.success("Booking ID Copied!");
+    notify.success("Reference ID Copied!");
     setTimeout(() => setIsCopied(false), 2000);
   };
 
@@ -63,15 +67,29 @@ const BookingSuccess = () => {
 
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      // High Quality Capture settings
+      const canvas = await html2canvas(element, {
+        scale: 3, // Higher scale for better clarity
+        useCORS: true,
+        backgroundColor: "#ffffff", // Ensure white background
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
       const imgProps = pdf.getImageProperties(imgData);
       const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      // Center vertically if receipt is small, or top align
+      let positionY = 10; 
       
-      pdf.addImage(imgData, 'PNG', 0, 20, pdfWidth, imgHeight);
-      pdf.save(`Hostel_Receipt_${orderId}.pdf`);
+      pdf.addImage(imgData, "PNG", 0, positionY, pdfWidth, imgHeight);
+      pdf.save(`Hostel_Receipt_${orderId || "REF"}.pdf`);
+      
       notify.success("Receipt downloaded successfully!");
     } catch (error) {
       console.error("Download Error:", error);
@@ -81,227 +99,115 @@ const BookingSuccess = () => {
     }
   };
 
-  // --- STYLES ---
-  const s = {
-    pageContainer: {
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%)', 
-      fontFamily: "'Inter', sans-serif",
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '40px 20px'
-    },
-    
-    card: {
-      backgroundColor: 'white',
-      borderRadius: '24px',
-      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)',
-      width: '100%',
-      maxWidth: '550px',
-      overflow: 'hidden',
-      border: '1px solid #ffffff',
-      position: 'relative'
-    },
-
-    contentToCapture: {
-      backgroundColor: 'white', 
-      padding: '40px 35px 25px',
-    },
-
-    headerSection: {
-      textAlign: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      marginBottom: '30px'
-    },
-    
-    iconWrapper: {
-      width: '70px', height: '70px',
-      backgroundColor: '#ecfdf5',
-      borderRadius: '50%',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      marginBottom: '15px',
-      color: '#10b981',
-      boxShadow: '0 0 0 6px rgba(16, 185, 129, 0.1)'
-    },
-
-    title: { fontSize: '24px', fontWeight: '800', color: '#1e293b', marginBottom: '5px' },
-    subTitle: { fontSize: '14px', color: '#64748b' },
-
-    // Transaction Info Box
-    metaBox: {
-      display: 'flex', justifyContent: 'center', gap: '20px',
-      marginTop: '20px', width: '100%'
-    },
-    metaItem: {
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      padding: '10px 20px', backgroundColor: '#f8fafc', borderRadius: '12px',
-      border: '1px solid #e2e8f0', flex: 1
-    },
-    metaLabel: { fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' },
-    metaValue: { fontSize: '13px', fontWeight: '600', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' },
-
-    // Date Section
-    dateSection: {
-      backgroundColor: '#eff6ff',
-      borderRadius: '16px',
-      padding: '20px',
-      margin: '0 0 25px',
-      border: '1px solid #bfdbfe',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between'
-    },
-    dateBox: { display: 'flex', flexDirection: 'column', gap: '4px' },
-    dateLabel: { fontSize: '12px', color: '#60a5fa', fontWeight: '600', textTransform: 'uppercase' },
-    dateVal: { fontSize: '16px', fontWeight: '800', color: '#1e40af' },
-    arrowIcon: { color: '#93c5fd' },
-
-    // Details Grid
-    detailsGrid: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '20px',
-      marginBottom: '25px'
-    },
-    detailItem: { display: 'flex', flexDirection: 'column', gap: '5px' },
-    label: { color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' },
-    val: { fontWeight: '600', color: '#1e293b', fontSize: '15px' },
-    
-    // Total Amount
-    totalRow: { 
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      backgroundColor: '#f8fafc', padding: '15px 20px', borderRadius: '12px',
-      border: '1px dashed #cbd5e1'
-    },
-    totalLabel: { fontSize: '14px', fontWeight: '700', color: '#475569' },
-    totalVal: { fontSize: '22px', fontWeight: '800', color: '#059669' },
-
-    // Footer Buttons
-    footer: {
-      padding: '0 35px 35px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px'
-    },
-    homeBtn: {
-      width: '100%', padding: '14px',
-      background: '#1e293b', color: 'white',
-      border: 'none', borderRadius: '12px',
-      fontSize: '15px', fontWeight: '600',
-      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-      transition: 'transform 0.1s',
-      boxShadow: '0 4px 12px rgba(30, 41, 59, 0.15)'
-    },
-    downloadBtn: {
-      width: '100%', padding: '14px',
-      background: 'white', color: '#475569',
-      border: '1px solid #e2e8f0', borderRadius: '12px',
-      fontSize: '15px', fontWeight: '600',
-      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-      transition: 'background 0.2s'
-    }
-  };
+  if (!orderId) return null; // Avoid flickering before redirect
 
   return (
-    <div style={s.pageContainer}>
-      <div style={s.card}>
-        
-        {/* Receipt Content to Capture */}
-        <div ref={receiptRef} style={s.contentToCapture}>
-            
-            {/* Header */}
-            <div style={s.headerSection}>
-                <div style={s.iconWrapper}>
-                    <CheckCircle size={36} strokeWidth={3} />
-                </div>
-                <h1 style={s.title}>Payment Successful</h1>
-                <p style={s.subTitle}>Your booking has been officially confirmed.</p>
+    <div className="booking-success-container">
+      {/* Animated Background Icon */}
+      <div className="bs-bg-pattern"></div>
 
-                {/* ID & Time */}
-                <div style={s.metaBox}>
-                    <div style={s.metaItem} onClick={handleCopy} title="Click ID to Copy">
-                        <span style={s.metaLabel}>Ref ID</span>
-                        <span style={{...s.metaValue, fontFamily: 'monospace', cursor:'pointer'}}>
-                            {orderId} {isCopied ? <CheckCircle size={12} color="#10b981"/> : <Copy size={12}/>}
-                        </span>
-                    </div>
-                    <div style={s.metaItem}>
-                        <span style={s.metaLabel}>Payment Time</span>
-                        <span style={s.metaValue}>
-                            <Clock size={12}/> {paymentTime}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Date Timeline */}
-            <div style={s.dateSection}>
-                <div style={s.dateBox}>
-                    <span style={s.dateLabel}>Check-in</span>
-                    <span style={s.dateVal}>{checkIn}</span>
-                </div>
-                <ArrowRight size={24} style={s.arrowIcon}/>
-                <div style={{...s.dateBox, alignItems:'flex-end'}}>
-                    <span style={s.dateLabel}>Check-out</span>
-                    <span style={s.dateVal}>{checkOut}</span>
-                </div>
-            </div>
-
-            {/* Details Grid (Updated Student Section) */}
-            <div style={s.detailsGrid}>
-                <div style={s.detailItem}>
-                    <span style={s.label}><User size={14}/> Student</span>
-                    <span style={s.val}>{studentName}</span>
-                    {/* අලුතින් එකතු කරන ලද කොටස */}
-                    <div style={{display:'flex', flexDirection:'column', gap:'2px', marginTop:'4px', fontSize:'12px', color:'#64748b'}}>
-                        <span>{studentId}</span>
-                        <span>{studentEmail}</span>
-                        <span>{studentPhone}</span>
-                    </div>
-                </div>
-                <div style={s.detailItem}>
-                    <span style={s.label}><MapPin size={14}/> Accommodation</span>
-                    <span style={s.val}>{roomNumber}</span>
-                    <span style={{fontSize:'13px', color:'#64748b'}}>Bed No: {bedNumber}</span>
-                </div>
-            </div>
-
-            {/* Total */}
-            <div style={s.totalRow}>
-                <span style={s.totalLabel}>Total Paid</span>
-                <span style={s.totalVal}>
-                    LKR {amount ? amount.toLocaleString('en-US', {minimumFractionDigits: 2}) : "0.00"}
-                </span>
-            </div>
-
-        </div>
-
-        {/* Footer Buttons */}
-        <div style={s.footer}>
-          <button 
-            style={s.homeBtn}
-            onClick={() => navigate('/')}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <Home size={18}/> Back to Home
-          </button>
+      <div className="bs-main-wrapper">
+        <div className="bs-card-container">
           
-          <button 
-            style={s.downloadBtn}
-            onClick={handleDownload}
-            disabled={isDownloading}
-            onMouseOver={(e) => !isDownloading && (e.currentTarget.style.backgroundColor = '#f8fafc')}
-            onMouseOut={(e) => !isDownloading && (e.currentTarget.style.backgroundColor = 'white')}
-          >
-            {isDownloading ? <Loader2 size={18} className="animate-spin"/> : <Download size={18}/>}
-            {isDownloading ? "Generating PDF..." : "Download Receipt"}
-          </button>
-        </div>
+          {/* --- RECEIPT SECTION (To be Printed) --- */}
+          <div ref={receiptRef} className="bs-receipt-card">
+            
+            {/* Header / Success Banner */}
+            <div className="bs-success-banner">
+              <div className="bs-icon-pulse">
+                <CheckCircle size={48} color="#ffffff" strokeWidth={2.5} />
+              </div>
+              <h1 className="bs-title">Payment Successful!</h1>
+              <p className="bs-subtitle">Your booking is confirmed.</p>
+            </div>
 
+            <div className="bs-receipt-body">
+              {/* Reference ID Row */}
+              <div className="bs-ref-row">
+                <div className="bs-ref-label">Reference ID</div>
+                <div className="bs-ref-value clickable" onClick={handleCopy} title="Click to Copy">
+                  {orderId} 
+                  {isCopied ? <CheckCircle size={14} color="#10b981" /> : <Copy size={14} color="#64748b" />}
+                </div>
+                <div className="bs-ref-time">{paymentTime}</div>
+              </div>
+
+              {/* Dotted Divider */}
+              <div className="bs-divider"></div>
+
+              {/* Timeline Section */}
+              <div className="bs-timeline-section">
+                <div className="bs-timeline-box">
+                  <span className="bs-t-label">Check-in</span>
+                  <span className="bs-t-date">{checkIn}</span>
+                </div>
+                <div className="bs-timeline-arrow">
+                  <ArrowRight size={20} color="#94a3b8" />
+                </div>
+                <div className="bs-timeline-box right">
+                  <span className="bs-t-label">Check-out</span>
+                  <span className="bs-t-date">{checkOut}</span>
+                </div>
+              </div>
+
+              {/* Details Grid */}
+              <div className="bs-grid-section">
+                <div className="bs-grid-item">
+                  <div className="bs-grid-icon"><User size={16} /></div>
+                  <div className="bs-grid-info">
+                    <span className="bs-g-label">Student</span>
+                    <span className="bs-g-val">{studentName}</span>
+                    <span className="bs-g-sub">{studentId}</span>
+                  </div>
+                </div>
+                <div className="bs-grid-item">
+                  <div className="bs-grid-icon"><MapPin size={16} /></div>
+                  <div className="bs-grid-info">
+                    <span className="bs-g-label">Room / Bed</span>
+                    <span className="bs-g-val">{roomNumber}</span>
+                    <span className="bs-g-sub">Bed No: {bedNumber}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Info (Compact) */}
+              <div className="bs-contact-mini">
+                 <span><Mail size={12}/> {studentEmail}</span>
+                 {studentPhone && <span><Phone size={12}/> {studentPhone}</span>}
+              </div>
+
+              {/* Total Amount */}
+              <div className="bs-total-box">
+                <span className="bs-total-text">Total Paid</span>
+                <span className="bs-total-amount">
+                  LKR {amount ? parseFloat(amount).toLocaleString("en-US", { minimumFractionDigits: 2 }) : "0.00"}
+                </span>
+              </div>
+            </div>
+
+            {/* Receipt Footer (Visible in PDF) */}
+            <div className="bs-receipt-footer">
+              <Receipt size={14} /> Generated via Hostel Management System
+            </div>
+          </div>
+          {/* --- END RECEIPT SECTION --- */}
+
+          {/* Action Buttons (Not Printed) */}
+          <div className="bs-actions">
+            <button className="bs-btn-secondary" onClick={() => navigate("/")}>
+              <Home size={18} /> Home
+            </button>
+            <button 
+              className="bs-btn-primary" 
+              onClick={handleDownload} 
+              disabled={isDownloading}
+            >
+              {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              {isDownloading ? "Generating..." : "Download Receipt"}
+            </button>
+          </div>
+
+        </div>
       </div>
     </div>
   );
