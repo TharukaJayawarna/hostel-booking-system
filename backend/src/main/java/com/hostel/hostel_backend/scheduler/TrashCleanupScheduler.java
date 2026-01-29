@@ -17,16 +17,13 @@ public class TrashCleanupScheduler {
 
     private final ReservationRepository reservationRepository;
 
-    // දිනපතා මධ්‍යම රාත්‍රියේ (At 00:00) ක්‍රියාත්මක වේ
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void moveOldReservationsToTrash() {
         System.out.println("Running Trash Cleanup Scheduler...");
 
-        // අද දිනට මාස 6කට පෙර දිනය (6 Months Ago)
         LocalDate sixMonthsAgo = LocalDate.now().minusMonths(6);
 
-        // Checkout Date එක මාස 6කට වඩා පරණ, සහ දැනටමත් TRASH නොවන ඒවා සොයාගැනීම
         List<Reservation> oldReservations = reservationRepository.findByToDateBeforeAndReservationStatusNot(
                 sixMonthsAgo,
                 ReservationStatus.TRASH

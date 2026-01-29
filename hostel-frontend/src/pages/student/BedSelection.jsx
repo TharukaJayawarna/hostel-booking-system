@@ -9,11 +9,10 @@ import {
   DoorOpen,
   ArrowLeft,
   Loader2,
-  Wrench, // Maintenance Icon
+  Wrench,
 } from "lucide-react";
 import "./styles/BedSelection.css";
 
-// roomService import
 import roomService from "../../services/room.service";
 
 const BedSelection = () => {
@@ -22,14 +21,12 @@ const BedSelection = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract params from location state
   const { checkIn, checkOut, reservedFor } = location.state || {};
-  
+
   const [beds, setBeds] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Validation: දින තෝරා නොමැති නම් Redirect කිරීම
     if (!checkIn || !checkOut) {
       notify.error("Session expired or invalid dates. Please start over.");
       navigate("/");
@@ -41,7 +38,12 @@ const BedSelection = () => {
   const fetchBeds = async () => {
     try {
       setLoading(true);
-      const response = await roomService.getBedsByRoom(roomId);
+
+      const response = await roomService.getBedsByRoom(
+        roomId,
+        checkIn,
+        checkOut,
+      );
 
       if (response.data.status === "SUCCESS") {
         setBeds(response.data.data);
@@ -54,16 +56,16 @@ const BedSelection = () => {
     }
   };
 
-  // --- Optimization: Sort Beds Numerically ---
-  // B-1, B-2, B-10 ආකාරයට නිවැරදිව Sort කිරීම
   const sortedBeds = useMemo(() => {
-    return [...beds].sort((a, b) => 
-      a.bedNumber.localeCompare(b.bedNumber, undefined, { numeric: true, sensitivity: 'base' })
+    return [...beds].sort((a, b) =>
+      a.bedNumber.localeCompare(b.bedNumber, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
     );
   }, [beds]);
 
   const handleBedSelect = (bed) => {
-    // Validation: Booked හෝ Maintenance නම් Click කිරීම වැළැක්වීම
     if (bed.isBooked || bed.underMaintenance) return;
 
     navigate("/reserve", {
@@ -78,10 +80,11 @@ const BedSelection = () => {
     });
   };
 
-  // Helper function to determine bed status styles
   const getBedStatus = (bed) => {
-    if (bed.underMaintenance) return { class: "maintenance", label: "Maintenance", icon: Wrench };
-    if (bed.isBooked) return { class: "booked", label: "Occupied", icon: XCircle };
+    if (bed.underMaintenance)
+      return { class: "maintenance", label: "Maintenance", icon: Wrench };
+    if (bed.isBooked)
+      return { class: "booked", label: "Occupied", icon: XCircle };
     return { class: "available", label: "Available", icon: CheckCircle2 };
   };
 
@@ -89,7 +92,9 @@ const BedSelection = () => {
     return (
       <div className="bs-loading-container">
         <Loader2 className="animate-spin" size={40} color="#4f46e5" />
-        <span style={{ marginTop: "10px", color: "#64748b", fontWeight: 500 }}>Checking availability...</span>
+        <span style={{ marginTop: "10px", color: "#64748b", fontWeight: 500 }}>
+          Checking availability...
+        </span>
       </div>
     );
   }
@@ -130,7 +135,7 @@ const BedSelection = () => {
                   className={`bs-card ${status.class}`}
                   onClick={() => handleBedSelect(bed)}
                   role="button"
-                  tabIndex={status.class === "available" ? 0 : -1} // Accessibility
+                  tabIndex={status.class === "available" ? 0 : -1}
                   aria-disabled={status.class !== "available"}
                 >
                   {/* Icon Box */}

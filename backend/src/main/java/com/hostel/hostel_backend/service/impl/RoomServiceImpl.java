@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class RoomServiceImpl implements RoomService {
     private final FloorRepository floorRepository;
     private final RoomRepository roomRepository;
-    private final BedRepository bedRepository; // BedRepository එකතු කරන ලදී
+    private final BedRepository bedRepository;
 
     @Override
     @Transactional
@@ -52,14 +52,13 @@ public class RoomServiceImpl implements RoomService {
 
         room.setReservationPeriod(dto.getReservationPeriod());
         room.setReservedFor(dto.getReservedFor());
-        room.setComment(dto.getComment()); // Comment save fix
+        room.setComment(dto.getComment());
 
         RoomType type = dto.getRoomType() != null ? dto.getRoomType() : RoomType.SHARING_2;
         room.setRoomType(type);
 
         roomRepository.save(room);
 
-        // Auto-generate Beds
         int capacity = type.getCapacity();
         List<Bed> bedList = new ArrayList<>();
 
@@ -106,7 +105,6 @@ public class RoomServiceImpl implements RoomService {
                 .build();
     }
 
-    // ... (අනෙකුත් Get/Delete methods එලෙසම තබන්න) ...
     @Override
     public List<RoomResponseDTO> getPublicRooms() {
         return roomRepository.findByIsPrivateFalse().stream().map(this::mapToDTO).collect(Collectors.toList());
@@ -188,14 +186,12 @@ public class RoomServiceImpl implements RoomService {
                 .collect(Collectors.toList());
     }
 
-    // --- UPDATED METHOD: Room Update Logic ---
     @Override
     @Transactional
     public void updateRoom(Long roomId, CreateRoomRequestDTO dto) throws ResourceNotFoundException {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found with id " + roomId));
 
-        // 1. සාමාන්‍ය දත්ත යාවත්කාලීන කිරීම
         if (dto.getMonthlyPrice() != null) room.setMonthlyPrice(dto.getMonthlyPrice());
         if (dto.getWeeklyPrice() != null) room.setWeeklyPrice(dto.getWeeklyPrice());
         if (dto.getDailyPrice() != null) room.setDailyPrice(dto.getDailyPrice());
@@ -204,26 +200,22 @@ public class RoomServiceImpl implements RoomService {
         if (dto.getReservedFor() != null) room.setReservedFor(dto.getReservedFor());
         if (dto.getComment() != null) room.setComment(dto.getComment());
 
-        // 2. Room Number වෙනස් වී ඇත්දැයි පරීක්ෂා කිරීම
         boolean roomNumberChanged = false;
         if (dto.getRoomNumber() != null && !dto.getRoomNumber().equals(room.getRoomNumber())) {
             room.setRoomNumber(dto.getRoomNumber());
             roomNumberChanged = true;
         }
 
-        // 3. Room Type (Capacity) වෙනස් වී ඇත්දැයි පරීක්ෂා කිරීම සහ ඇඳන් යාවත්කාලීන කිරීම
         if (dto.getRoomType() != null && dto.getRoomType() != room.getRoomType()) {
-            updateRoomCapacity(room, dto.getRoomType()); // ඇඳන් එකතු කිරීම/ඉවත් කිරීම
+            updateRoomCapacity(room, dto.getRoomType());
             room.setRoomType(dto.getRoomType());
         } else if (roomNumberChanged) {
-            // Capacity වෙනස් නොවී නම පමණක් වෙනස් වූවා නම්, ඇඳන් වල නම් අලුත් කරන්න
             refreshBedNames(room);
         }
 
         roomRepository.save(room);
     }
 
-    // ඇඳන් ගණන පාලනය කරන Logic එක
     private void updateRoomCapacity(Room room, RoomType newType) {
         int newCapacity = newType.getCapacity();
         List<Bed> beds = room.getBeds();
@@ -236,7 +228,6 @@ public class RoomServiceImpl implements RoomService {
         int currentCount = beds.size();
 
         if (newCapacity > currentCount) {
-            // ධාරිතාව වැඩි නම් (Increase): අලුත් ඇඳන් එකතු කරන්න
             for (int i = currentCount + 1; i <= newCapacity; i++) {
                 Bed bed = new Bed();
                 bed.setBedNumber(room.getRoomNumber() + "-" + i);
@@ -247,35 +238,27 @@ public class RoomServiceImpl implements RoomService {
                 bedRepository.save(bed);
             }
         } else if (newCapacity < currentCount) {
-            // ධාරිතාව අඩු නම් (Decrease): අමතර ඇඳන් ඉවත් කරන්න
-
-            // අගින් ඇති ඇඳන් සොයා ගැනීමට Sort කරන්න
             List<Bed> sortedBeds = new ArrayList<>(beds);
             sortedBeds.sort(Comparator.comparingInt(this::getBedIndex));
 
             List<Bed> bedsToRemove = new ArrayList<>();
 
-            // ඉවත් කළ යුතු ඇඳන් ලිස්ට් එක හදන්න
             for (int i = newCapacity; i < currentCount; i++) {
                 Bed bed = sortedBeds.get(i);
 
-                // Book කර ඇති ඇඳක් නම් Error එකක් යවන්න
                 if (Boolean.TRUE.equals(bed.getIsBooked())) {
                     throw new AppException("Cannot reduce capacity: Bed " + bed.getBedNumber() + " is currently occupied. Please move the student first.", HttpStatus.CONFLICT);
                 }
                 bedsToRemove.add(bed);
             }
 
-            // Database සහ List එකෙන් ඉවත් කරන්න
             beds.removeAll(bedsToRemove);
             bedRepository.deleteAll(bedsToRemove);
         }
 
-        // නම් නිවැරදි කිරීම (උදා: Room Number වෙනස් වී ඇත්නම් හෝ මැදින් ඇඳක් අඩු වූවා නම්)
         refreshBedNames(room);
     }
 
-    // ඇඳන් වල නම් පිළිවෙලට සකසන Function එක (R-101-1, R-101-2...)
     private void refreshBedNames(Room room) {
         List<Bed> beds = room.getBeds();
         if (beds == null || beds.isEmpty()) return;
@@ -286,7 +269,6 @@ public class RoomServiceImpl implements RoomService {
             Bed bed = beds.get(i);
             String correctName = room.getRoomNumber() + "-" + (i + 1);
 
-            // නම වැරදි නම් නිවැරදි කර Save කරන්න
             if (!correctName.equals(bed.getBedNumber())) {
                 bed.setBedNumber(correctName);
                 bedRepository.save(bed);
@@ -294,13 +276,12 @@ public class RoomServiceImpl implements RoomService {
         }
     }
 
-    // Bed Number එකේ අග කොටස (Index) ලබා ගන්නා Helper Function එක
     private int getBedIndex(Bed bed) {
         try {
             String s = bed.getBedNumber();
             return Integer.parseInt(s.substring(s.lastIndexOf('-') + 1));
         } catch (Exception e) {
-            return 0; // Error එකක් ආවොත් 0 දෙන්න
+            return 0;
         }
     }
 }

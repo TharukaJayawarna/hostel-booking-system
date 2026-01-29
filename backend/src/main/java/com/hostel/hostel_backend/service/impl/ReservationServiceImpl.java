@@ -11,6 +11,7 @@ import com.hostel.hostel_backend.exception.AppException;
 import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.*;
 import com.hostel.hostel_backend.repository.*;
+import com.hostel.hostel_backend.service.EmailService;
 import com.hostel.hostel_backend.service.NotificationService;
 import com.hostel.hostel_backend.service.ReservationService;
 import com.hostel.hostel_backend.util.PayHereUtil;
@@ -26,10 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,9 +41,8 @@ public class ReservationServiceImpl implements ReservationService {
     private final PayHereUtil payHereUtil;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
-
-    // UPDATE 1: BlockedDateRepository එක final කර Inject කරගන්න
     private final BlockedDateRepository blockedDateRepository;
+    private final EmailService emailService;
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -56,20 +53,16 @@ public class ReservationServiceImpl implements ReservationService {
     @Value("${payhere.currency}")
     private String currency;
 
-    // UPDATE 2: Blocked Dates Validation Helper Method
     private void validateDatesNotBlocked(LocalDate startDate, LocalDate endDate) {
-        // මෙය BlockedDateRepository හි ඇති existsOverlappingDate query එක භාවිතා කරයි
         boolean isBlocked = blockedDateRepository.existsOverlappingDate(startDate, endDate);
         if (isBlocked) {
             throw new AppException("Booking failed: Selected dates are blocked by administration (e.g., Maintenance/Holidays).", HttpStatus.BAD_REQUEST);
         }
     }
 
-    // --- 1. Manual Reservation Create ---
     @Override
     @Transactional
     public void createManualReservation(AdminReservationRequestDTO dto) {
-        // UPDATE 3: Check Blocked Dates
         validateDatesNotBlocked(dto.getFromDate(), dto.getToDate());
 
         Bed bed = bedRepository.findById(dto.getBedId())
@@ -124,17 +117,15 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (linkedUser != null) {
-            String title = "Reservation Confirmed ✅";
-            String message = generateDetailedBillHtml(reservation, "Your reservation has been successfully created manually by the administration.");
-            notificationService.createNotification(linkedUser, title, message);
+            String message = generateBillHtml(reservation, "Your reservation has been successfully created manually by the administration.");
+            notificationService.createNotification(linkedUser, "Reservation Confirmed ✅", message);
         }
     }
 
-    // --- 2. Update Reservation Dates ---
     @Override
     @Transactional
     public void updateReservationDates(Long reservationId, DateChangeRequestDTO dto) throws ResourceNotFoundException {
-        // UPDATE 4: Check Blocked Dates
+
         validateDatesNotBlocked(dto.getNewCheckInDate(), dto.getNewCheckOutDate());
 
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -165,13 +156,11 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            String title = "Dates Updated Successfully 📅";
-            String message = generateDetailedBillHtml(reservation, "Your reservation dates have been updated. Please find the revised details below.");
-            notificationService.createNotification(reservation.getUser(), title, message);
+            String message = generateBillHtml(reservation, "Your reservation dates have been updated. Please find the revised details below.");
+            notificationService.createNotification(reservation.getUser(), "Dates Updated Successfully 📅", message);
         }
     }
 
-    // --- 3. Cancel Reservation ---
     @Override
     @Transactional
     public void cancelReservation(Long reservationId) throws ResourceNotFoundException {
@@ -192,139 +181,57 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            String title = "Reservation Cancelled 🚫";
-            String warningMsg = "<span style='color:red; font-weight:bold;'>IMPORTANT: This reservation includes a non-refundable room policy. Cancellation does not guarantee a refund.</span>";
-            String message = generateDetailedBillHtml(reservation, "Your reservation has been cancelled as per your request.<br/><br/>" + warningMsg);
-            notificationService.createNotification(reservation.getUser(), title, message);
+            Map<String, Object> vars = getCommonVariables(reservation, "Your reservation has been cancelled as per your request.");
+            vars.put("showCancellationWarning", true);
+            String message = emailService.getHtmlContent("reservation-bill", vars);
+            notificationService.createNotification(reservation.getUser(), "Reservation Cancelled 🚫", message);
         }
     }
 
-    // --- 4. Success Email (Online Booking) -> Notification ---
     public void sendSuccessEmail(Reservation res) {
         if (res.getUser() != null) {
-            String title = "Booking Confirmed ✅";
-            String message = generateDetailedBillHtml(res, "Thank you for your reservation! Your payment has been received and booking confirmed.");
-            notificationService.createNotification(res.getUser(), title, message);
+            String message = generateBillHtml(res, "Thank you for your reservation! Your payment has been received and booking confirmed.");
+            notificationService.createNotification(res.getUser(), "Booking Confirmed ✅", message);
         }
     }
 
     public void sendFailureEmail(Reservation res) {
         if (res.getUser() != null) {
-            String title = "Reservation Failed ❌";
-            String message = "<p>Dear " + res.getStudentName() + ",</p>" +
-                    "<p>Your payment for reservation <strong>#" + res.getReservationNumber() + "</strong> was unsuccessful.</p>" +
-                    "<p style='color: red;'>As a result, your booking has been cancelled.</p>" +
-                    "<p>Please try making the reservation again.</p>";
-            notificationService.createNotification(res.getUser(), title, message);
+            Map<String, Object> vars = new HashMap<>();
+            vars.put("studentName", res.getStudentName());
+            vars.put("reservationNumber", res.getReservationNumber());
+            String message = emailService.getHtmlContent("reservation-failure", vars);
+            notificationService.createNotification(res.getUser(), "Reservation Failed ❌", message);
         }
     }
 
-    // --- HELPER: GENERATE DETAILED BILL HTML ---
-    private String generateDetailedBillHtml(Reservation res, String introMessage) {
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
-        long nights = ChronoUnit.DAYS.between(res.getFromDate(), res.getToDate());
-        Double amount = res.getPayment() != null ? res.getPayment().getPaymentAmount() : 0.00;
-        String formattedAmount = String.format("LKR %,.2f", amount);
 
-        String companyInfo =
-                "<div style='font-size:12px; color:#6b7280; line-height:1.4;'>" +
-                        "  <strong>NSBM Green University Hostel</strong><br/>" +
-                        "  Mahenwatta, Pitipana, Homagama<br/>" +
-                        "  Telephone: +94 11 544 5000<br/>" +
-                        "  Email: support@hostel.nsbm.ac.lk" +
-                        "</div>";
-
-        String bookingTable =
-                "<div style='margin-top:20px; font-size:14px; font-weight:700; color:#111827; border-bottom:1px solid #e5e7eb; padding-bottom:5px;'>Reservation Details</div>" +
-                        "<table style='width:100%; margin-top:10px; border-collapse:collapse; font-size:14px; border:1px solid #e5e7eb;'>" +
-                        "  <tr style='background-color:#f9fafb; text-align:left;'>" +
-                        "    <th style='padding:10px; border-bottom:1px solid #e5e7eb;'>Description</th>" +
-                        "    <th style='padding:10px; border-bottom:1px solid #e5e7eb;'>Details</th>" +
-                        "  </tr>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; color:#4b5563;'>Booking Ref</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; font-weight:bold; font-family:monospace;'>" + res.getReservationNumber() + "</td>" +
-                        "  </tr>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; color:#4b5563;'>Room / Bed</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + res.getBed().getRoom().getRoomNumber() + " / Bed " + res.getBed().getBedNumber() + "</td>" +
-                        "  </tr>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; color:#4b5563;'>Check-in</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + res.getFromDate().format(dateFormatter) + " <span style='color:#9ca3af; font-size:11px;'>(5:00 am - 9.00 pm)</span></td>" +
-                        "  </tr>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; color:#4b5563;'>Check-out</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + res.getToDate().format(dateFormatter) + " <span style='color:#9ca3af; font-size:11px;'>(8.00 am - 12:30 PM)</span></td>" +
-                        "  </tr>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; color:#4b5563;'>Duration</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + nights + " Nights</td>" +
-                        "  </tr>" +
-                        "</table>";
-
-        String studentTable =
-                "<div style='margin-top:25px; font-size:14px; font-weight:700; color:#111827; border-bottom:1px solid #e5e7eb; padding-bottom:5px;'>Student Information</div>" +
-                        "<table style='width:100%; margin-top:10px; border-collapse:collapse; font-size:14px; border:1px solid #e5e7eb;'>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; background-color:#f9fafb; width:35%; color:#4b5563;'>Full Name</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + res.getStudentName() + "</td>" +
-                        "  </tr>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; background-color:#f9fafb; color:#4b5563;'>Registration No</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + (res.getStudentRegistrationNumber() != null ? res.getStudentRegistrationNumber() : "N/A") + "</td>" +
-                        "  </tr>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; background-color:#f9fafb; color:#4b5563;'>Email Address</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + (res.getStudentEmail() != null ? res.getStudentEmail() : "N/A") + "</td>" +
-                        "  </tr>" +
-                        "  <tr>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb; background-color:#f9fafb; color:#4b5563;'>Phone Number</td>" +
-                        "    <td style='padding:10px; border-bottom:1px solid #e5e7eb;'>" + (res.getStudentContactNumber() != null ? res.getStudentContactNumber() : "N/A") + "</td>" +
-                        "  </tr>" +
-                        "</table>";
-
-        String costSection =
-                "<div style='margin-top:20px; background-color:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:15px;'>" +
-                        "  <div style='display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; color:#166534;'>" +
-                        "    <span>Status</span>" +
-                        "    <span style='font-weight:bold;'>" + res.getReservationStatus() + "</span>" +
-                        "  </div>" +
-                        "  <div style='display:flex; justify-content:space-between; font-size:16px; font-weight:bold; color:#15803d; border-top:1px dashed #86efac; paddingTop:10px; marginTop:5px;'>" +
-                        "    <span>Total Paid</span>" +
-                        "    <span>" + formattedAmount + "</span>" +
-                        "  </div>" +
-                        "</div>";
-
-        String policy =
-                "<div style='margin-top:20px; font-size:11px; color:#9ca3af; text-align:center;'>" +
-                        "  * This reservation includes a non-cancellable and non-refundable room policy.<br/>" +
-                        "  Generated on " + LocalDate.now().format(dateFormatter) +
-                        "</div>";
-
-        return "<div style='font-family: sans-serif; color:#1f2937;'>" +
-                "  <p style='font-size:15px;'>Hello <strong>" + res.getStudentName() + "</strong>,</p>" +
-                "  <p style='font-size:14px; color:#4b5563;'>" + introMessage + "</p>" +
-                "  <hr style='border:none; border-top:1px solid #e5e7eb; margin:20px 0;'/>" +
-                companyInfo +
-                bookingTable +
-                studentTable +
-                costSection +
-                policy +
-                "</div>";
-    }
-
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public PayHereInitResponseDTO initiateReservation(CreateReservationRequestDTO dto) {
-        // UPDATE 5: Check Blocked Dates
         validateDatesNotBlocked(dto.getFromDate(), dto.getToDate());
 
         try {
             Bed bed = bedRepository.findById(dto.getBedId())
                     .orElseThrow(() -> new ResourceNotFoundException("Bed not found with id: " + dto.getBedId()));
 
-            if (Boolean.TRUE.equals(bed.getIsBooked())) {
-                throw new AppException("This bed is already booked!", HttpStatus.CONFLICT);
+//            if (Boolean.TRUE.equals(bed.getIsBooked())) {
+//                throw new AppException("This bed is already booked!", HttpStatus.CONFLICT);
+//            }
+            List<ReservationStatus> blockingStatuses = Arrays.asList(
+                    ReservationStatus.APPROVED,
+                    ReservationStatus.PENDING
+            );
+            boolean isOccupied = reservationRepository.existsOverlappingReservation(
+                    bed.getId(),
+                    null,
+                    dto.getFromDate(),
+                    dto.getToDate(),
+                    blockingStatuses
+            );
+
+            if (isOccupied) {
+                throw new AppException("Selected dates are not available for this bed.", HttpStatus.CONFLICT);
             }
 
             Double calculatedAmount = calculateTotalAmount(dto.getBedId(), dto.getFromDate(), dto.getToDate());
@@ -359,7 +266,7 @@ public class ReservationServiceImpl implements ReservationService {
             reservation.setUser(currentUser);
             payment.setReservation(reservation);
 
-            bed.setIsBooked(true);
+//            bed.setIsBooked(true);
 
             paymentRepository.save(payment);
             bedRepository.save(bed);
@@ -454,9 +361,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            String title = "Booking Reactivated 🔄";
-            String message = generateDetailedBillHtml(reservation, "Your booking has been manually reactivated by the administration.");
-            notificationService.createNotification(reservation.getUser(), title, message);
+            String message = generateBillHtml(reservation, "Your booking has been manually reactivated by the administration.");
+            notificationService.createNotification(reservation.getUser(), "Booking Reactivated 🔄", message);
         }
     }
 
@@ -490,9 +396,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            String title = "New Bed Assigned 🛏️";
-            String message = generateDetailedBillHtml(reservation, "Since your original bed was unavailable due to late payment verification, we have assigned you a new matching bed.");
-            notificationService.createNotification(reservation.getUser(), title, message);
+            String message = generateBillHtml(reservation, "Since your original bed was unavailable, we have assigned you a new matching bed.");
+            notificationService.createNotification(reservation.getUser(), "New Bed Assigned 🛏️", message);
         }
     }
 
@@ -576,6 +481,34 @@ public class ReservationServiceImpl implements ReservationService {
                 .paymentStatus(res.getPayment() != null ? res.getPayment().getPaymentStatus() : null)
                 .amountPaid(res.getPayment() != null ? res.getPayment().getPaymentAmount() : 0.0)
                 .build();
+    }
+
+    private String generateBillHtml(Reservation res, String introMessage) {
+        Map<String, Object> variables = getCommonVariables(res, introMessage);
+        return emailService.getHtmlContent("reservation-bill", variables);
+    }
+
+    private Map<String, Object> getCommonVariables(Reservation res, String introMessage) {
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+        long nights = ChronoUnit.DAYS.between(res.getFromDate(), res.getToDate());
+        Double amount = res.getPayment() != null ? res.getPayment().getPaymentAmount() : 0.00;
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("studentName", res.getStudentName());
+        vars.put("introMessage", introMessage);
+        vars.put("reservationNumber", res.getReservationNumber());
+        vars.put("roomNumber", res.getBed().getRoom().getRoomNumber());
+        vars.put("bedNumber", res.getBed().getBedNumber());
+        vars.put("checkIn", res.getFromDate().format(dateFormatter));
+        vars.put("checkOut", res.getToDate().format(dateFormatter));
+        vars.put("nights", nights);
+        vars.put("studentRegNo", res.getStudentRegistrationNumber() != null ? res.getStudentRegistrationNumber() : "N/A");
+        vars.put("studentEmail", res.getStudentEmail() != null ? res.getStudentEmail() : "N/A");
+        vars.put("studentPhone", res.getStudentContactNumber() != null ? res.getStudentContactNumber() : "N/A");
+        vars.put("status", res.getReservationStatus());
+        vars.put("amount", String.format("LKR %,.2f", amount));
+        vars.put("generatedDate", LocalDate.now().format(dateFormatter));
+        return vars;
     }
 
     @Override

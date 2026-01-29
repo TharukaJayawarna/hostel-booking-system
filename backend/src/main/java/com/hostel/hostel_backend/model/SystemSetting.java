@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 @Table(name = "system_settings")
 public class SystemSetting {
     @Id
-    private String settingKey; // උදා: "MAX_BOOKING_DAYS"
+    private String settingKey;
     private String settingValue;
 }

@@ -47,7 +47,6 @@
   box-shadow: 0 0 0 8px #eff6ff;
 }
 
-/* Content */
 .cm-content {
   margin-bottom: 25px;
 }
@@ -65,7 +64,6 @@
   line-height: 1.5;
 }
 
-/* Actions */
 .cm-actions {
   display: flex;
   gap: 12px;

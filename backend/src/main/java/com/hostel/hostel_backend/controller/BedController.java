@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -53,7 +54,16 @@ public class BedController {
 
     @GetMapping(value = "/rooms/{room-id}/beds", headers = "X-Api-Version=v1")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'WARDEN', 'STUDENT')")
-    public ResponseEntity<ApiResponse<List<BedsResponseDTO>>> getBedsByRoom(@PathVariable("room-id") Long roomId) {
+    public ResponseEntity<ApiResponse<List<BedsResponseDTO>>> getBedsByRoom(
+            @PathVariable("room-id") Long roomId,
+            @RequestParam(required = false) LocalDate checkIn,
+            @RequestParam(required = false) LocalDate checkOut
+    ) {
+        if (checkIn != null && checkOut != null) {
+            return ResponseEntity.ok(ApiResponse.success("Beds fetched with availability",
+                    bedService.getBedsByRoomIdAndDateRange(roomId, checkIn, checkOut)));
+        }
+        
         return ResponseEntity.ok(ApiResponse.success("Beds fetched", bedService.getBedsByRoomId(roomId)));
     }
 

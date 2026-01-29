@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hostel Management System</title>
+    <style>
+        /* Email Clients සඳහා Inline CSS අත්‍යවශ්‍ය වේ */
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { background-color: #4f46e5; padding: 30px; text-align: center; color: #ffffff; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px; }
+        .header p { margin: 5px 0 0; color: #e0e7ff; font-size: 14px; }
+        .content { padding: 40px 30px; color: #374151; line-height: 1.6; font-size: 16px; }
+        .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+        .alert { padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
+        .alert-red { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-green { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Hostel PMS</h1>
+        <p>Student Accommodation System</p>
+    </div>
+
+    <div class="content">
+        <div layout:fragment="content">
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>&copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2025</span> NSBM Green University Hostel.</p>
+        <p style="margin-top: 5px;">Mahenwatta, Pitipana, Homagama | +94 11 544 5000</p>
+        <p style="margin-top: 5px; color: #9ca3af;">This is an automated email. Please do not reply.</p>
+    </div>
+</div>
+</body>
+</html>

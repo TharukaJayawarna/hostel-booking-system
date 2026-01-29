@@ -1,38 +1,39 @@
-/* =========================================
-   1. MAIN CONTAINER
-   ========================================= */
 .login-container {
   min-height: 100vh;
   width: 100vw;
   display: flex;
   background-color: #ffffff;
-  font-family: 'Inter', sans-serif;
-  overflow: hidden; /* Scroll bar ඉවත් කිරීමට */
+  font-family: "Inter", sans-serif;
+  overflow: hidden;
 }
 
-/* =========================================
-   2. LEFT SIDE (IMAGE SECTION)
-   ========================================= */
 .login-image-section {
   flex: 1.2;
   position: relative;
   background-color: #1e293b;
-  /* High Quality Hostel Image */
+
   background-image: url("https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80");
   background-size: cover;
   background-position: center;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; /* Text පහළට ගැනීමට */
+  justify-content: flex-end;
   padding: 60px;
   color: white;
 }
 
 .login-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  /* Dark Gradient Overlay for readability */
-  background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 100%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  background: linear-gradient(
+    to top,
+    rgba(15, 23, 42, 0.9) 0%,
+    rgba(15, 23, 42, 0.4) 100%
+  );
   z-index: 1;
 }
 
@@ -42,7 +43,6 @@
   max-width: 500px;
 }
 
-/* Brand Logo (Square 'H' Box) */
 .login-brand-logo {
   width: 50px;
   height: 50px;
@@ -69,16 +69,13 @@
 
 .brand-desc {
   font-size: 16px;
-  color: #cbd5e1; /* Light Gray text */
+  color: #cbd5e1;
   line-height: 1.6;
   margin: 0;
   font-weight: 400;
   opacity: 0.9;
 }
 
-/* =========================================
-   3. RIGHT SIDE (FORM SECTION)
-   ========================================= */
 .login-form-section {
   flex: 1;
   display: flex;
@@ -90,10 +87,9 @@
 
 .login-form-wrapper {
   width: 100%;
-  max-width: 400px; /* Form එකේ පළල සීමා කිරීම */
+  max-width: 400px;
 }
 
-/* Header Text */
 .login-header {
   margin-bottom: 35px;
 }
@@ -113,9 +109,6 @@
   margin: 0;
 }
 
-/* =========================================
-   4. INPUT STYLES (UPDATED)
-   ========================================= */
 .input-group {
   margin-bottom: 24px;
 }
@@ -130,7 +123,6 @@
   letter-spacing: 0.5px;
 }
 
-/* Input Wrapper (Container for Icon + Input + EyeBtn) */
 .input-wrapper {
   display: flex;
   align-items: center;
@@ -139,17 +131,15 @@
   background-color: #f8fafc;
   transition: all 0.2s ease;
   position: relative;
-  overflow: hidden; /* වැදගත් */
+  overflow: hidden;
 }
 
-/* Focus State */
 .input-wrapper:focus-within {
   border-color: #4f46e5;
   background-color: white;
   box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
-/* Error State (Red Border) */
 .input-wrapper.error-border {
   border-color: #ef4444;
   background-color: #fef2f2;
@@ -159,7 +149,6 @@
   color: #ef4444;
 }
 
-/* Left Icon (Lock/User) */
 .input-icon {
   padding-left: 16px;
   padding-right: 12px;
@@ -170,9 +159,8 @@
   transition: color 0.2s;
 }
 
-/* The Actual Input Field */
 .form-input {
-  flex: 1; /* ඉතිරි ඉඩ සම්පූර්ණයෙන්ම ගනී */
+  flex: 1;
   padding: 14px 0;
   border: none;
   background: transparent;
@@ -180,15 +168,13 @@
   font-size: 15px;
   color: #1e293b;
   font-weight: 500;
-  min-width: 0; /* Text overflow වැළැක්වීමට */
+  min-width: 0;
 }
 
-/* Placeholder Color */
 .form-input::placeholder {
   color: #cbd5e1;
 }
 
-/* Password Toggle Button (Eye Icon) */
 .password-toggle-btn {
   background: none;
   border: none;
@@ -205,9 +191,6 @@
   color: #4f46e5;
 }
 
-/* =========================================
-   5. ACTIONS & BUTTONS
-   ========================================= */
 .form-actions {
   display: flex;
   justify-content: space-between;
@@ -246,11 +229,10 @@
   text-decoration: underline;
 }
 
-/* Login Button */
 .btn-login {
   width: 100%;
   padding: 14px;
-  background-color: #4f46e5; /* Dark Navy */
+  background-color: #4f46e5;
   color: white;
   border: none;
   border-radius: 12px;
@@ -277,17 +259,19 @@
   background-color: #94a3b8;
 }
 
-/* Spinner Animation */
 .spinner {
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Error Message Box */
 .login-error-msg {
   background-color: #fef2f2;
   color: #ef4444;
@@ -305,9 +289,16 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 /* Footer */
@@ -331,23 +322,20 @@
   text-decoration: underline;
 }
 
-/* =========================================
-   6. RESPONSIVE MEDIA QUERIES
-   ========================================= */
 @media (max-width: 900px) {
   .login-container {
     flex-direction: column;
     height: auto;
     overflow-y: auto;
   }
-  
+
   .login-image-section {
-    display: none; /* Mobile වලදී Image එක සඟවන්න */
+    display: none;
   }
 
   .login-form-section {
     padding: 30px 20px;
     flex: none;
-    min-height: 100vh; /* Screen එක පුරාම Form එක පෙන්වන්න */
+    min-height: 100vh;
   }
 }

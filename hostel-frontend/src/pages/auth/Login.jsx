@@ -15,7 +15,7 @@ const Login = () => {
     username: "",
     password: "",
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +29,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
     if (!formData.username.trim() || !formData.password) {
       setError("Username and Password are required.");
@@ -44,10 +44,8 @@ const Login = () => {
       if (response.data.status === "SUCCESS") {
         const user = response.data.data;
 
-        // --- SIMPLIFIED LOGIN LOGIC ---
-        // සැමවිටම Local Storage හි දත්ත තැන්පත් කරයි (Standard Persistent Login)
         localStorage.setItem("user", JSON.stringify(user));
-        // ආරක්ෂාවට Session එකේ පරණ දත්ත තිබේ නම් ඒවා මකා දමයි
+
         sessionStorage.removeItem("user");
 
         notify.success(`Welcome back, ${user.firstName}!`);
@@ -59,7 +57,8 @@ const Login = () => {
         }
       }
     } catch (err) {
-      const msg = err.response?.data?.message || "Invalid credentials. Please try again.";
+      const msg =
+        err.response?.data?.message || "Invalid credentials. Please try again.";
       setError(msg);
       notify.error(msg);
     } finally {
@@ -69,20 +68,18 @@ const Login = () => {
 
   return (
     <div className="login-container">
-      {/* LEFT SIDE - Branding Image */}
       <div className="login-image-section">
         <div className="login-overlay"></div>
         <div className="login-image-content">
           <div className="login-brand-logo">H</div>
           <h1 className="brand-title">Welcome to Hostel PMS</h1>
           <p className="brand-desc">
-            Your all-in-one solution for seamless hostel management. 
-            Secure bookings, easy payments, and smart facility management.
+            Your all-in-one solution for seamless hostel management. Secure
+            bookings, easy payments, and smart facility management.
           </p>
         </div>
       </div>
 
-      {/* RIGHT SIDE - Login Form */}
       <div className="login-form-section">
         <div className="login-form-wrapper">
           <div className="login-header">
@@ -93,10 +90,9 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit}>
-            {/* Username Input */}
             <div className="input-group">
               <label className="input-label">Username</label>
-              <div className={`input-wrapper ${error ? 'error-border' : ''}`}>
+              <div className={`input-wrapper ${error ? "error-border" : ""}`}>
                 <div className="input-icon">
                   <User size={20} />
                 </div>
@@ -110,10 +106,9 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Password Input */}
             <div className="input-group">
               <label className="input-label">Password</label>
-              <div className={`input-wrapper ${error ? 'error-border' : ''}`}>
+              <div className={`input-wrapper ${error ? "error-border" : ""}`}>
                 <div className="input-icon">
                   <Lock size={20} />
                 </div>
@@ -135,14 +130,15 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Forgot Password Link Only (Align Right) */}
-            <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+            <div
+              className="form-actions"
+              style={{ justifyContent: "flex-end" }}
+            >
               <Link to="/forgot-password" className="forgot-password-link">
                 Forgot password?
               </Link>
             </div>
 
-            {/* Error Message Display */}
             {error && <div className="login-error-msg">{error}</div>}
 
             <button type="submit" className="btn-login" disabled={loading}>

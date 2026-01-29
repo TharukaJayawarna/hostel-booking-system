@@ -16,16 +16,15 @@ import {
   CreditCard,
   ShieldCheck,
   Loader2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { DateRange } from "react-date-range";
-import "react-date-range/dist/styles.css"; // Main css file
-import "react-date-range/dist/theme/default.css"; // Theme css file
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import ConfirmModal from "../../components/ConfirmModal";
 import "./styles/MyBookings.css";
 
-// Service import
 import reservationService from "../../services/reservation.service";
 
 const MyBookings = () => {
@@ -33,7 +32,6 @@ const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Date Change Modal State
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [selectedBookingForDate, setSelectedBookingForDate] = useState(null);
   const [dateRange, setDateRange] = useState([
@@ -41,7 +39,6 @@ const MyBookings = () => {
   ]);
   const [requiredDuration, setRequiredDuration] = useState(0);
 
-  // Gate Pass Modal State
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [passDetails, setPassDetails] = useState(null);
   const [passLoading, setPassLoading] = useState(false);
@@ -72,7 +69,6 @@ const MyBookings = () => {
     }
   };
 
-  // --- Cancel Booking Logic ---
   const handleCancelClick = (id) => {
     setBookingToCancel(id);
     setCancelModalOpen(true);
@@ -91,7 +87,6 @@ const MyBookings = () => {
     }
   };
 
-  // --- View Gate Pass Logic ---
   const handleViewPass = async (id) => {
     setPassLoading(true);
     setIsPassModalOpen(true);
@@ -114,7 +109,7 @@ const MyBookings = () => {
     const start = parseISO(booking.checkIn);
     const end = parseISO(booking.checkOut);
     const duration = differenceInDays(end, start);
-    
+
     setRequiredDuration(duration);
     setSelectedBookingForDate(booking);
     setDateRange([{ startDate: start, endDate: end, key: "selection" }]);
@@ -127,7 +122,9 @@ const MyBookings = () => {
     const newDuration = differenceInDays(newEnd, newStart);
 
     if (newDuration !== requiredDuration) {
-      notify.error(`Invalid Duration! Please select exactly ${requiredDuration} days.`);
+      notify.error(
+        `Invalid Duration! Please select exactly ${requiredDuration} days.`,
+      );
       return;
     }
 
@@ -146,11 +143,19 @@ const MyBookings = () => {
 
   const getStatusBadge = (status) => {
     const config = {
-      APPROVED: { class: "status-approved", icon: CheckCircle2, label: "Active" },
+      APPROVED: {
+        class: "status-approved",
+        icon: CheckCircle2,
+        label: "Active",
+      },
       PENDING: { class: "status-pending", icon: Clock, label: "Pending" },
       REJECTED: { class: "status-rejected", icon: XCircle, label: "Rejected" },
       CANCELLED: { class: "status-cancelled", icon: Ban, label: "Cancelled" },
-      COMPLETED: { class: "status-completed", icon: History, label: "Completed" },
+      COMPLETED: {
+        class: "status-completed",
+        icon: History,
+        label: "Completed",
+      },
     };
     const style = config[status] || config.PENDING;
     const Icon = style.icon;
@@ -167,7 +172,9 @@ const MyBookings = () => {
         <div className="bookings-header">
           <div>
             <h1 className="page-title">My Reservations</h1>
-            <p className="page-subtitle">Manage your current and past accommodation bookings.</p>
+            <p className="page-subtitle">
+              Manage your current and past accommodation bookings.
+            </p>
           </div>
         </div>
 
@@ -187,41 +194,65 @@ const MyBookings = () => {
             <div key={booking.id} className="booking-card">
               <div className="booking-card-header">
                 <div>
-                  <div className="res-id">REF: #{booking.reservationNumber}</div>
+                  <div className="res-id">
+                    REF: #{booking.reservationNumber}
+                  </div>
                   <div className="bed-info">
-                    <BedDouble size={20} color="#4f46e5" /> 
-                    <span>{booking.roomNumber} - Bed {booking.bedNumber}</span>
+                    <BedDouble size={20} color="#4f46e5" />
+                    <span>
+                      {booking.roomNumber} - Bed {booking.bedNumber}
+                    </span>
                   </div>
                 </div>
                 {getStatusBadge(booking.status)}
               </div>
-              
+
               <div className="booking-card-body">
                 <div className="info-grid">
                   <div className="info-item">
                     <span className="info-label">Check-in</span>
-                    <span className="info-value"><Calendar size={16} /> {booking.checkIn}</span>
+                    <span className="info-value">
+                      <Calendar size={16} /> {booking.checkIn}
+                    </span>
                   </div>
                   <div className="info-item">
                     <span className="info-label">Check-out</span>
-                    <span className="info-value"><Calendar size={16} /> {booking.checkOut}</span>
+                    <span className="info-value">
+                      <Calendar size={16} /> {booking.checkOut}
+                    </span>
                   </div>
                   <div className="info-item">
                     <span className="info-label">Duration</span>
-                    <span className="info-value"><Clock size={16} /> {differenceInDays(parseISO(booking.checkOut), parseISO(booking.checkIn))} Nights</span>
+                    <span className="info-value">
+                      <Clock size={16} />{" "}
+                      {differenceInDays(
+                        parseISO(booking.checkOut),
+                        parseISO(booking.checkIn),
+                      )}{" "}
+                      Nights
+                    </span>
                   </div>
                 </div>
               </div>
 
               {booking.status === "APPROVED" && (
                 <div className="booking-card-footer">
-                  <button onClick={() => handleViewPass(booking.id)} className="action-btn btn-pass">
+                  <button
+                    onClick={() => handleViewPass(booking.id)}
+                    className="action-btn btn-pass"
+                  >
                     <Ticket size={16} /> View Gate Pass
                   </button>
-                  <button onClick={() => openDateModal(booking)} className="action-btn btn-outline">
+                  <button
+                    onClick={() => openDateModal(booking)}
+                    className="action-btn btn-outline"
+                  >
                     <Edit3 size={16} /> Change Dates
                   </button>
-                  <button onClick={() => handleCancelClick(booking.id)} className="action-btn btn-danger">
+                  <button
+                    onClick={() => handleCancelClick(booking.id)}
+                    className="action-btn btn-danger"
+                  >
                     <Ban size={16} /> Cancel
                   </button>
                 </div>
@@ -233,10 +264,16 @@ const MyBookings = () => {
 
       {/* --- GATE PASS MODAL --- */}
       {isPassModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsPassModalOpen(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsPassModalOpen(false)}
+        >
           <div className="pass-card" onClick={(e) => e.stopPropagation()}>
             <div className="pass-header">
-              <button className="pass-close-btn" onClick={() => setIsPassModalOpen(false)}>
+              <button
+                className="pass-close-btn"
+                onClick={() => setIsPassModalOpen(false)}
+              >
                 <X size={18} />
               </button>
               <div className="pass-title">Hostel Entry Pass</div>
@@ -245,7 +282,10 @@ const MyBookings = () => {
 
             <div className="pass-body">
               {passLoading ? (
-                <div className="loading-msg"><Loader2 className="animate-spin" size={24}/> Loading details...</div>
+                <div className="loading-msg">
+                  <Loader2 className="animate-spin" size={24} /> Loading
+                  details...
+                </div>
               ) : passDetails ? (
                 <>
                   <div className="status-row">
@@ -253,33 +293,76 @@ const MyBookings = () => {
                   </div>
 
                   <div className="pass-section">
-                    <div className="section-title"><User size={14} /> Student Details</div>
-                    <div className="info-row"><span className="row-label">Name</span><span className="row-val">{passDetails.studentName}</span></div>
-                    <div className="info-row"><span className="row-label">Reg No</span><span className="row-val">{passDetails.studentRegistrationNumber}</span></div>
-                    <div className="info-row"><span className="row-label">Email</span><span className="row-val">{passDetails.studentEmail}</span></div>
+                    <div className="section-title">
+                      <User size={14} /> Student Details
+                    </div>
+                    <div className="info-row">
+                      <span className="row-label">Name</span>
+                      <span className="row-val">{passDetails.studentName}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="row-label">Reg No</span>
+                      <span className="row-val">
+                        {passDetails.studentRegistrationNumber}
+                      </span>
+                    </div>
+                    <div className="info-row">
+                      <span className="row-label">Email</span>
+                      <span className="row-val">
+                        {passDetails.studentEmail}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="pass-section">
-                    <div className="section-title"><MapPin size={14} /> Accommodation</div>
-                    <div className="info-row"><span className="row-label">Room / Bed</span><span className="row-val">{passDetails.roomNumber} / {passDetails.bedNumber}</span></div>
-                    <div className="info-row"><span className="row-label">Valid From</span><span className="row-val">{passDetails.checkIn}</span></div>
-                    <div className="info-row"><span className="row-label">Valid Until</span><span className="row-val">{passDetails.checkOut}</span></div>
+                    <div className="section-title">
+                      <MapPin size={14} /> Accommodation
+                    </div>
+                    <div className="info-row">
+                      <span className="row-label">Room / Bed</span>
+                      <span className="row-val">
+                        {passDetails.roomNumber} / {passDetails.bedNumber}
+                      </span>
+                    </div>
+                    <div className="info-row">
+                      <span className="row-label">Valid From</span>
+                      <span className="row-val">{passDetails.checkIn}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="row-label">Valid Until</span>
+                      <span className="row-val">{passDetails.checkOut}</span>
+                    </div>
                   </div>
 
                   <div className="pass-section payment-section">
-                    <div className="section-title"><CreditCard size={14} /> Payment</div>
-                    <div className="info-row"><span className="row-label">Ref ID</span><span className="row-val mono">{passDetails.reservationNumber}</span></div>
-                    <div className="info-row"><span className="row-label">Amount</span><span className="row-val amount">LKR {passDetails.amountPaid?.toLocaleString()}</span></div>
+                    <div className="section-title">
+                      <CreditCard size={14} /> Payment
+                    </div>
+                    <div className="info-row">
+                      <span className="row-label">Ref ID</span>
+                      <span className="row-val mono">
+                        {passDetails.reservationNumber}
+                      </span>
+                    </div>
+                    <div className="info-row">
+                      <span className="row-label">Amount</span>
+                      <span className="row-val amount">
+                        LKR {passDetails.amountPaid?.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Barcode Placeholder */}
                   <div className="barcode-box">
                     <div className="barcode-lines"></div>
-                    <div className="barcode-text">{passDetails.reservationNumber}</div>
+                    <div className="barcode-text">
+                      {passDetails.reservationNumber}
+                    </div>
                   </div>
                 </>
               ) : (
-                <div className="error-msg"><AlertCircle size={20}/> Failed to load pass.</div>
+                <div className="error-msg">
+                  <AlertCircle size={20} /> Failed to load pass.
+                </div>
               )}
             </div>
           </div>
@@ -288,17 +371,31 @@ const MyBookings = () => {
 
       {/* --- DATE CHANGE MODAL --- */}
       {isDateModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsDateModalOpen(false)}>
-          <div className="date-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={() => setIsDateModalOpen(false)}
+        >
+          <div
+            className="date-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="dm-header">
               <div className="dm-title">Change Dates</div>
-              <button onClick={() => setIsDateModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+              <button
+                onClick={() => setIsDateModalOpen(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
                 <X size={20} />
               </button>
             </div>
             <div className="dm-body">
               <div className="dm-note">
-                Note: You must select exactly <strong>{requiredDuration} days</strong>.
+                Note: You must select exactly{" "}
+                <strong>{requiredDuration} days</strong>.
               </div>
               <div className="dm-calendar-wrapper">
                 <DateRange
@@ -313,8 +410,18 @@ const MyBookings = () => {
               </div>
             </div>
             <div className="dm-footer">
-              <button onClick={() => setIsDateModalOpen(false)} className="action-btn btn-outline">Cancel</button>
-              <button onClick={handleDateChangeSubmit} className="action-btn btn-pass">Update Dates</button>
+              <button
+                onClick={() => setIsDateModalOpen(false)}
+                className="action-btn btn-outline"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDateChangeSubmit}
+                className="action-btn btn-pass"
+              >
+                Update Dates
+              </button>
             </div>
           </div>
         </div>

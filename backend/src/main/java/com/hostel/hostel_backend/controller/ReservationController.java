@@ -30,7 +30,6 @@ public class ReservationController {
     @PostMapping(value = "/initiate", headers = "X-Api-Version=v1")
     @PreAuthorize("hasAuthority('STUDENT')")
     public ResponseEntity<ApiResponse<PayHereInitResponseDTO>> initiateReservation(@RequestBody CreateReservationRequestDTO dto) {
-        // Exception Handling is done automatically by GlobalExceptionHandler
         PayHereInitResponseDTO response = reservationService.initiateReservation(dto);
         return ResponseEntity.ok(ApiResponse.success("Reservation initiated successfully", response));
     }
@@ -122,7 +121,6 @@ public class ReservationController {
     @PostMapping(value = "/admin/create", headers = "X-Api-Version=v1")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> createManualReservation(@RequestBody AdminReservationRequestDTO dto) {
-        // Validation (Service එකේදීත් බලනවා, මෙතනින් සරලව)
         if(dto.getBedId() == null || dto.getRegistrationNumber() == null) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Bed ID and Reg No are required"));
         }

@@ -4,15 +4,19 @@ import com.hostel.hostel_backend.controller.request.CreateBedRequestDTO;
 import com.hostel.hostel_backend.controller.response.BedsResponseDTO;
 import com.hostel.hostel_backend.exception.ResourceNotFoundException;
 import com.hostel.hostel_backend.model.Bed;
+import com.hostel.hostel_backend.model.ReservationStatus;
 import com.hostel.hostel_backend.model.Room;
 import com.hostel.hostel_backend.repository.BedRepository;
+import com.hostel.hostel_backend.repository.ReservationRepository;
 import com.hostel.hostel_backend.repository.RoomRepository;
 import com.hostel.hostel_backend.service.BedService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +27,7 @@ public class BedServiceImpl implements BedService {
 
     private final RoomRepository roomRepository;
     private final BedRepository bedRepository;
+    private final ReservationRepository reservationRepository;
 
     @Override
     @Transactional
@@ -56,6 +61,28 @@ public class BedServiceImpl implements BedService {
                .underMaintenance(bed.getUnderMaintenance())
                 .build();
 
+    }
+
+    public List<BedsResponseDTO> getBedsByRoomIdAndDateRange(Long roomId, LocalDate checkIn, LocalDate checkOut) {
+        List<Bed> allBeds = bedRepository.findByRoomId(roomId);
+
+        List<ReservationStatus> activeStatuses = Arrays.asList(
+                ReservationStatus.APPROVED,
+                ReservationStatus.PENDING
+        );
+
+        List<Long> occupiedBedIds = reservationRepository.findOccupiedBedIds(
+                roomId, checkIn, checkOut, activeStatuses
+        );
+
+        return allBeds.stream()
+                .map(bed -> {
+                    BedsResponseDTO dto = mapToDTO(bed);
+                    boolean isOccupiedForDates = occupiedBedIds.contains(bed.getId());
+                    dto.setIsBooked(isOccupiedForDates);
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override

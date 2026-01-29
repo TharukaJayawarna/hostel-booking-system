@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useNotification } from "../../context/NotificationContext";
 import ConfirmModal from "../../components/ConfirmModal";
-import ManualReservationModal from "./ManualReservationModal"; // IMPORTED
-import ViewReservationModal from "./ViewReservationModal"; // IMPORTED
-import MoveBedModal from "./MoveBedModal"; // IMPORTED
+import ManualReservationModal from "./ManualReservationModal";
+import ViewReservationModal from "./ViewReservationModal";
+import MoveBedModal from "./MoveBedModal";
 
 import {
   CalendarDays,
@@ -28,7 +28,6 @@ import "./styles/ManageReservations.css";
 import reservationService from "../../services/reservation.service";
 import authService from "../../services/auth.service";
 
-// Stat Card Component
 const StatCard = ({ icon: Icon, colorClass, value, label }) => (
   <div className="mr-stat-card">
     <div className={`mr-stat-icon-box ${colorClass}`}>
@@ -44,30 +43,25 @@ const StatCard = ({ icon: Icon, colorClass, value, label }) => (
 const ManageReservations = () => {
   const notify = useNotification();
 
-  // Data States
   const [reservations, setReservations] = useState([]);
   const [showTrash, setShowTrash] = useState(false);
 
-  // Filter & Pagination
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  // UI States
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState(null);
   const dropdownRef = useRef(null);
 
-  // Modal States
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isReactivateModalOpen, setIsReactivateModalOpen] = useState(false);
 
-  // Selected Item States
   const [selectedResId, setSelectedResId] = useState(null);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -85,7 +79,6 @@ const ManageReservations = () => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus, showTrash]);
 
-  // Click Outside Dropdown Logic
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -115,7 +108,6 @@ const ManageReservations = () => {
     setActiveDropdownId(activeDropdownId === id ? null : id);
   };
 
-  // --- Filter & Pagination Logic ---
   const filteredReservations = useMemo(() => {
     return reservations.filter((res) => {
       const term = searchTerm.toLowerCase().trim();
@@ -150,7 +142,6 @@ const ManageReservations = () => {
     [reservations],
   );
 
-  // --- Handlers ---
   const handleMoveBedOpen = async (id) => {
     setSelectedResId(id);
     setActiveDropdownId(null);
@@ -235,7 +226,6 @@ const ManageReservations = () => {
 
   return (
     <div className="mr-container" onClick={() => setActiveDropdownId(null)}>
-      {/* Header & Stats - Keep as is */}
       <div className="mr-header">
         <div className="mr-title-group">
           <div className="mr-title">
@@ -286,7 +276,6 @@ const ManageReservations = () => {
       </div>
 
       <div className="mr-toolbar">
-        {/* Search and Filters same as before... */}
         <div className="mr-search-box">
           <Search size={18} color="#9ca3af" />
           <input
@@ -468,7 +457,7 @@ const ManageReservations = () => {
             )}
           </tbody>
         </table>
-        {/* Pagination Controls ... (Same as before) */}
+
         {!loading && filteredReservations.length > 0 && (
           <div
             style={{
@@ -518,7 +507,6 @@ const ManageReservations = () => {
         )}
       </div>
 
-      {/* --- SEPARATED MODALS --- */}
       <ManualReservationModal
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
@@ -542,7 +530,6 @@ const ManageReservations = () => {
         onConfirm={handleMoveConfirm}
       />
 
-      {/* Generic Confirmation Modals */}
       <ConfirmModal
         isOpen={isReactivateModalOpen}
         onClose={() => !isSubmitting && setIsReactivateModalOpen(false)}

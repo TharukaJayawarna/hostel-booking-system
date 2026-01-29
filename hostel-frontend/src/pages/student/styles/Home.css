@@ -1,7 +1,7 @@
 .home-container {
   width: 100%;
   min-height: 100vh;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   background-color: #f8fafc;
   color: #334155;
   display: flex;
@@ -11,16 +11,32 @@
 }
 
 .home-hero {
-  width: 100%;
   position: relative;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: white;
-  padding: 80px 20px;
-  text-align: center;
+  height: 60vh;
+  width: 100%;
   display: flex;
+  align-items: center;
   justify-content: center;
-  border-radius: 0 0 40px 40px;
-  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.5);
+  overflow: hidden;
+  color: white;
+  text-align: center;
+}
+
+.home-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80");
+  background-size: cover;
+  background-position: center;
+
+  filter: blur(1px);
+
+  transform: scale(1.1);
+  z-index: 0;
 }
 
 .hero-overlay {
@@ -29,17 +45,15 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 30px 30px;
-  opacity: 0.3;
-  border-radius: 0 0 40px 40px;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1;
 }
 
 .hero-content {
   position: relative;
   z-index: 2;
   max-width: 800px;
-  animation: fadeInUp 0.8s ease-out;
+  padding: 0 20px;
 }
 
 .hero-badge {
@@ -108,11 +122,14 @@
   position: relative;
 }
 
-.price-container, .policy-container {
+.price-container,
+.policy-container {
   background-color: white;
   border-radius: 20px;
   padding: 30px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.05),
+    0 4px 6px -2px rgba(0, 0, 0, 0.025);
   border: 1px solid #f1f5f9;
 }
 
@@ -201,7 +218,7 @@
 }
 
 .price-badge {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 700;
   color: #4338ca;
   background-color: #eef2ff;
@@ -234,9 +251,7 @@
 .policy-container {
   background-color: #fff1f2;
   border: 1px solid #fecdd3;
-  
 }
-
 
 .title-danger {
   color: #be123c;
@@ -331,11 +346,13 @@
   flex-direction: column;
 }
 .hub-section {
-  scroll-margin-top: 180px; 
+  scroll-margin-top: 180px;
 }
 .hub-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   border-color: #cbd5e1;
 }
 
@@ -453,21 +470,37 @@
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(10px); }
-  60% { transform: translateY(5px); }
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(10px);
+  }
+  60% {
+    transform: translateY(5px);
+  }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1024px) {
   .info-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .hero-title {
     font-size: 36px;
   }
@@ -477,12 +510,13 @@
   .hero-title {
     font-size: 30px;
   }
-  
-  .price-th, .price-td {
+
+  .price-th,
+  .price-td {
     padding: 10px 5px;
     font-size: 12px;
   }
-  
+
   .price-badge {
     min-width: auto;
     padding: 4px 8px;
@@ -499,7 +533,7 @@
 }
 
 .title-feature {
-  color: #854d0e; /* Dark Yellow/Gold text */
+  color: #854d0e;
   margin-bottom: 20px;
   font-size: 18px;
   font-weight: 700;
@@ -531,16 +565,15 @@
 .feature-item:hover {
   transform: translateY(-2px);
   background-color: #fff;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .feature-icon {
   color: #4f46e5;
 }
 
-/* Mobile Responsive adjustment */
 @media (max-width: 1024px) {
   .info-grid {
-    grid-template-columns: 1fr; /* Stack on tablet/mobile */
+    grid-template-columns: 1fr;
   }
 }

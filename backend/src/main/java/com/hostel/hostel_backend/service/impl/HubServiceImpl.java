@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class HubServiceImpl implements HubService {
 
     private final HubRepository hubRepository;
-    private final Cloudinary cloudinary; // Cloudinary Bean eka inject karagannawa
+    private final Cloudinary cloudinary;
 
     @Override
     @Transactional
@@ -34,13 +34,10 @@ public class HubServiceImpl implements HubService {
         hub.setDescription(dto.getDescription());
 
         if (image != null && !image.isEmpty()) {
-            // Cloudinary ekata upload karanawa
             Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.emptyMap());
 
-            // Upload wuna image eke URL eka gannawa
             String imageUrl = (String) uploadResult.get("url");
 
-            // URL eka database eke save karanawa
             hub.setImagePath(imageUrl);
         }
 
@@ -67,7 +64,6 @@ public class HubServiceImpl implements HubService {
                 .id(hub.getId())
                 .hubNumber(hub.getHubNumber())
                 .description(hub.getDescription())
-                // Cloudinary URL eka kelinma thiyena nisa modification one na
                 .image(hub.getImagePath())
                 .noOfFloors(floorCount)
                 .noOfRooms(roomCount)
@@ -85,8 +81,7 @@ public class HubServiceImpl implements HubService {
     @Transactional
     public void deleteHub(Long hubId) throws ResourceNotFoundException {
         if (hubRepository.existsById(hubId)) {
-            // Amathara deyak: Oya kamathi nam methana Cloudinary walin image eka delete karana logic ekath liyanna puluwan.
-            // Namuth database eken delete kirima pamanak pramanawath.
+
             hubRepository.deleteById(hubId);
         } else {
             throw new ResourceNotFoundException("Hub not found with id: " + hubId);

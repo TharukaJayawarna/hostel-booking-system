@@ -46,7 +46,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             username = jwtUtils.extractUsername(jwt);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // මෙතන try-catch එකක් දාන්න
                 try {
                     UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
@@ -60,13 +59,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     }
                 } catch (UsernameNotFoundException e) {
-                    // User Database එකේ නැත්නම් (උදා: DB Reset කරපු නිසා), Token එක නොසලකා හරින්න.
-                    // එවිට පහලදී 403 Forbidden එකක් වැටේවි.
                     System.out.println("User not found for token: " + username);
                 }
             }
         } catch (Exception e) {
-            // Token එක Expire වෙලා හෝ වැරදි නම්
             System.out.println("JWT Processing Error: " + e.getMessage());
         }
 

@@ -1,10 +1,10 @@
-import api from '../api/axiosConfig';
+import api from "../api/axiosConfig";
 
 // Report a new issue
 const reportIssue = (issueData) => {
-    return api.post('/issues', issueData);
+  return api.post("/issues", issueData);
 };
 
 export default {
-    reportIssue
+  reportIssue,
 };

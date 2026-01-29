@@ -6,7 +6,7 @@
   align-items: center;
   background-color: #f8fafc;
   padding: 20px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 /* Card */
@@ -16,7 +16,9 @@
   max-width: 420px;
   border-radius: 20px;
   padding: 50px 30px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.05),
+    0 8px 10px -6px rgba(0, 0, 0, 0.01);
   text-align: center;
   border: 1px solid #e2e8f0;
 }
@@ -72,7 +74,7 @@
   border: 1px solid #fee2e2;
 }
 
-/* Progress Bar (For Processing) */
+/* Progress Bar */
 .ps-progress-bar {
   width: 100%;
   height: 6px;
@@ -97,7 +99,8 @@
   margin-top: 20px;
 }
 
-.ps-btn-primary, .ps-btn-secondary {
+.ps-btn-primary,
+.ps-btn-secondary {
   flex: 1;
   padding: 12px;
   border-radius: 10px;
@@ -141,19 +144,43 @@
 
 /* Animations */
 @keyframes loadingBar {
-  0% { width: 0%; margin-left: 0; }
-  50% { width: 60%; margin-left: 20%; }
-  100% { width: 0%; margin-left: 100%; }
+  0% {
+    width: 0%;
+    margin-left: 0;
+  }
+  50% {
+    width: 60%;
+    margin-left: 20%;
+  }
+  100% {
+    width: 0%;
+    margin-left: 100%;
+  }
 }
 
 @keyframes popIn {
-  0% { transform: scale(0); opacity: 0; }
-  80% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  80% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }

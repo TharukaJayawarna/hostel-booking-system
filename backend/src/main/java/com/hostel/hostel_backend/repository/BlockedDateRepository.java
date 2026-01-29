@@ -13,7 +13,6 @@ import java.time.LocalDate;
 @Repository
 public interface BlockedDateRepository extends JpaRepository<BlockedDate, Long> {
 
-    // Check if the requested range overlaps with any blocked period
     @Query("SELECT COUNT(b) > 0 FROM BlockedDate b WHERE " +
             "(:endDate >= b.startDate) AND (:startDate <= b.endDate)")
     boolean existsOverlappingDate(@Param("startDate") LocalDate startDate,

@@ -16,20 +16,19 @@ import {
 } from "lucide-react";
 import "./styles/IssueForm.css";
 
-// Service import
 import issueService from "../../services/issue.service";
 
 const IssueForm = () => {
   const notify = useNotification();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     studentName: "",
     studentId: "",
     studentEmail: "",
     studentPhone: "",
-    duration: "1 Month", // Default value
+    duration: "1 Month",
     checkinDate: "",
     checkoutDate: "",
     bank: "",
@@ -38,7 +37,6 @@ const IssueForm = () => {
     comment: "",
   });
 
-  // User Data Auto Fill Logic
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
@@ -63,13 +61,17 @@ const IssueForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. Basic Validation
-    if (!formData.studentName.trim() || !formData.studentId.trim() || !formData.comment.trim()) {
-      notify.warning("Please fill in all required fields (Name, ID, Description).");
+    if (
+      !formData.studentName.trim() ||
+      !formData.studentId.trim() ||
+      !formData.comment.trim()
+    ) {
+      notify.warning(
+        "Please fill in all required fields (Name, ID, Description).",
+      );
       return;
     }
 
-    // 2. Date Validation (Optional fields but if filled, must be logical)
     if (formData.checkinDate && formData.checkoutDate) {
       if (new Date(formData.checkinDate) >= new Date(formData.checkoutDate)) {
         notify.error("Check-out date must be after Check-in date.");
@@ -79,14 +81,16 @@ const IssueForm = () => {
 
     setLoading(true);
     try {
-      // Service call: Report Issue
       await issueService.reportIssue(formData);
 
       notify.success("Issue reported successfully! Admin will contact you.");
-      // Optional: Reset form or navigate
+
       navigate("/");
     } catch (error) {
-      notify.error(error.response?.data?.message || "Failed to submit issue. Please try again.");
+      notify.error(
+        error.response?.data?.message ||
+          "Failed to submit issue. Please try again.",
+      );
       console.error(error);
     } finally {
       setLoading(false);
@@ -97,7 +101,11 @@ const IssueForm = () => {
     <div className="issue-page-container">
       <div className="issue-inner-wrapper">
         <div className="issue-header">
-          <button className="issue-back-btn" onClick={() => navigate("/")} type="button">
+          <button
+            className="issue-back-btn"
+            onClick={() => navigate("/")}
+            type="button"
+          >
             <ArrowLeft size={16} /> Back Home
           </button>
           <div className="issue-title-box">
@@ -109,14 +117,16 @@ const IssueForm = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="issue-card">
-          
           {/* 1. Student Info */}
           <div className="issue-section-title">
-            <User size={20} className="issue-section-icon" /> Student Information
+            <User size={20} className="issue-section-icon" /> Student
+            Information
           </div>
           <div className="issue-grid">
             <div className="issue-input-group">
-              <label className="issue-label">Full Name <span style={{color: 'red'}}>*</span></label>
+              <label className="issue-label">
+                Full Name <span style={{ color: "red" }}>*</span>
+              </label>
               <div className="issue-input-wrapper">
                 <User size={18} className="issue-input-icon" />
                 <input
@@ -131,7 +141,9 @@ const IssueForm = () => {
               </div>
             </div>
             <div className="issue-input-group">
-              <label className="issue-label">Student ID / Reg No <span style={{color: 'red'}}>*</span></label>
+              <label className="issue-label">
+                Student ID / Reg No <span style={{ color: "red" }}>*</span>
+              </label>
               <div className="issue-input-wrapper">
                 <Hash size={18} className="issue-input-icon" />
                 <input
@@ -146,7 +158,9 @@ const IssueForm = () => {
               </div>
             </div>
             <div className="issue-input-group">
-              <label className="issue-label">Email Address <span style={{color: 'red'}}>*</span></label>
+              <label className="issue-label">
+                Email Address <span style={{ color: "red" }}>*</span>
+              </label>
               <div className="issue-input-wrapper">
                 <Mail size={18} className="issue-input-icon" />
                 <input
@@ -179,7 +193,8 @@ const IssueForm = () => {
 
           {/* 2. Reservation Context */}
           <div className="issue-section-title">
-            <Calendar size={20} className="issue-section-icon" /> Booking & Payment Details
+            <Calendar size={20} className="issue-section-icon" /> Booking &
+            Payment Details
           </div>
           <div className="issue-grid">
             <div className="issue-input-group">
@@ -278,11 +293,14 @@ const IssueForm = () => {
 
           {/* 3. Issue Description */}
           <div className="issue-section-title">
-            <AlertCircle size={20} className="issue-section-icon danger" /> Describe Your Issue
+            <AlertCircle size={20} className="issue-section-icon danger" />{" "}
+            Describe Your Issue
           </div>
           <div style={{ marginBottom: "30px" }}>
             <div className="issue-input-group">
-              <label className="issue-label">Detailed Description <span style={{color: 'red'}}>*</span></label>
+              <label className="issue-label">
+                Detailed Description <span style={{ color: "red" }}>*</span>
+              </label>
               <textarea
                 required
                 name="comment"
@@ -309,7 +327,11 @@ const IssueForm = () => {
               className="issue-submit-btn"
               disabled={loading}
             >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              {loading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} />
+              )}
               {loading ? "Sending..." : "Submit Ticket"}
             </button>
           </div>

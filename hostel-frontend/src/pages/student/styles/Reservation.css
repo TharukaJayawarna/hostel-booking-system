@@ -3,7 +3,7 @@
   width: 100vw;
   display: flex;
   background-color: #f8fafc;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   overflow: hidden;
   padding-top: 50px;
   box-sizing: border-box;
@@ -183,7 +183,11 @@
   width: 450px;
   height: 450px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.3) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
   z-index: 0;
   animation: float 8s ease-in-out infinite;
 }
@@ -195,7 +199,11 @@
   width: 350px;
   height: 350px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.25) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
   z-index: 0;
   animation: float 10s ease-in-out infinite reverse;
 }
@@ -378,9 +386,15 @@
 }
 
 @keyframes float {
-  0% { transform: translateY(0px) translateX(0px); }
-  50% { transform: translateY(-20px) translateX(10px); }
-  100% { transform: translateY(0px) translateX(0px); }
+  0% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
 }
 
 @media (max-width: 1024px) {
@@ -414,7 +428,7 @@
   .res-form-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .res-title {
     font-size: 24px;
   }

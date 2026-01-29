@@ -18,14 +18,12 @@ public class EmailConsumer {
         try {
             System.out.println("Processing email for: " + emailDTO.getTo());
 
-            // ඇත්තටම යවන්න ට්‍රයි කරනවා
             realEmailSenderService.sendEmail(emailDTO.getTo(), emailDTO.getSubject(), emailDTO.getBody());
 
             System.out.println("Email Sent Successfully to: " + emailDTO.getTo());
 
         } catch (Exception e) {
             System.err.println("Email sending failed (Connection Issue?). Re-queueing message...");
-            // Exception එකක් විසි කළාම RabbitMQ එක මේක ආපහු Queue එකට දානවා
             throw new RuntimeException("Re-queue message due to failure");
         }
     }

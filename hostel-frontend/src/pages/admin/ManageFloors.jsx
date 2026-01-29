@@ -11,16 +11,15 @@ import {
   Search,
   LayoutGrid,
   Filter,
-  Loader2, // Loading animation සදහා
-  ChevronLeft, // Pagination සදහා
-  ChevronRight, // Pagination සදහා
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import "./styles/ManageFloors.css";
 import floorService from "../../services/floor.service";
 import hubService from "../../services/hub.service";
 import authService from "../../services/auth.service";
 
-// --- Sub-Component: Stat Card (Code එක පිරිසිදු තබා ගැනීමට) ---
 const StatCard = ({ icon: Icon, colorClass, value, label }) => (
   <div className="mf-stat-card">
     <div className={`mf-stat-icon-box ${colorClass}`}>
@@ -36,29 +35,23 @@ const StatCard = ({ icon: Icon, colorClass, value, label }) => (
 const ManageFloors = () => {
   const notify = useNotification();
 
-  // --- Data States ---
   const [floors, setFloors] = useState([]);
   const [hubs, setHubs] = useState([]);
 
-  // --- UI States ---
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Button disable කිරීමට
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- Filter States ---
   const [searchTerm, setSearchTerm] = useState("");
   const [filterHub, setFilterHub] = useState("ALL");
 
-  // --- Pagination States (NEW) ---
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // පිටුවක පෙන්වන අයිතම ගණන
+  const [itemsPerPage] = useState(10);
 
-  // --- Modal States ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ hubId: "", floorNumber: "" });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [floorToDelete, setFloorToDelete] = useState(null);
 
-  // authService හරහා user ලබා ගැනීම
   const user = authService.getCurrentUser();
   const isWarden = user?.role === "WARDEN";
 
@@ -66,7 +59,6 @@ const ManageFloors = () => {
     fetchAll();
   }, []);
 
-  // Filter වෙනස් වන විට Page 1 ට reset වීම (UX Best Practice)
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterHub]);
@@ -88,7 +80,6 @@ const ManageFloors = () => {
     }
   };
 
-  // --- Optimized Filtering (useMemo) ---
   const filteredFloors = useMemo(() => {
     return floors.filter((floor) => {
       const matchesSearch =
@@ -104,7 +95,6 @@ const ManageFloors = () => {
     });
   }, [floors, searchTerm, filterHub]);
 
-  // --- Pagination Logic (NEW) ---
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentFloors = filteredFloors.slice(indexOfFirstItem, indexOfLastItem);
@@ -151,7 +141,6 @@ const ManageFloors = () => {
 
       notify.success("Floor Deleted Successfully");
 
-      // Optimistic Delete (Frontend එකෙන් ඉක්මනින් ඉවත් කිරීම)
       setFloors((prev) => prev.filter((f) => f.id !== floorToDelete));
     } catch (e) {
       notify.error("Failed to delete floor");
@@ -251,7 +240,6 @@ const ManageFloors = () => {
                 </td>
               </tr>
             ) : (
-              // Pagination: currentFloors භාවිතා කිරීම
               currentFloors.map((f) => (
                 <tr key={f.id} className="mf-tr">
                   <td className="mf-td">
@@ -296,7 +284,6 @@ const ManageFloors = () => {
           </tbody>
         </table>
 
-        {/* --- Pagination Controls (NEW) --- */}
         {!loading && filteredFloors.length > 0 && (
           <div
             style={{

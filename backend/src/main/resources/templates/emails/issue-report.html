@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{emails/common-layout}">
+<body>
+
+<div layout:fragment="content">
+    <h2 style="color: #b91c1c; margin-top: 0;">New Issue Reported 🛠️</h2>
+    <p>A student has reported an issue regarding their hostel reservation. Full details are below:</p>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase; color: #4f46e5; border-bottom: 1px dashed #cbd5e1; padding-bottom: 8px;">👤 Student Information</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr>
+                <td style="padding: 5px 0; color: #64748b; width: 40%;">Name:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${studentName}"></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 0; color: #64748b;">Reg No:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${studentId}"></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 0; color: #64748b;">Phone:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${studentPhone}"></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 0; color: #64748b;">Email:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${studentEmail}"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase; color: #0d9488; border-bottom: 1px dashed #99f6e4; padding-bottom: 8px;">📅 Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr>
+                <td style="padding: 5px 0; color: #64748b; width: 40%;">Check-in:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${checkIn}"></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 0; color: #64748b;">Check-out:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${checkOut}"></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 0; color: #64748b;">Duration:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${duration}"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase; color: #d97706; border-bottom: 1px dashed #fde68a; padding-bottom: 8px;">💳 Payment Details</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr>
+                <td style="padding: 5px 0; color: #64748b; width: 40%;">Bank / Method:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${bank}"></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 0; color: #64748b;">Payment Date:</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${paymentDate}"></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 0; color: #64748b;">Card Ref (Last 4):</td>
+                <td style="padding: 5px 0; font-weight: 600; color: #334155;" th:text="${cardLastFour}"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 20px; border-radius: 4px;">
+        <h3 style="margin-top: 0; color: #991b1b; font-size: 16px;">⚠️ Issue Description</h3>
+        <p style="color: #7f1d1d; margin-bottom: 0; line-height: 1.6; white-space: pre-wrap;" th:utext="${comment}">Description here...</p>
+    </div>
+
+</div>
+
+</body>
+</html>

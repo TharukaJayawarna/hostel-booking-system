@@ -37,7 +37,6 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Transactional
     public void clearAllNotifications(String username) {
-        // User ගේ username එක අනුව notifications සොයා ඉවත් කිරීම
         List<Notification> notifications = notificationRepository.findByUserUsernameOrderByCreatedAtDesc(username);
         notificationRepository.deleteAll(notifications);
     }

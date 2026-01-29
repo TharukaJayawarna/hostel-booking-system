@@ -14,17 +14,16 @@ import {
   Coffee,
   Eye,
   EyeOff,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import "../../components/styles/Signup.css";
 
-// Service import
 import authService from "../../services/auth.service";
 
 const Signup = () => {
   const navigate = useNavigate();
   const notify = useNotification();
-  
+
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -43,11 +42,13 @@ const Signup = () => {
   const validate = () => {
     let tempErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^(?:0|94|\+94)?(?:7\d{8})$/; // Sri Lankan Mobile Format (07xxxxxxxx)
+    const phoneRegex = /^(?:0|94|\+94)?(?:7\d{8})$/;
 
-    if (!formData.firstName.trim()) tempErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) tempErrors.lastName = "Last name is required";
-    
+    if (!formData.firstName.trim())
+      tempErrors.firstName = "First name is required";
+    if (!formData.lastName.trim())
+      tempErrors.lastName = "Last name is required";
+
     if (!formData.email) {
       tempErrors.email = "Email is required";
     } else if (!emailRegex.test(formData.email)) {
@@ -61,7 +62,7 @@ const Signup = () => {
     }
 
     if (!formData.username.trim()) tempErrors.username = "Username is required";
-    
+
     if (!formData.password) {
       tempErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
@@ -75,8 +76,7 @@ const Signup = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
-    // Clear error when user types
+
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
     }
@@ -84,7 +84,7 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validate()) {
       notify.error("Please fix the errors in the form.");
       return;
@@ -125,26 +125,38 @@ const Signup = () => {
 
           <div className="feature-list">
             <div className="feature-item">
-              <div className="feature-icon-box"><Wifi size={20} /></div>
+              <div className="feature-icon-box">
+                <Wifi size={20} />
+              </div>
               <div className="feature-text">
                 <span className="feature-item-title">High-Speed WiFi</span>
-                <span className="feature-desc">Fiber internet access in all rooms and study areas.</span>
+                <span className="feature-desc">
+                  Fiber internet access in all rooms and study areas.
+                </span>
               </div>
             </div>
 
             <div className="feature-item">
-              <div className="feature-icon-box"><ShieldCheck size={20} /></div>
+              <div className="feature-icon-box">
+                <ShieldCheck size={20} />
+              </div>
               <div className="feature-text">
                 <span className="feature-item-title">24/7 Security</span>
-                <span className="feature-desc">Round-the-clock surveillance and support.</span>
+                <span className="feature-desc">
+                  Round-the-clock surveillance and support.
+                </span>
               </div>
             </div>
 
             <div className="feature-item">
-              <div className="feature-icon-box"><Coffee size={20} /></div>
+              <div className="feature-icon-box">
+                <Coffee size={20} />
+              </div>
               <div className="feature-text">
                 <span className="feature-item-title">Modern Common Areas</span>
-                <span className="feature-desc">Spacious lounges and study rooms.</span>
+                <span className="feature-desc">
+                  Spacious lounges and study rooms.
+                </span>
               </div>
             </div>
           </div>
@@ -165,8 +177,12 @@ const Signup = () => {
             <div className="form-grid-row">
               <div className="input-group">
                 <label className="input-label">First Name</label>
-                <div className={`input-container ${errors.firstName ? 'error' : ''}`}>
-                  <div className="input-icon"><Type size={18} /></div>
+                <div
+                  className={`input-container ${errors.firstName ? "error" : ""}`}
+                >
+                  <div className="input-icon">
+                    <Type size={18} />
+                  </div>
                   <input
                     name="firstName"
                     className="form-input"
@@ -175,13 +191,19 @@ const Signup = () => {
                     onChange={handleChange}
                   />
                 </div>
-                {errors.firstName && <span className="error-text">{errors.firstName}</span>}
+                {errors.firstName && (
+                  <span className="error-text">{errors.firstName}</span>
+                )}
               </div>
 
               <div className="input-group">
                 <label className="input-label">Last Name</label>
-                <div className={`input-container ${errors.lastName ? 'error' : ''}`}>
-                  <div className="input-icon"><Type size={18} /></div>
+                <div
+                  className={`input-container ${errors.lastName ? "error" : ""}`}
+                >
+                  <div className="input-icon">
+                    <Type size={18} />
+                  </div>
                   <input
                     name="lastName"
                     className="form-input"
@@ -190,14 +212,18 @@ const Signup = () => {
                     onChange={handleChange}
                   />
                 </div>
-                {errors.lastName && <span className="error-text">{errors.lastName}</span>}
+                {errors.lastName && (
+                  <span className="error-text">{errors.lastName}</span>
+                )}
               </div>
             </div>
 
             <div className="input-group">
               <label className="input-label">Email Address</label>
-              <div className={`input-container ${errors.email ? 'error' : ''}`}>
-                <div className="input-icon"><Mail size={18} /></div>
+              <div className={`input-container ${errors.email ? "error" : ""}`}>
+                <div className="input-icon">
+                  <Mail size={18} />
+                </div>
                 <input
                   type="email"
                   name="email"
@@ -207,14 +233,20 @@ const Signup = () => {
                   onChange={handleChange}
                 />
               </div>
-              {errors.email && <span className="error-text">{errors.email}</span>}
+              {errors.email && (
+                <span className="error-text">{errors.email}</span>
+              )}
             </div>
 
             <div className="form-grid-row">
               <div className="input-group">
                 <label className="input-label">Phone Number</label>
-                <div className={`input-container ${errors.contactNumber ? 'error' : ''}`}>
-                  <div className="input-icon"><Phone size={18} /></div>
+                <div
+                  className={`input-container ${errors.contactNumber ? "error" : ""}`}
+                >
+                  <div className="input-icon">
+                    <Phone size={18} />
+                  </div>
                   <input
                     name="contactNumber"
                     className="form-input"
@@ -224,13 +256,19 @@ const Signup = () => {
                     maxLength={10}
                   />
                 </div>
-                {errors.contactNumber && <span className="error-text">{errors.contactNumber}</span>}
+                {errors.contactNumber && (
+                  <span className="error-text">{errors.contactNumber}</span>
+                )}
               </div>
 
               <div className="input-group">
                 <label className="input-label">Username</label>
-                <div className={`input-container ${errors.username ? 'error' : ''}`}>
-                  <div className="input-icon"><User size={18} /></div>
+                <div
+                  className={`input-container ${errors.username ? "error" : ""}`}
+                >
+                  <div className="input-icon">
+                    <User size={18} />
+                  </div>
                   <input
                     name="username"
                     className="form-input"
@@ -239,14 +277,20 @@ const Signup = () => {
                     onChange={handleChange}
                   />
                 </div>
-                {errors.username && <span className="error-text">{errors.username}</span>}
+                {errors.username && (
+                  <span className="error-text">{errors.username}</span>
+                )}
               </div>
             </div>
 
             <div className="input-group">
               <label className="input-label">Password</label>
-              <div className={`input-container ${errors.password ? 'error' : ''}`}>
-                <div className="input-icon"><Lock size={18} /></div>
+              <div
+                className={`input-container ${errors.password ? "error" : ""}`}
+              >
+                <div className="input-icon">
+                  <Lock size={18} />
+                </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -266,7 +310,9 @@ const Signup = () => {
               {errors.password ? (
                 <span className="error-text">{errors.password}</span>
               ) : (
-                <p className="password-hint">Must be at least 8 characters long.</p>
+                <p className="password-hint">
+                  Must be at least 8 characters long.
+                </p>
               )}
             </div>
 
@@ -274,12 +320,17 @@ const Signup = () => {
               {loading ? (
                 <Loader2 className="animate-spin" size={20} />
               ) : (
-                <>Create Account <ArrowRight size={18} /></>
+                <>
+                  Create Account <ArrowRight size={18} />
+                </>
               )}
             </button>
 
             <div className="signup-footer">
-              Already have an account? <Link to="/login" className="login-link">Log in</Link>
+              Already have an account?{" "}
+              <Link to="/login" className="login-link">
+                Log in
+              </Link>
             </div>
           </form>
         </div>

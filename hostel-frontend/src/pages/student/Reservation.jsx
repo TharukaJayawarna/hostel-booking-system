@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import "./styles/Reservation.css";
 
-// Services
 import reservationService from "../../services/reservation.service";
 import paymentService from "../../services/payment.service";
 import authService from "../../services/auth.service";
@@ -44,7 +43,6 @@ const Reservation = () => {
   const [loading, setLoading] = useState(false);
   const [priceLoading, setPriceLoading] = useState(true);
 
-  // Auto-fill user data
   useEffect(() => {
     const user = authService.getCurrentUser();
     if (user) {
@@ -57,7 +55,6 @@ const Reservation = () => {
     }
   }, []);
 
-  // Fetch Price
   useEffect(() => {
     if (!bedId || !checkIn || !checkOut) {
       notify.error("Session expired. Please restart booking.");
@@ -80,7 +77,7 @@ const Reservation = () => {
         setTotalAmount(
           typeof response.data === "number"
             ? response.data
-            : response.data.data || 0
+            : response.data.data || 0,
         );
       }
     } catch (error) {
@@ -98,7 +95,6 @@ const Reservation = () => {
   const handlePayment = async (e) => {
     e.preventDefault();
 
-    // 1. Validate Form Data
     if (
       !formData.studentName.trim() ||
       !formData.registrationNumber.trim() ||
@@ -110,7 +106,6 @@ const Reservation = () => {
       return;
     }
 
-    // 2. Validate Gender Restriction
     if (reservedFor) {
       const studentGender = formData.gender;
       if (reservedFor === "BOYS" && studentGender === "FEMALE") {
@@ -134,14 +129,16 @@ const Reservation = () => {
     };
 
     try {
-      // 3. Initiate Reservation
-      const response = await reservationService.initiateReservation(bookingPayload);
+      const response =
+        await reservationService.initiateReservation(bookingPayload);
 
       if (response.status === 200) {
         openPayHerePopup(response.data.data);
       }
     } catch (error) {
-      notify.error(error.response?.data?.message || "Payment initiation failed.");
+      notify.error(
+        error.response?.data?.message || "Payment initiation failed.",
+      );
       setLoading(false);
     }
   };
@@ -155,8 +152,8 @@ const Reservation = () => {
 
     const appUrl = import.meta.env.VITE_APP_BASE_URL;
     const notifyUrl = import.meta.env.VITE_PAYHERE_NOTIFY_URL;
-    // Check for 'true' string explicitly for env variable
-    const isSandbox = import.meta.env.VITE_PAYHERE_IS_SANDBOX === 'true'; 
+
+    const isSandbox = import.meta.env.VITE_PAYHERE_IS_SANDBOX === "true";
 
     const paymentObject = {
       sandbox: isSandbox,
@@ -181,10 +178,8 @@ const Reservation = () => {
     window.payhere.onCompleted = async function onCompleted(orderId) {
       setLoading(true);
       try {
-        // Wait slightly for webhook processing (optional but safer)
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // Verify Payment
         const res = await paymentService.verifyPayment(orderId);
         const status = res.data.data.paymentStatus;
 
@@ -202,8 +197,10 @@ const Reservation = () => {
             },
           });
         } else {
-          notify.warn("Payment verification pending. Please check status later.");
-          navigate("/payment-success?order_id=" + orderId); // Fallback page
+          notify.warn(
+            "Payment verification pending. Please check status later.",
+          );
+          navigate("/payment-success?order_id=" + orderId);
         }
       } catch (error) {
         console.error(error);
@@ -230,27 +227,33 @@ const Reservation = () => {
 
   return (
     <div className="reservation-container">
-      {/* --- Left Side: Input Form --- */}
       <div className="res-left-panel">
         <div className="res-header">
           <button className="res-back-btn" onClick={() => navigate(-1)}>
             <ArrowLeft size={18} /> Back
           </button>
           <h1 className="res-title">Student Details</h1>
-          <p className="res-subtitle">Please complete your registration to secure your spot.</p>
+          <p className="res-subtitle">
+            Please complete your registration to secure your spot.
+          </p>
         </div>
 
         {reservedFor && (
-          <div className={`res-warning-box ${reservedFor === "BOYS" ? "info-blue" : "info-pink"}`}>
+          <div
+            className={`res-warning-box ${reservedFor === "BOYS" ? "info-blue" : "info-pink"}`}
+          >
             <AlertTriangle size={16} />
-            This room is reserved for <strong>{reservedFor}</strong> students only.
+            This room is reserved for <strong>{reservedFor}</strong> students
+            only.
           </div>
         )}
 
         <form onSubmit={handlePayment}>
           <div className="res-form-grid">
             <div className="res-input-group">
-              <label className="res-label">Full Name <span style={{color:'red'}}>*</span></label>
+              <label className="res-label">
+                Full Name <span style={{ color: "red" }}>*</span>
+              </label>
               <div className="res-input-wrapper">
                 <User size={18} className="res-input-icon" />
                 <input
@@ -265,7 +268,9 @@ const Reservation = () => {
               </div>
             </div>
             <div className="res-input-group">
-              <label className="res-label">Student ID <span style={{color:'red'}}>*</span></label>
+              <label className="res-label">
+                Student ID <span style={{ color: "red" }}>*</span>
+              </label>
               <div className="res-input-wrapper">
                 <CreditCard size={18} className="res-input-icon" />
                 <input
@@ -283,7 +288,9 @@ const Reservation = () => {
 
           <div className="res-form-grid">
             <div className="res-input-group">
-              <label className="res-label">Email Address <span style={{color:'red'}}>*</span></label>
+              <label className="res-label">
+                Email Address <span style={{ color: "red" }}>*</span>
+              </label>
               <div className="res-input-wrapper">
                 <Mail size={18} className="res-input-icon" />
                 <input
@@ -299,7 +306,9 @@ const Reservation = () => {
               </div>
             </div>
             <div className="res-input-group">
-              <label className="res-label">Phone Number <span style={{color:'red'}}>*</span></label>
+              <label className="res-label">
+                Phone Number <span style={{ color: "red" }}>*</span>
+              </label>
               <div className="res-input-wrapper">
                 <Phone size={18} className="res-input-icon" />
                 <input
@@ -316,7 +325,9 @@ const Reservation = () => {
           </div>
 
           <div className="res-input-group">
-            <label className="res-label">Residential Address <span style={{color:'red'}}>*</span></label>
+            <label className="res-label">
+              Residential Address <span style={{ color: "red" }}>*</span>
+            </label>
             <div className="res-input-wrapper">
               <MapPin size={18} className="res-input-icon" />
               <input
@@ -332,7 +343,9 @@ const Reservation = () => {
           </div>
 
           <div className="res-input-group">
-            <label className="res-label">Gender <span style={{color:'red'}}>*</span></label>
+            <label className="res-label">
+              Gender <span style={{ color: "red" }}>*</span>
+            </label>
             <select
               name="gender"
               onChange={handleInputChange}
@@ -347,7 +360,6 @@ const Reservation = () => {
         </form>
       </div>
 
-      {/* --- Right Side: Ticket Summary --- */}
       <div className="res-right-panel">
         <div className="res-bg-circle-1"></div>
         <div className="res-bg-circle-2"></div>
@@ -388,9 +400,7 @@ const Reservation = () => {
           </div>
 
           {reservedFor && (
-            <div className="res-reserved-note">
-              RESERVED FOR: {reservedFor}
-            </div>
+            <div className="res-reserved-note">RESERVED FOR: {reservedFor}</div>
           )}
 
           <div className="res-total-section">

@@ -11,18 +11,17 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
-  ShieldQuestion
+  ShieldQuestion,
 } from "lucide-react";
 import "../../components/styles/ForgotPassword.css";
 
-// Service import
 import authService from "../../services/auth.service";
 
 const ForgotPassword = () => {
   const notify = useNotification();
   const navigate = useNavigate();
-  
-  const [step, setStep] = useState(1); // 1: Email, 2: OTP & Reset
+
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -30,10 +29,9 @@ const ForgotPassword = () => {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  // Step 1: Send OTP
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       notify.error("Please enter a valid email address.");
       return;
@@ -51,10 +49,9 @@ const ForgotPassword = () => {
     }
   };
 
-  // Step 2: Verify & Reset
   const handleReset = async (e) => {
     e.preventDefault();
-    
+
     if (otp.length < 4) {
       notify.error("Please enter a valid OTP.");
       return;
@@ -70,7 +67,9 @@ const ForgotPassword = () => {
       notify.success("Password changed successfully! Please login.");
       navigate("/login");
     } catch (error) {
-      notify.error(error.response?.data?.message || "Invalid OTP or Reset failed.");
+      notify.error(
+        error.response?.data?.message || "Invalid OTP or Reset failed.",
+      );
     } finally {
       setLoading(false);
     }
@@ -79,7 +78,6 @@ const ForgotPassword = () => {
   return (
     <div className="fp-container">
       <div className="fp-card">
-        
         {/* Header Icon */}
         <div className="fp-icon-wrapper">
           <ShieldQuestion size={40} color="#4f46e5" />
@@ -90,13 +88,16 @@ const ForgotPassword = () => {
           <form onSubmit={handleSendOtp}>
             <h2 className="fp-title">Forgot Password?</h2>
             <p className="fp-subtitle">
-              No worries! Enter your email address below and we will send you a code to reset your password.
+              No worries! Enter your email address below and we will send you a
+              code to reset your password.
             </p>
 
             <div className="fp-input-group">
               <label className="fp-label">Email Address</label>
               <div className="fp-input-wrapper">
-                <div className="fp-input-icon"><Mail size={18} /></div>
+                <div className="fp-input-icon">
+                  <Mail size={18} />
+                </div>
                 <input
                   type="email"
                   className="fp-input"
@@ -109,7 +110,13 @@ const ForgotPassword = () => {
             </div>
 
             <button type="submit" className="fp-btn-primary" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <>Send Code <ArrowRight size={18} /></>}
+              {loading ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>
+                  Send Code <ArrowRight size={18} />
+                </>
+              )}
             </button>
           </form>
         ) : (
@@ -117,18 +124,21 @@ const ForgotPassword = () => {
           <form onSubmit={handleReset}>
             <h2 className="fp-title">Reset Password</h2>
             <p className="fp-subtitle">
-              We have sent a code to <span className="highlight-email">{email}</span>.
-              Please enter it below to verify.
+              We have sent a code to{" "}
+              <span className="highlight-email">{email}</span>. Please enter it
+              below to verify.
             </p>
 
             {/* OTP Input */}
             <div className="fp-input-group">
               <label className="fp-label">Verification Code (OTP)</label>
               <div className="fp-input-wrapper">
-                <div className="fp-input-icon"><KeyRound size={18} /></div>
+                <div className="fp-input-icon">
+                  <KeyRound size={18} />
+                </div>
                 <input
                   type="text"
-                  className="fp-input otp-tracking" // spaced text for OTP
+                  className="fp-input otp-tracking"
                   placeholder="Enter 6-digit code"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
@@ -142,7 +152,9 @@ const ForgotPassword = () => {
             <div className="fp-input-group">
               <label className="fp-label">New Password</label>
               <div className="fp-input-wrapper">
-                <div className="fp-input-icon"><Lock size={18} /></div>
+                <div className="fp-input-icon">
+                  <Lock size={18} />
+                </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   className="fp-input"
@@ -161,8 +173,18 @@ const ForgotPassword = () => {
               </div>
             </div>
 
-            <button type="submit" className="fp-btn-primary success-theme" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <>Reset Password <CheckCircle2 size={18} /></>}
+            <button
+              type="submit"
+              className="fp-btn-primary success-theme"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>
+                  Reset Password <CheckCircle2 size={18} />
+                </>
+              )}
             </button>
           </form>
         )}
@@ -173,7 +195,6 @@ const ForgotPassword = () => {
             <ArrowLeft size={16} /> Back to Login
           </button>
         </div>
-
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ public class CreateRoomRequestDTO {
     private String roomNumber;
     private Boolean isPrivate;
     private Double monthlyPrice;
-    private Double weeklyPrice; // New
+    private Double weeklyPrice;
     private Double dailyPrice;
     private RoomType roomType;
     private ReservationPeriod reservationPeriod;

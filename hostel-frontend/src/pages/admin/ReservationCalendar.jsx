@@ -21,31 +21,30 @@ import {
   BedDouble,
   Search,
   Loader2,
-  Info
+  Info,
 } from "lucide-react";
 import "./styles/ReservationCalendar.css";
 
-// Services
 import bedService from "../../services/bed.service";
 import reservationService from "../../services/reservation.service";
 
-// --- Constants ---
-const CELL_WIDTH = 40; // පික්සල් වලින් දිනක පළල
+const CELL_WIDTH = 40;
 
-// --- Sub-Component: Tooltip (Performance සදහා වෙන් කරන ලදී) ---
 const CalendarTooltip = ({ hoveredRes, position }) => {
   if (!hoveredRes) return null;
 
   const nights = differenceInCalendarDays(
     parseISO(hoveredRes.checkOut),
-    parseISO(hoveredRes.checkIn)
+    parseISO(hoveredRes.checkIn),
   );
 
   return (
     <div className="rc-tooltip" style={{ top: position.y, left: position.x }}>
       <div className="rc-tooltip-header">
         <span>Reservation Details</span>
-        <span className={`rc-status-badge ${hoveredRes.status === "PENDING" ? "status-pending" : "status-confirmed"}`}>
+        <span
+          className={`rc-status-badge ${hoveredRes.status === "PENDING" ? "status-pending" : "status-confirmed"}`}
+        >
           {hoveredRes.status}
         </span>
       </div>
@@ -80,19 +79,16 @@ const CalendarTooltip = ({ hoveredRes, position }) => {
 
 const ReservationCalendar = () => {
   const notify = useNotification();
-  
-  // Data States
+
   const [beds, setBeds] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  
-  // UI States
+
   const [searchTerm, setSearchTerm] = useState("");
   const [hoveredRes, setHoveredRes] = useState(null);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
-  // Refs for Scroll Sync
   const sidebarRef = useRef(null);
   const timelineRef = useRef(null);
 
@@ -112,7 +108,7 @@ const ReservationCalendar = () => {
         const sortedBeds = bedsRes.data.data.sort(
           (a, b) =>
             a.roomNumber.localeCompare(b.roomNumber) ||
-            a.bedNumber.localeCompare(b.bedNumber)
+            a.bedNumber.localeCompare(b.bedNumber),
         );
         setBeds(sortedBeds);
       }
@@ -126,8 +122,6 @@ const ReservationCalendar = () => {
     }
   };
 
-  // --- OPTIMIZATION 1: Group Reservations by Bed Number ($O(N) Complexity) ---
-  // මෙය සිදු කිරීමෙන් Render වන සෑම අවස්ථාවකම Loop වීම වැළකේ.
   const reservationsMap = useMemo(() => {
     const map = {};
     reservations.forEach((res) => {
@@ -139,16 +133,16 @@ const ReservationCalendar = () => {
     return map;
   }, [reservations]);
 
-  // --- OPTIMIZATION 2: Memoize Filtered Beds ---
   const filteredBeds = useMemo(() => {
     return beds.filter(
       (bed) =>
-        bed.roomNumber.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
-        bed.bedNumber.toLowerCase().includes(searchTerm.toLowerCase().trim())
+        bed.roomNumber
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase().trim()) ||
+        bed.bedNumber.toLowerCase().includes(searchTerm.toLowerCase().trim()),
     );
   }, [beds, searchTerm]);
 
-  // --- OPTIMIZATION 3: Memoize Days Array ---
   const daysInMonth = useMemo(() => {
     return eachDayOfInterval({
       start: startOfMonth(currentDate),
@@ -156,21 +150,50 @@ const ReservationCalendar = () => {
     });
   }, [currentDate]);
 
-  // Handlers
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const goToToday = () => setCurrentDate(new Date());
 
-  // Mouse Handlers (Optimization: Only update position on Enter/Move to reduce jitter)
   const handleMouseEnter = (e, res) => {
+    const { clientX, clientY } = e;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const tooltipWidth = 300;
+    const tooltipHeight = 220;
+
+    let xPos = clientX + 20;
+    if (clientX + tooltipWidth > screenWidth) {
+      xPos = clientX - tooltipWidth - 20;
+    }
+
+    let yPos = clientY + 20;
+    if (clientY + tooltipHeight > screenHeight) {
+      yPos = clientY - tooltipHeight - 20;
+    }
+
     setHoveredRes(res);
-    setCursorPos({ x: e.clientX + 20, y: e.clientY + 20 });
+    setCursorPos({ x: xPos, y: yPos });
   };
 
   const handleMouseMove = (e) => {
-    // Optional: Only update if moved significantly to reduce re-renders
     if (hoveredRes) {
-      setCursorPos({ x: e.clientX + 20, y: e.clientY + 20 });
+      const { clientX, clientY } = e;
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const tooltipWidth = 300;
+      const tooltipHeight = 220;
+
+      let xPos = clientX + 20;
+      if (clientX + tooltipWidth > screenWidth) {
+        xPos = clientX - tooltipWidth - 20;
+      }
+
+      let yPos = clientY + 20;
+      if (clientY + tooltipHeight > screenHeight) {
+        yPos = clientY - tooltipHeight - 20;
+      }
+
+      setCursorPos({ x: xPos, y: yPos });
     }
   };
 
@@ -178,14 +201,12 @@ const ReservationCalendar = () => {
     setHoveredRes(null);
   };
 
-  // Scroll Sync Logic
   const handleScroll = (e) => {
     if (sidebarRef.current) {
       sidebarRef.current.scrollTop = e.target.scrollTop;
     }
   };
 
-  // --- Helper Function: Get Reservations for current view ---
   const getVisibleReservations = (bedNumber) => {
     const bedResList = reservationsMap[bedNumber] || [];
     const monthStart = startOfMonth(currentDate);
@@ -194,7 +215,7 @@ const ReservationCalendar = () => {
     return bedResList.filter((res) => {
       const resStart = parseISO(res.checkIn);
       const resEnd = parseISO(res.checkOut);
-      // Check if reservation overlaps with current month
+
       return resStart <= monthEnd && resEnd >= monthStart;
     });
   };
@@ -236,13 +257,21 @@ const ReservationCalendar = () => {
           </div>
 
           <div className="rc-nav-group">
-            <button className="rc-nav-btn" onClick={prevMonth} title="Previous Month">
+            <button
+              className="rc-nav-btn"
+              onClick={prevMonth}
+              title="Previous Month"
+            >
               <ChevronLeft size={20} />
             </button>
             <button className="rc-today-btn" onClick={goToToday}>
               Today
             </button>
-            <button className="rc-nav-btn" onClick={nextMonth} title="Next Month">
+            <button
+              className="rc-nav-btn"
+              onClick={nextMonth}
+              title="Next Month"
+            >
               <ChevronRight size={20} />
             </button>
           </div>
@@ -251,10 +280,10 @@ const ReservationCalendar = () => {
 
       {/* 2. CALENDAR GRID */}
       <div className="rc-content">
-        {/* Left Sidebar (Fixed Columns) */}
+        {/* Left Sidebar */}
         <div className="rc-sidebar" ref={sidebarRef}>
           <div className="rc-sidebar-header">
-             <span style={{fontWeight: 600}}>Unit</span>
+            <span style={{ fontWeight: 700 }}>Accommodation Unit</span>
           </div>
           {filteredBeds.map((bed) => (
             <div key={bed.id} className="rc-sidebar-row">
@@ -265,14 +294,22 @@ const ReservationCalendar = () => {
             </div>
           ))}
           {filteredBeds.length === 0 && (
-             <div style={{padding: '20px', fontSize: '12px', color: '#94a3b8', textAlign: 'center'}}>No beds found</div>
+            <div
+              style={{
+                padding: "20px",
+                fontSize: "12px",
+                color: "#94a3b8",
+                textAlign: "center",
+              }}
+            >
+              No beds found
+            </div>
           )}
         </div>
 
-        {/* Right Timeline (Scrollable) */}
+        {/* Right Timeline */}
         <div className="rc-timeline" ref={timelineRef} onScroll={handleScroll}>
           <div style={{ width: `${daysInMonth.length * CELL_WIDTH}px` }}>
-            
             {/* Days Header */}
             <div className="rc-timeline-header">
               {daysInMonth.map((day) => {
@@ -299,7 +336,14 @@ const ReservationCalendar = () => {
                   <div key={bed.id} className="rc-grid-row">
                     {/* Empty Grid Cells for Lines */}
                     {daysInMonth.map((_, i) => (
-                         <div key={i} className="rc-grid-cell-bg" style={{width: `${CELL_WIDTH}px`, left: `${i * CELL_WIDTH}px`}}></div>
+                      <div
+                        key={i}
+                        className="rc-grid-cell-bg"
+                        style={{
+                          width: `${CELL_WIDTH}px`,
+                          left: `${i * CELL_WIDTH}px`,
+                        }}
+                      ></div>
                     ))}
 
                     {bedRes.map((res) => {
@@ -307,37 +351,46 @@ const ReservationCalendar = () => {
                       const resEnd = parseISO(res.checkOut);
                       const monthStart = startOfMonth(currentDate);
 
-                      // Calculate Start Position
-                      let startIndex = differenceInCalendarDays(resStart, monthStart);
-                      
-                      // Handle reservations starting before current month
+                      let startIndex = differenceInCalendarDays(
+                        resStart,
+                        monthStart,
+                      );
+
                       if (startIndex < 0) startIndex = 0;
 
-                      // Calculate Duration (Width)
-                      const endOfView = endOfMonth(currentDate) < resEnd ? endOfMonth(currentDate) : resEnd;
-                      const startOfView = resStart < monthStart ? monthStart : resStart;
-                      
-                      const duration = differenceInCalendarDays(endOfView, startOfView) + 1;
+                      const endOfView =
+                        endOfMonth(currentDate) < resEnd
+                          ? endOfMonth(currentDate)
+                          : resEnd;
+                      const startOfView =
+                        resStart < monthStart ? monthStart : resStart;
+
+                      const duration =
+                        differenceInCalendarDays(endOfView, startOfView) + 1;
 
                       if (duration <= 0) return null;
 
-                      const statusClass = res.status === "PENDING" ? "pending" : "confirmed";
-                      const hoverClass = hoveredRes?.id === res.id ? "hovered" : "";
+                      const statusClass =
+                        res.status === "PENDING" ? "pending" : "confirmed";
+                      const hoverClass =
+                        hoveredRes?.id === res.id ? "hovered" : "";
 
                       return (
                         <div
                           key={res.id}
                           className={`rc-res-pill ${statusClass} ${hoverClass}`}
                           style={{
-                            left: `${startIndex * CELL_WIDTH + 4}px`, // +4 for padding
-                            width: `${duration * CELL_WIDTH - 8}px`,   // -8 for gap
+                            left: `${startIndex * CELL_WIDTH + 4}px`,
+                            width: `${duration * CELL_WIDTH - 8}px`,
                           }}
                           onMouseEnter={(e) => handleMouseEnter(e, res)}
                           onMouseMove={handleMouseMove}
                           onMouseLeave={handleMouseLeave}
                         >
                           <User size={12} className="rc-user-icon" />
-                          <span className="rc-user-name">{res.studentName}</span>
+                          <span className="rc-user-name">
+                            {res.studentName}
+                          </span>
                         </div>
                       );
                     })}
@@ -349,7 +402,7 @@ const ReservationCalendar = () => {
         </div>
       </div>
 
-      {/* 3. TOOLTIP (Separated Component) */}
+      {/* 3. TOOLTIP  */}
       <CalendarTooltip hoveredRes={hoveredRes} position={cursorPos} />
     </div>
   );

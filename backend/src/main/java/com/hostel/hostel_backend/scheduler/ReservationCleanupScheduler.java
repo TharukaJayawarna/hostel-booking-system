@@ -30,7 +30,6 @@ public class ReservationCleanupScheduler {
         for (Reservation res : expiredList) {
             res.setReservationStatus(ReservationStatus.REJECTED);
 
-            // Bed eka release karanna
             Bed bed = res.getBed();
             if (bed != null) {
                 bed.setIsBooked(false);
@@ -46,17 +45,14 @@ public class ReservationCleanupScheduler {
     public void markCompletedReservations() {
         System.out.println("Running Completed Reservation Scheduler...");
 
-        // Find APPROVED reservations where checkout date is in the past (before today)
         List<Reservation> finishedReservations = reservationRepository.findByReservationStatusAndToDateBefore(
                 ReservationStatus.APPROVED,
                 LocalDate.now()
         );
 
         for (Reservation res : finishedReservations) {
-            // 1. Status eka COMPLETED karanna
             res.setReservationStatus(ReservationStatus.COMPLETED);
 
-            // 2. Bed eka free karanna
             Bed bed = res.getBed();
             if (bed != null) {
                 bed.setIsBooked(false);

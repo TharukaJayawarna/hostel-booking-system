@@ -1,6 +1,6 @@
 /* Container */
 .mh-container {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   color: #1f2937;
   padding-bottom: 40px;
 }
@@ -89,9 +89,18 @@
   justify-content: center;
 }
 
-.icon-blue { background: #eff6ff; color: #2563eb; }
-.icon-green { background: #f0fdf4; color: #16a34a; }
-.icon-red { background: #fef2f2; color: #dc2626; }
+.icon-blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.icon-green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.icon-red {
+  background: #fef2f2;
+  color: #dc2626;
+}
 
 .mh-stat-value {
   font-size: 24px;
@@ -223,8 +232,16 @@
   font-weight: 600;
 }
 
-.badge-floors { background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
-.badge-rooms { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.badge-floors {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+.badge-rooms {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
 
 .mh-action-btn {
   background: white;
@@ -311,7 +328,8 @@
   color: #475569;
 }
 
-.mh-input, .mh-textarea {
+.mh-input,
+.mh-textarea {
   width: 100%;
   padding: 12px 16px;
   border-radius: 12px;
@@ -319,7 +337,9 @@
   font-size: 14px;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   background-color: white;
   color: #1e293b;
 }
@@ -376,6 +396,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

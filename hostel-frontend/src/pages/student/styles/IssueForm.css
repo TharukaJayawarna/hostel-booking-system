@@ -2,7 +2,7 @@
 .issue-page-container {
   min-height: 100vh;
   background-color: #f8fafc;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   padding: 60px 20px;
   display: flex;
   justify-content: center;
@@ -182,7 +182,7 @@
 }
 
 .issue-textarea:focus {
-  border-color: #ef4444; /* Danger color focused for issue description */
+  border-color: #ef4444;
   background-color: white;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
@@ -213,7 +213,9 @@
   align-items: center;
   gap: 8px;
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-  transition: transform 0.2s, background-color 0.2s;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
 }
 
 .issue-submit-btn:hover:not(:disabled) {

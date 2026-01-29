@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{emails/common-layout}">
+<body>
+<div layout:fragment="content">
+    <h2 style="color: #b91c1c; margin-top: 0;">URGENT: Late Payment Received 🚨</h2>
+    <div class="alert alert-red">
+        A payment was received <strong>AFTER</strong> the reservation had already expired/cancelled.
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <tr>
+            <td style="padding: 8px; font-weight: bold;">Order ID:</td>
+            <td style="padding: 8px;" th:text="${orderId}"></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; font-weight: bold;">Amount:</td>
+            <td style="padding: 8px;" th:text="${amount}"></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; font-weight: bold;">Student:</td>
+            <td style="padding: 8px;"><span th:text="${studentName}"></span> (<span th:text="${regNo}"></span>)</td>
+        </tr>
+    </table>
+
+    <p style="margin-top: 20px; font-weight: bold; color: #b91c1c;">ACTION REQUIRED: Please verify and process a manual REFUND if necessary.</p>
+</div>
+</body>
+</html>

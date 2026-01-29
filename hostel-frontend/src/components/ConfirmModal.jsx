@@ -1,6 +1,6 @@
-import React from 'react';
-import { AlertTriangle, Info } from 'lucide-react';
-import './styles/ConfirmModal.css';
+import React from "react";
+import { AlertTriangle, Info } from "lucide-react";
+import "./styles/ConfirmModal.css";
 
 const ConfirmModal = ({
   isOpen,
@@ -10,16 +10,15 @@ const ConfirmModal = ({
   message,
   confirmText = "Yes, Delete",
   cancelText = "Cancel",
-  isDanger = true
+  isDanger = true,
 }) => {
   if (!isOpen) return null;
 
   return (
     <div className="cm-overlay" onClick={onClose}>
       <div className="cm-modal" onClick={(e) => e.stopPropagation()}>
-
         {/* Icon */}
-        <div className={`cm-icon ${isDanger ? 'danger' : 'info'}`}>
+        <div className={`cm-icon ${isDanger ? "danger" : "info"}`}>
           {isDanger ? <AlertTriangle size={32} /> : <Info size={32} />}
         </div>
 
@@ -35,13 +34,12 @@ const ConfirmModal = ({
             {cancelText}
           </button>
           <button
-            className={`cm-confirm ${isDanger ? 'danger' : 'info'}`}
+            className={`cm-confirm ${isDanger ? "danger" : "info"}`}
             onClick={onConfirm}
           >
             {confirmText}
           </button>
         </div>
-
       </div>
     </div>
   );

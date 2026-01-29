@@ -53,7 +53,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* === STUDENT ROUTES (Only STUDENT) === */}
+          {/* === STUDENT ROUTES === */}
           <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
             <Route path="/" element={<StudentLayout />}>
               <Route index element={<Home />} />
@@ -88,7 +88,6 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="settings" element={<SystemSettings />} />{" "}
-              {/* මෙතනට දාන්න */}
               <Route path="users" element={<ManageUsers />} />
             </Route>
           </Route>

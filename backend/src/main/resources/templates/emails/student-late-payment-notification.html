@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{emails/common-layout}">
+<body>
+<div layout:fragment="content">
+    <h2 style="color: #d97706; margin-top: 0;">Payment Issue Notification ⚠️</h2>
+    <p>Dear <span th:text="${studentName}">Student</span>,</p>
+
+    <p>We received your payment of <strong>LKR <span th:text="${amount}">0.00</span></strong>.</p>
+
+    <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; color: #92400e;">
+        <p style="margin: 0;"><strong>Notice:</strong> Your reservation time had expired before the payment process was completed.</p>
+    </div>
+
+    <p>Don't worry! Your payment has been recorded in our system. A member of our administration team will review this and contact you shortly regarding a refund or alternative arrangement.</p>
+</div>
+</body>
+</html>

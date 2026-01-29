@@ -10,15 +10,14 @@ import {
   X,
   Search,
   LayoutGrid,
-  Loader2, // Loading icon
-  ChevronLeft, // Pagination icons
+  Loader2,
+  ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import "./styles/ManageHubs.css";
 import hubService from "../../services/hub.service";
 import authService from "../../services/auth.service";
 
-// --- Sub-Component: Stat Card ---
 const StatCard = ({ icon: Icon, colorClass, value, label }) => (
   <div className="mh-stat-card">
     <div className={`mh-stat-icon-box ${colorClass}`}>
@@ -34,21 +33,16 @@ const StatCard = ({ icon: Icon, colorClass, value, label }) => (
 const ManageHubs = () => {
   const notify = useNotification();
 
-  // --- Data States ---
   const [hubs, setHubs] = useState([]);
 
-  // --- UI States ---
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Button disable state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- Filter States ---
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- Pagination States (NEW) ---
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // පිටුවක පෙන්වන අයිතම ගණන
+  const [itemsPerPage] = useState(10);
 
-  // --- Form & Modal States ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hubName, setHubName] = useState("");
   const [description, setDescription] = useState("");
@@ -57,7 +51,6 @@ const ManageHubs = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [hubToDelete, setHubToDelete] = useState(null);
 
-  // authService හරහා user ලබා ගැනීම
   const user = authService.getCurrentUser();
   const isWarden = user?.role === "WARDEN";
 
@@ -65,7 +58,6 @@ const ManageHubs = () => {
     fetchHubs();
   }, []);
 
-  // Search කරන විට Page 1 ට reset වීම
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
@@ -82,14 +74,12 @@ const ManageHubs = () => {
     }
   };
 
-  // --- Optimized Filtering (useMemo) ---
   const filteredHubs = useMemo(() => {
     return hubs.filter((hub) =>
       hub.hubNumber.toLowerCase().includes(searchTerm.toLowerCase().trim()),
     );
   }, [hubs, searchTerm]);
 
-  // --- Pagination Logic ---
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentHubs = filteredHubs.slice(indexOfFirstItem, indexOfLastItem);
@@ -116,13 +106,11 @@ const ManageHubs = () => {
 
       notify.success("Hub Created Successfully!");
 
-      // Reset Form
       setHubName("");
       setDescription("");
       setImageFile(null);
       setIsModalOpen(false);
 
-      // Refresh Data
       fetchHubs();
     } catch (e) {
       console.error(e);
@@ -146,7 +134,6 @@ const ManageHubs = () => {
 
       notify.success("Hub Deleted Successfully");
 
-      // Optimistic Delete (Frontend එකෙන් ඉවත් කිරීම)
       setHubs((prev) => prev.filter((h) => h.id !== hubToDelete));
     } catch (e) {
       notify.error("Failed to delete hub");
@@ -157,7 +144,6 @@ const ManageHubs = () => {
     }
   };
 
-  // Stats Logic (Using useMemo for performance)
   const stats = useMemo(
     () => ({
       totalHubs: hubs.length,
@@ -250,7 +236,6 @@ const ManageHubs = () => {
                 </td>
               </tr>
             ) : (
-              // Use currentHubs for Pagination
               currentHubs.map((hub) => (
                 <tr key={hub.id} className="mh-tr">
                   <td className="mh-td">
@@ -297,7 +282,6 @@ const ManageHubs = () => {
           </tbody>
         </table>
 
-        {/* --- Pagination Controls --- */}
         {!loading && filteredHubs.length > 0 && (
           <div
             style={{

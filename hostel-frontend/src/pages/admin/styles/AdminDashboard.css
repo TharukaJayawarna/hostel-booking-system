@@ -1,6 +1,6 @@
 /* Container */
 .ad-container {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   color: #1f2937;
   padding-bottom: 40px;
 }
@@ -105,19 +105,49 @@
   margin-top: 5px;
 }
 
-.trend-up { color: #10b981; }
-.trend-down { color: #f59e0b; }
-.trend-neutral { color: #6b7280; }
+.trend-up {
+  color: #10b981;
+}
+.trend-down {
+  color: #f59e0b;
+}
+.trend-neutral {
+  color: #6b7280;
+}
 
 /* Colors for Cards */
-.bg-blue { background: #eff6ff; color: #2563eb; }
-.bg-green { background: #f0fdf4; color: #16a34a; }
-.bg-purple { background: #f5f3ff; color: #7c3aed; }
-.bg-orange { background: #fff7ed; color: #ea580c; }
-.bg-red { background: #fef2f2; color: #be123c; }
-.bg-cyan { background: #f0f9ff; color: #0284c7; }
-.bg-emerald { background: #ecfdf5; color: #047857; }
-.bg-amber { background: #fffbeb; color: #b45309; }
+.bg-blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.bg-green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.bg-purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+.bg-orange {
+  background: #fff7ed;
+  color: #ea580c;
+}
+.bg-red {
+  background: #fef2f2;
+  color: #be123c;
+}
+.bg-cyan {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+.bg-emerald {
+  background: #ecfdf5;
+  color: #047857;
+}
+.bg-amber {
+  background: #fffbeb;
+  color: #b45309;
+}
 
 /* Inventory Section */
 .ad-section-title {

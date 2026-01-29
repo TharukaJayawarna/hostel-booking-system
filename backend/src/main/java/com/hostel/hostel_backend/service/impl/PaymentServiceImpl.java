@@ -7,19 +7,22 @@ import com.hostel.hostel_backend.repository.BedRepository;
 import com.hostel.hostel_backend.repository.PaymentRepository;
 import com.hostel.hostel_backend.repository.ReservationRepository;
 import com.hostel.hostel_backend.service.EmailProducer;
+import com.hostel.hostel_backend.service.EmailService;
 import com.hostel.hostel_backend.service.PaymentService;
 import com.hostel.hostel_backend.util.PayHereUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -29,7 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final EmailProducer emailProducer;
     private final ReservationServiceImpl reservationService;
     private final NotificationServiceImpl notificationService;
-
+    private final EmailService emailService;
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -50,93 +53,123 @@ public class PaymentServiceImpl implements PaymentService {
         String statusCode = payload.get("status_code");
         String md5sig = payload.get("md5sig");
 
-        // 1. Validate Hash
-//        String localHash = payHereUtil.generateHash(merchantId, orderId, Double.parseDouble(payhereAmount), payhereCurrency, merchantSecret);
-//        if (!localHash.equals(md5sig)) return "FAILED";
+        log.info("Received PayHere notification | Order ID: {}", orderId);
 
-        String localHash = payHereUtil.generateNotifyHash(merchantId, orderId, Double.parseDouble(payhereAmount), payhereCurrency, statusCode, merchantSecret);
+        String localHash = payHereUtil.generateNotifyHash(
+                merchantId,
+                orderId,
+                Double.parseDouble(payhereAmount),
+                payhereCurrency,
+                statusCode,
+                merchantSecret
+        );
 
         if (!localHash.equals(md5sig)) {
-            System.err.println("Hash Mismatch! PayHere: " + md5sig + " vs Local: " + localHash);
+            log.error("Hash mismatch | Order ID: {} | PayHere: {} | Local: {}",
+                    orderId, md5sig, localHash);
             return "FAILED";
         }
-        // 2. Find Payment
+
         Optional<Payment> paymentOpt = paymentRepository.findByPaymentId(orderId);
-        if (paymentOpt.isEmpty()) return "FAILED";
+        if (paymentOpt.isEmpty()) {
+            log.warn("Payment not found | Order ID: {}", orderId);
+            return "FAILED";
+        }
 
         Payment payment = paymentOpt.get();
 
         Double receivedAmount = Double.parseDouble(payhereAmount);
-        if (payment.getPaymentAmount() != null && !payment.getPaymentAmount().equals(receivedAmount)) {
-            System.err.println("Amount Mismatch! Expected: " + payment.getPaymentAmount() + ", Received: " + receivedAmount);
+        if (payment.getPaymentAmount() != null &&
+                !payment.getPaymentAmount().equals(receivedAmount)) {
+
+            log.error("Amount mismatch | Order ID: {} | Expected: {} | Received: {}",
+                    orderId, payment.getPaymentAmount(), receivedAmount);
             return "FAILED";
         }
 
         Reservation reservation = payment.getReservation();
 
-        // 3. Status Check
-        if ("2".equals(statusCode)) { // Success
+        if ("2".equals(statusCode)) {
+            log.info("Payment SUCCESS | Order ID: {}", orderId);
             return handleSuccess(payment, reservation, payhereAmount, orderId);
-        } else if ("-1".equals(statusCode) || "-2".equals(statusCode)) { // Failed
+        } else if ("-1".equals(statusCode) || "-2".equals(statusCode)) {
+            log.warn("Payment FAILED | Order ID: {} | Status Code: {}", orderId, statusCode);
             return handleFailure(payment, reservation);
         }
 
+        log.info("Unhandled payment status | Order ID: {} | Status Code: {}", orderId, statusCode);
         return "OK";
     }
 
-    private String handleSuccess(Payment payment, Reservation reservation, String payhereAmount, String orderId) {
-        // Late Payment Scenario
-        if (reservation != null && reservation.getReservationStatus() == ReservationStatus.REJECTED) {
+    private String handleSuccess(Payment payment, Reservation reservation,
+                                 String payhereAmount, String orderId) {
+
+        if (reservation != null &&
+                reservation.getReservationStatus() == ReservationStatus.REJECTED) {
+
+            log.warn("Late payment received for REJECTED reservation | Order ID: {}", orderId);
+
             payment.setPaymentStatus(PaymentStatus.APPROVED);
             paymentRepository.save(payment);
 
-            // 1. Admin Email (Late Payment) - මෙය එලෙසම තබන්න (Admin Alert එකක් නිසා)
-            String adminSubject = "URGENT: Late Payment Received - " + orderId;
-            String adminContent = "<p>A payment was received <strong>AFTER</strong> the reservation was cancelled.</p>" +
-                    "<ul>" +
-                    "<li><strong>Order ID:</strong> " + orderId + "</li>" +
-                    "<li><strong>Amount:</strong> " + payhereAmount + "</li>" +
-                    "<li><strong>Student:</strong> " + reservation.getStudentName() + " (" + reservation.getStudentRegistrationNumber() + ")</li>" +
-                    "</ul>" +
-                    "<p style='color: red; font-weight: bold;'>ACTION REQUIRED: Please process a manual REFUND.</p>";
+            Bed bed = reservation.getBed();
+            if (bed != null && !Boolean.TRUE.equals(bed.getIsBooked())) {
+                bed.setIsBooked(true);
+                bedRepository.save(bed);
 
-            String adminBody = generateCommonEmailTemplate("Late Payment Alert 🚨", adminContent);
-            emailProducer.sendEmail(ADMIN_EMAIL, adminSubject, adminBody);
+                reservation.setReservationStatus(ReservationStatus.APPROVED);
+                reservationRepository.save(reservation);
 
-            // 2. Student Notification (Email වෙනුවට)
-            if (reservation.getUser() != null) {
-                String studentSubject = "Payment Received - Booking Cancellation Alert";
-                String studentContent = "<p>Dear " + reservation.getStudentName() + ",</p>" +
-                        "<p>We received your payment of <strong>LKR " + payhereAmount + "</strong>.</p>" +
-                        "<div style='background-color: #fff7ed; border-left: 4px solid #ea580c; padding: 15px; margin: 20px 0; color: #9a3412;'>" +
-                        "  However, your reservation time had expired before the payment was completed." +
-                        "</div>" +
-                        "<p>Don't worry! Your payment has been recorded and a necessary arrangement will be processed shortly.</p>";
+                reservationService.sendSuccessEmail(reservation);
 
-                // Email එක වෙනුවට Notification එක යවන්න
-                notificationService.createNotification(reservation.getUser(), studentSubject, studentContent);
+                log.info("Reservation AUTO-RECOVERED from Late Payment | Order ID: {}", orderId);
+                return "OK";
             }
 
-            // පැරණි Email යැවීම ඉවත් කර ඇත:
-            // String studentBody = generateCommonEmailTemplate("Payment Issue ⚠️", studentContent);
-            // emailProducer.sendEmail(reservation.getStudentEmail(), studentSubject, studentBody);
+            // 1. Admin Email (Late Payment)
+            Map<String, Object> adminVars = new HashMap<>();
+            adminVars.put("orderId", orderId);
+            adminVars.put("amount", payhereAmount);
+            adminVars.put("studentName", reservation.getStudentName());
+            adminVars.put("regNo", reservation.getStudentRegistrationNumber());
+
+            String adminBody = emailService.getHtmlContent("admin-late-payment", adminVars);
+            emailProducer.sendEmail(ADMIN_EMAIL, "URGENT: Late Payment Received - " + orderId, adminBody);
+
+            // 2. Student Notification
+            if (reservation.getUser() != null) {
+                Map<String, Object> studentVars = new HashMap<>();
+                studentVars.put("studentName", reservation.getStudentName());
+                studentVars.put("amount", payhereAmount);
+
+                String studentContent = emailService.getHtmlContent("student-late-payment-notification", studentVars);
+                notificationService.createNotification(
+                        reservation.getUser(),
+                        "Payment Received - Booking Issue",
+                        studentContent
+                );
+            }
 
             return "OK";
         }
 
-        // Normal Flow
         payment.setPaymentStatus(PaymentStatus.APPROVED);
+
         if (reservation != null) {
             reservation.setReservationStatus(ReservationStatus.APPROVED);
             reservationRepository.save(reservation);
             reservationService.sendSuccessEmail(reservation);
         }
+
         paymentRepository.save(payment);
+        log.info("Reservation & payment approved | Order ID: {}", orderId);
         return "OK";
     }
 
     private String handleFailure(Payment payment, Reservation reservation) {
+
         payment.setPaymentStatus(PaymentStatus.REJECTED);
+
         if (reservation != null) {
             reservation.setReservationStatus(ReservationStatus.REJECTED);
 
@@ -144,47 +177,43 @@ public class PaymentServiceImpl implements PaymentService {
             if (bed != null) {
                 bed.setIsBooked(false);
                 bedRepository.save(bed);
+                log.info("Bed released | Bed ID: {}", bed.getId());
             }
+
             reservationRepository.save(reservation);
             reservationService.sendFailureEmail(reservation);
         }
+
         paymentRepository.save(payment);
+        log.warn("Payment marked as REJECTED | Order ID: {}", payment.getPaymentId());
         return "OK";
     }
 
     @Override
-    public ReservationDetailResponseDTO verifyPayment(String orderId) throws ResourceNotFoundException {
-        Reservation reservation = reservationRepository.findByReservationNumber(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found for Order ID: " + orderId));
+    public ReservationDetailResponseDTO verifyPayment(String orderId)
+            throws ResourceNotFoundException {
+
+        Reservation reservation = reservationRepository
+                .findByReservationNumber(orderId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Reservation not found for Order ID: " + orderId
+                        )
+                );
+
+        log.info("Payment verification requested | Order ID: {}", orderId);
 
         return ReservationDetailResponseDTO.builder()
                 .id(reservation.getId())
                 .reservationNumber(reservation.getReservationNumber())
                 .status(reservation.getReservationStatus())
-                .paymentStatus(reservation.getPayment() != null ? reservation.getPayment().getPaymentStatus() : null)
+                .paymentStatus(
+                        reservation.getPayment() != null
+                                ? reservation.getPayment().getPaymentStatus()
+                                : null
+                )
                 .studentName(reservation.getStudentName())
                 .studentEmail(reservation.getStudentEmail())
                 .build();
-    }
-
-    private String generateCommonEmailTemplate(String title, String content) {
-        return "<html>" +
-                "<body style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 0;'>" +
-                "  <div style='max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>" +
-                "    <div style='background-color: #4f46e5; padding: 30px; text-align: center;'>" +
-                "      <h1 style='color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;'>Hostel PMS</h1>" +
-                "      <p style='color: #e0e7ff; margin: 5px 0 0; font-size: 14px;'>Student Accommodation System</p>" +
-                "    </div>" +
-                "    <div style='padding: 30px; color: #374151; line-height: 1.6;'>" +
-                "      <h2 style='color: #1f2937; margin-top: 0; font-size: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px;'>" + title + "</h2>" +
-                "      <div style='font-size: 16px;'>" + content + "</div>" +
-                "    </div>" +
-                "    <div style='background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;'>" +
-                "      <p style='margin: 0; color: #6b7280; font-size: 12px;'>&copy; 2025 Hostel Management System. All rights reserved.</p>" +
-                "      <p style='margin: 5px 0 0; color: #9ca3af; font-size: 11px;'>This is an automated email. Please do not reply.</p>" +
-                "    </div>" +
-                "  </div>" +
-                "</body>" +
-                "</html>";
     }
 }

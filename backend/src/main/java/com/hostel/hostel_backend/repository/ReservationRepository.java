@@ -13,16 +13,13 @@ import java.util.Optional;
 
 public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     Optional<Reservation> findByReservationNumber(String reservationNumber);
-    //All Reservations (TRASH ඒවා හැර අනිත් ඔක්කොම)
     List<Reservation> findByReservationStatusNot(ReservationStatus status);
 
-    //Trash Reservations Only (TRASH ඒවා විතරයි)
+    //Trash Reservations Only
     List<Reservation> findByReservationStatus(ReservationStatus status);
 
-    //Scheduler එකට (Checkout කර මාස 6ක් පරණ, හැබැයි තාම TRASH නොකරපු ඒවා)
     List<Reservation> findByToDateBeforeAndReservationStatusNot(LocalDate date, ReservationStatus status);
 
-    // Scheduler එකට අවශ්‍ය Query එක
     List<Reservation> findAllByReservationStatusAndCreatedDateBefore(
             ReservationStatus status,
             LocalDateTime dateTime
@@ -31,6 +28,15 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     List<Reservation> findByReservationStatusAndToDateBefore(ReservationStatus status, LocalDate date);
 
     List<Reservation> findByUserUsernameAndToDateGreaterThanEqual(String username, LocalDate date);
+
+    @Query("SELECT r.bed.id FROM Reservation r " +
+            "WHERE r.bed.room.id = :roomId " +
+            "AND r.reservationStatus IN :statuses " +
+            "AND ((:checkIn < r.toDate) AND (:checkOut > r.fromDate))")
+    List<Long> findOccupiedBedIds(@Param("roomId") Long roomId,
+                                  @Param("checkIn") LocalDate checkIn,
+                                  @Param("checkOut") LocalDate checkOut,
+                                  @Param("statuses") List<ReservationStatus> statuses);
 
     @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM Reservation r " +
             "WHERE r.bed.id = :bedId " +

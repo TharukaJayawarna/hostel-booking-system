@@ -15,7 +15,7 @@ import {
   Clock,
   ArrowLeft,
   Layers,
-  Loader2, // Loading Icon
+  Loader2,
 } from "lucide-react";
 
 import { DateRange } from "react-date-range";
@@ -30,7 +30,6 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import "./styles/FloorSelection.css";
 
-// Services
 import settingsService from "../../services/settings.service";
 import roomService from "../../services/room.service";
 
@@ -39,7 +38,6 @@ const FloorSelection = () => {
   const { hubId } = useParams();
   const navigate = useNavigate();
 
-  // --- States ---
   const [dateRange, setDateRange] = useState([
     {
       startDate: new Date(),
@@ -51,37 +49,33 @@ const FloorSelection = () => {
   const [openDate, setOpenDate] = useState(false);
   const calendarRef = useRef(null);
 
-  const [rawRooms, setRawRooms] = useState([]); // Store raw API data
+  const [rawRooms, setRawRooms] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isSearching, setIsSearching] = useState(false); // UI State for search button
+  const [isSearching, setIsSearching] = useState(false);
   const [searched, setSearched] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState(null);
-  
-  // Settings States
+
   const [maxBookingDays, setMaxBookingDays] = useState(90);
   const [disabledDates, setDisabledDates] = useState([]);
 
   const durationInDays = differenceInCalendarDays(
     dateRange[0].endDate,
-    dateRange[0].startDate
+    dateRange[0].startDate,
   );
 
-  // --- Initial Data Fetch (Combined) ---
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
         const [settingsRes, blockedRes] = await Promise.all([
           settingsService.getMaxBookingDays(),
-          settingsService.getBlockedDates()
+          settingsService.getBlockedDates(),
         ]);
 
-        // Set Max Days
         if (settingsRes.data.status === "SUCCESS") {
           setMaxBookingDays(settingsRes.data.data);
         }
 
-        // Set Blocked Dates
         if (blockedRes.data.status === "SUCCESS") {
           const blockedRanges = blockedRes.data.data;
           let allDisabled = [];
@@ -103,7 +97,6 @@ const FloorSelection = () => {
     fetchInitialData();
   }, [notify]);
 
-  // Click Outside Listener for Calendar
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (calendarRef.current && !calendarRef.current.contains(event.target)) {
@@ -113,8 +106,6 @@ const FloorSelection = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // --- Handlers ---
 
   const handleQuickDuration = (days) => {
     const newEndDate = addDays(dateRange[0].startDate, days);
@@ -147,7 +138,11 @@ const FloorSelection = () => {
     setRawRooms([]);
 
     try {
-      const response = await roomService.checkAvailability(hubId, checkIn, checkOut);
+      const response = await roomService.checkAvailability(
+        hubId,
+        checkIn,
+        checkOut,
+      );
 
       if (response.data.status === "SUCCESS") {
         setRawRooms(response.data.data);
@@ -162,21 +157,17 @@ const FloorSelection = () => {
     }
   };
 
-  // --- Data Processing (Memoized) ---
-  // මෙය handleSearch එක ඇතුලේ නොකර useMemo භාවිතයෙන් සිදු කිරීමෙන් Performance වැඩි වේ.
   const groupedData = useMemo(() => {
     let targetPeriod = "DAILY";
     if (durationInDays % 30 === 0) targetPeriod = "MONTHLY";
     else if (durationInDays % 7 === 0) targetPeriod = "WEEKLY";
 
-    // 1. Filter Rooms
     const filtered = rawRooms.filter((room) => {
-      if (room.isPrivate) return false; // Hide private rooms from this view
-      if (targetPeriod === "MONTHLY") return true; // Monthly can take any room
-      return room.reservationPeriod === "DEFAULT"; // Daily/Weekly needs Default rooms
+      if (room.isPrivate) return false;
+      if (targetPeriod === "MONTHLY") return true;
+      return room.reservationPeriod === "DEFAULT";
     });
 
-    // 2. Group by Floor -> Gender
     return filtered.reduce((acc, room) => {
       const floor = room.floorNumber || "General Floor";
       const gender = room.reservedFor;
@@ -236,7 +227,7 @@ const FloorSelection = () => {
               <div className="fs-quick-select">
                 <div className="fs-quick-title">Quick Select (Monthly)</div>
                 <div className="fs-quick-btn-group">
-                  {[30, 60, 90].map(days => (
+                  {[30, 60, 90].map((days) => (
                     <button
                       key={days}
                       className={`fs-quick-btn ${durationInDays === days ? "active" : ""}`}
@@ -257,11 +248,18 @@ const FloorSelection = () => {
                 color="#4f46e5"
                 disabledDates={disabledDates}
               />
-              <div className={`fs-duration-display ${durationInDays > maxBookingDays ? "fs-duration-invalid" : "fs-duration-valid"}`}>
+              <div
+                className={`fs-duration-display ${durationInDays > maxBookingDays ? "fs-duration-invalid" : "fs-duration-valid"}`}
+              >
                 {durationInDays} Nights Selected
               </div>
               <div className="fs-calendar-footer">
-                <button onClick={() => setOpenDate(false)} className="fs-done-btn">Done</button>
+                <button
+                  onClick={() => setOpenDate(false)}
+                  className="fs-done-btn"
+                >
+                  Done
+                </button>
               </div>
             </div>
           )}
@@ -270,9 +268,18 @@ const FloorSelection = () => {
             className="fs-search-btn"
             onClick={handleSearch}
             disabled={isSearching}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+            }}
           >
-            {isSearching ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
+            {isSearching ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <Search size={18} />
+            )}
             {isSearching ? "Checking..." : "Check Availability"}
           </button>
         </div>
@@ -285,7 +292,14 @@ const FloorSelection = () => {
                 <div className="fs-empty-icon">
                   <CalendarDays size={30} color="#cbd5e1" />
                 </div>
-                <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#475569", marginBottom: "5px" }}>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: "#475569",
+                    marginBottom: "5px",
+                  }}
+                >
                   No Shared Rooms Available
                 </h3>
                 <p style={{ fontSize: "14px" }}>
@@ -294,15 +308,19 @@ const FloorSelection = () => {
               </div>
             ) : (
               <>
-                {/* STEP 1: Select Category (Grouped by Floor) */}
                 {!selectedCategory && (
                   <div style={{ width: "100%" }}>
                     {Object.entries(groupedData)
-                      // Sort floors naturally (1st, 2nd, 3rd...)
-                      .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
+
+                      .sort((a, b) =>
+                        a[0].localeCompare(b[0], undefined, { numeric: true }),
+                      )
                       .map(([floorName, groups]) => {
-                        
-                        if (groups.BOYS.length === 0 && groups.GIRLS.length === 0) return null;
+                        if (
+                          groups.BOYS.length === 0 &&
+                          groups.GIRLS.length === 0
+                        )
+                          return null;
 
                         return (
                           <div key={floorName} className="fs-floor-row">
@@ -314,7 +332,12 @@ const FloorSelection = () => {
                               {groups.BOYS.length > 0 && (
                                 <div
                                   className="fs-cat-card fs-cat-boys"
-                                  onClick={() => setSelectedCategory({ floor: floorName, gender: "BOYS" })}
+                                  onClick={() =>
+                                    setSelectedCategory({
+                                      floor: floorName,
+                                      gender: "BOYS",
+                                    })
+                                  }
                                   role="button"
                                   tabIndex={0}
                                 >
@@ -322,12 +345,17 @@ const FloorSelection = () => {
                                     <div className="fs-cat-title">
                                       <User size={20} /> Boys Wing
                                     </div>
-                                    <span className="fs-cat-badge badge-boys">Available</span>
+                                    <span className="fs-cat-badge badge-boys">
+                                      Available
+                                    </span>
                                   </div>
                                   <div className="fs-cat-stats">
-                                    <DoorOpen size={16} /> {groups.BOYS.length} Rooms ({floorName})
+                                    <DoorOpen size={16} /> {groups.BOYS.length}{" "}
+                                    Rooms ({floorName})
                                   </div>
-                                  <div className="fs-tap-hint">Tap to view rooms</div>
+                                  <div className="fs-tap-hint">
+                                    Tap to view rooms
+                                  </div>
                                 </div>
                               )}
 
@@ -335,7 +363,12 @@ const FloorSelection = () => {
                               {groups.GIRLS.length > 0 && (
                                 <div
                                   className="fs-cat-card fs-cat-girls"
-                                  onClick={() => setSelectedCategory({ floor: floorName, gender: "GIRLS" })}
+                                  onClick={() =>
+                                    setSelectedCategory({
+                                      floor: floorName,
+                                      gender: "GIRLS",
+                                    })
+                                  }
                                   role="button"
                                   tabIndex={0}
                                 >
@@ -343,12 +376,17 @@ const FloorSelection = () => {
                                     <div className="fs-cat-title">
                                       <UserCheck size={20} /> Girls Wing
                                     </div>
-                                    <span className="fs-cat-badge badge-girls">Available</span>
+                                    <span className="fs-cat-badge badge-girls">
+                                      Available
+                                    </span>
                                   </div>
                                   <div className="fs-cat-stats">
-                                    <DoorOpen size={16} /> {groups.GIRLS.length} Rooms ({floorName})
+                                    <DoorOpen size={16} /> {groups.GIRLS.length}{" "}
+                                    Rooms ({floorName})
                                   </div>
-                                  <div className="fs-tap-hint">Tap to view rooms</div>
+                                  <div className="fs-tap-hint">
+                                    Tap to view rooms
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -358,7 +396,6 @@ const FloorSelection = () => {
                   </div>
                 )}
 
-                {/* STEP 2: Show Rooms for Selected Category */}
                 {selectedCategory && (
                   <div style={{ width: "100%" }}>
                     <button
@@ -369,11 +406,14 @@ const FloorSelection = () => {
                     </button>
 
                     <div className="fs-category-title">
-                      Available Rooms: {selectedCategory.floor} ({selectedCategory.gender === "BOYS" ? "Boys" : "Girls"})
+                      Available Rooms: {selectedCategory.floor} (
+                      {selectedCategory.gender === "BOYS" ? "Boys" : "Girls"})
                     </div>
 
                     <div className="fs-rooms-grid">
-                      {groupedData[selectedCategory.floor][selectedCategory.gender].map((room) => (
+                      {groupedData[selectedCategory.floor][
+                        selectedCategory.gender
+                      ].map((room) => (
                         <div
                           key={room.id}
                           className="fs-room-card"
@@ -382,23 +422,32 @@ const FloorSelection = () => {
                           tabIndex={0}
                         >
                           <div className="fs-room-number">
-                            <DoorOpen size={20} color="#334155" /> {room.roomNumber}
+                            <DoorOpen size={20} color="#334155" />{" "}
+                            {room.roomNumber}
                           </div>
                           <div className="fs-room-meta">
                             <div className="fs-meta-item">
                               <Users size={14} color="#64748b" /> Shared Room
                             </div>
                             <div className="fs-meta-item">
-                              <BedDouble size={14} color="#64748b" /> Single Bed Booking
+                              <BedDouble size={14} color="#64748b" /> Single Bed
+                              Booking
                             </div>
                           </div>
                           <div className="fs-price-tag">
                             <div>
-                              <span className="fs-price-label">Price ({room.reservationPeriod})</span>
+                              <span className="fs-price-label">
+                                Price ({room.reservationPeriod})
+                              </span>
                               <div className="fs-price-value">
-                                LKR {room.reservationPeriod === "MONTHLY"
-                                  ? parseFloat(room.monthlyPrice).toLocaleString()
-                                  : parseFloat(room.dailyPrice || room.monthlyPrice).toLocaleString()}
+                                LKR{" "}
+                                {room.reservationPeriod === "MONTHLY"
+                                  ? parseFloat(
+                                      room.monthlyPrice,
+                                    ).toLocaleString()
+                                  : parseFloat(
+                                      room.dailyPrice || room.monthlyPrice,
+                                    ).toLocaleString()}
                               </div>
                             </div>
                             <div className="fs-select-btn">

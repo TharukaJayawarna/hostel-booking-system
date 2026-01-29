@@ -13,7 +13,7 @@ public class RoomResponseDTO {
     private String roomNumber;
     private Boolean isPrivate;
     private Double monthlyPrice;
-    private Double weeklyPrice;  // New
+    private Double weeklyPrice;
     private Double dailyPrice;
     private ReservationPeriod reservationPeriod;
     private RoomType roomType;

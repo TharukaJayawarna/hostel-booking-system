@@ -1,6 +1,5 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-// නිවැරදි කරන ලද Import Paths
 import Navbar from "../components/navbar/Navbar";
 import Footer from "../components/Footer";
 import "./styles/StudentLayout.css";

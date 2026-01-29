@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 import {
   Facebook,
   Twitter,
@@ -9,9 +9,9 @@ import {
   Phone,
   MapPin,
   ShieldCheck,
-  ArrowRight
-} from 'lucide-react';
-import './styles/Footer.css';
+  ArrowRight,
+} from "lucide-react";
+import "./styles/Footer.css";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -19,15 +19,21 @@ const Footer = () => {
   return (
     <footer className="footer">
       <div className="footer-container">
-
         {/* Brand */}
         <div className="footer-column">
           <div className="brand-title">
-            <span><img src="https://img.freepik.com/free-vector/editable-hotel-logo-vector-business-corporate-identity-hostel_53876-111553.jpg?semt=ais_se_enriched&w=740&q=80" alt="Hostel PMS Logo" style={{ width: '40px', height: '40px' }} /></span> Hostel PMS
+            <span>
+              <img
+                src="https://img.freepik.com/free-vector/editable-hotel-logo-vector-business-corporate-identity-hostel_53876-111553.jpg?semt=ais_se_enriched&w=740&q=80"
+                alt="Hostel PMS Logo"
+                style={{ width: "40px", height: "40px" }}
+              />
+            </span>{" "}
+            Hostel PMS
           </div>
           <p className="brand-desc">
-            Providing safe, comfortable, and modern accommodation solutions for university students.
-            Your home away from home.
+            Providing safe, comfortable, and modern accommodation solutions for
+            university students. Your home away from home.
           </p>
           <div className="secure-badge">
             <ShieldCheck size={14} /> Secure & Verified
@@ -71,7 +77,8 @@ const Footer = () => {
           <div className="contact-item">
             <MapPin size={18} />
             <span>
-              NSBM Green University,<br />
+              NSBM Green University,
+              <br />
               Homagama, Sri Lanka
             </span>
           </div>
@@ -86,7 +93,6 @@ const Footer = () => {
             <span>+94 11 544 5000</span>
           </div>
         </div>
-
       </div>
 
       {/* Bottom Bar */}

@@ -24,6 +24,5 @@ public interface RoomService {
     List<RoomResponseDTO> getRoomsByReservationPeriod(ReservationPeriod reservationPeriod);
     List<RoomResponseDTO> getRoomsByReservedFor(ReservedFor reservedFor);
     List<RoomResponseDTO> getAvailableRooms(Long hubId, LocalDate checkIn, LocalDate checkOut);
-    // Interface eke pahatha method signature eka add karanna
     void updateRoom(Long roomId, CreateRoomRequestDTO dto) throws ResourceNotFoundException;
 }

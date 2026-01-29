@@ -6,7 +6,7 @@
   align-items: center;
   background-color: #f8fafc;
   padding: 20px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 /* Card */
@@ -16,7 +16,9 @@
   max-width: 420px;
   border-radius: 20px;
   padding: 40px 30px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.05),
+    0 8px 10px -6px rgba(0, 0, 0, 0.01);
   text-align: center;
   border: 1px solid #e2e8f0;
 }
@@ -113,7 +115,8 @@
   gap: 15px;
 }
 
-.pc-btn-primary, .pc-btn-secondary {
+.pc-btn-primary,
+.pc-btn-secondary {
   flex: 1;
   padding: 12px;
   border-radius: 10px;

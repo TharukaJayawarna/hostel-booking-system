@@ -11,35 +11,30 @@ import {
   XCircle,
   Loader2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import ConfirmModal from "../../components/ConfirmModal";
 import "./styles/ManageBeds.css";
 
-// Services import
 import bedService from "../../services/bed.service";
 import roomService from "../../services/room.service";
 import authService from "../../services/auth.service";
 
 const ManageBeds = () => {
   const notify = useNotification();
-  
-  // --- Data States ---
+
   const [beds, setBeds] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- Filter States ---
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRoom, setFilterRoom] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
 
-  // --- Pagination States (NEW) ---
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // පිටුවක පෙන්වන අයිතම ගණන මෙතනින් වෙනස් කරන්න
+  const [itemsPerPage] = useState(10);
 
-  // --- Modal States ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ roomId: "", bedNumber: "" });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -52,7 +47,6 @@ const ManageBeds = () => {
     fetchAll();
   }, []);
 
-  // Filter වෙනස් වන විට Page 1 ට reset වීම (UX Best Practice)
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterRoom, filterStatus]);
@@ -74,23 +68,24 @@ const ManageBeds = () => {
     }
   };
 
-  // --- Optimized Filtering (useMemo) ---
   const filteredBeds = useMemo(() => {
     return beds.filter((bed) => {
       const bedNo = bed.bedNumber ? bed.bedNumber.toString() : "";
-      const matchesSearch = bedNo.toLowerCase().includes(searchTerm.toLowerCase().trim());
+      const matchesSearch = bedNo
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase().trim());
       const matchesRoom = filterRoom === "ALL" || bed.roomNumber === filterRoom;
-      
+
       let matchesStatus = true;
       if (filterStatus === "BOOKED") matchesStatus = bed.isBooked;
-      if (filterStatus === "AVAILABLE") matchesStatus = !bed.isBooked && !bed.underMaintenance;
+      if (filterStatus === "AVAILABLE")
+        matchesStatus = !bed.isBooked && !bed.underMaintenance;
       if (filterStatus === "MAINTENANCE") matchesStatus = bed.underMaintenance;
-      
+
       return matchesSearch && matchesRoom && matchesStatus;
     });
   }, [beds, searchTerm, filterRoom, filterStatus]);
 
-  // --- Pagination Logic (NEW) ---
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentBeds = filteredBeds.slice(indexOfFirstItem, indexOfLastItem);
@@ -130,9 +125,8 @@ const ManageBeds = () => {
       setIsSubmitting(true);
       await bedService.deleteBed(bedToDelete);
       notify.success("Bed Deleted Successfully");
-      
-      // Optimistic Delete (Frontend එකෙන් අයින් කිරීම)
-      setBeds(prev => prev.filter(b => b.id !== bedToDelete));
+
+      setBeds((prev) => prev.filter((b) => b.id !== bedToDelete));
     } catch (e) {
       notify.error("Failed to delete bed");
     } finally {
@@ -148,7 +142,6 @@ const ManageBeds = () => {
     const previousStatus = bed.underMaintenance;
     const newStatus = !previousStatus;
 
-    // Optimistic UI Update
     const updatedBeds = beds.map((b) =>
       b.id === bed.id ? { ...b, underMaintenance: newStatus } : b,
     );
@@ -166,7 +159,6 @@ const ManageBeds = () => {
     }
   };
 
-  // Stats Calculation
   const stats = {
     total: beds.length,
     available: beds.filter((b) => !b.isBooked && !b.underMaintenance).length,
@@ -195,20 +187,40 @@ const ManageBeds = () => {
 
       <div className="mb-stats-grid">
         <div className="mb-stat-card">
-          <div className="mb-stat-icon icon-blue"><BedDouble size={24} /></div>
-          <div><div className="mb-stat-value">{stats.total}</div><div className="mb-stat-label">Total Beds</div></div>
+          <div className="mb-stat-icon icon-blue">
+            <BedDouble size={24} />
+          </div>
+          <div>
+            <div className="mb-stat-value">{stats.total}</div>
+            <div className="mb-stat-label">Total Beds</div>
+          </div>
         </div>
         <div className="mb-stat-card">
-          <div className="mb-stat-icon icon-green"><CheckCircle2 size={24} /></div>
-          <div><div className="mb-stat-value">{stats.available}</div><div className="mb-stat-label">Available</div></div>
+          <div className="mb-stat-icon icon-green">
+            <CheckCircle2 size={24} />
+          </div>
+          <div>
+            <div className="mb-stat-value">{stats.available}</div>
+            <div className="mb-stat-label">Available</div>
+          </div>
         </div>
         <div className="mb-stat-card">
-          <div className="mb-stat-icon icon-red"><XCircle size={24} /></div>
-          <div><div className="mb-stat-value">{stats.booked}</div><div className="mb-stat-label">Occupied</div></div>
+          <div className="mb-stat-icon icon-red">
+            <XCircle size={24} />
+          </div>
+          <div>
+            <div className="mb-stat-value">{stats.booked}</div>
+            <div className="mb-stat-label">Occupied</div>
+          </div>
         </div>
         <div className="mb-stat-card">
-          <div className="mb-stat-icon icon-amber"><Wrench size={24} /></div>
-          <div><div className="mb-stat-value">{stats.maintenance}</div><div className="mb-stat-label">Maintenance</div></div>
+          <div className="mb-stat-icon icon-amber">
+            <Wrench size={24} />
+          </div>
+          <div>
+            <div className="mb-stat-value">{stats.maintenance}</div>
+            <div className="mb-stat-label">Maintenance</div>
+          </div>
         </div>
       </div>
 
@@ -224,13 +236,23 @@ const ManageBeds = () => {
         </div>
         <div className="mb-filter-group">
           <Filter size={18} color="#6b7280" />
-          <select className="mb-select" value={filterRoom} onChange={(e) => setFilterRoom(e.target.value)}>
+          <select
+            className="mb-select"
+            value={filterRoom}
+            onChange={(e) => setFilterRoom(e.target.value)}
+          >
             <option value="ALL">All Rooms</option>
             {[...new Set(beds.map((b) => b.roomNumber))].map((r) => (
-              <option key={r} value={r}>{r}</option>
+              <option key={r} value={r}>
+                {r}
+              </option>
             ))}
           </select>
-          <select className="mb-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <select
+            className="mb-select"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
             <option value="ALL">All Status</option>
             <option value="AVAILABLE">Available</option>
             <option value="BOOKED">Booked</option>
@@ -247,16 +269,27 @@ const ManageBeds = () => {
               <th className="mb-th">Room</th>
               <th className="mb-th">Current Status</th>
               <th className="mb-th">Maintenance Mode</th>
-              {!isWarden && <th style={{ textAlign: "right" }} className="mb-th">Actions</th>}
+              {!isWarden && (
+                <th style={{ textAlign: "right" }} className="mb-th">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="5" className="mb-loading">Loading...</td></tr>
+              <tr>
+                <td colSpan="5" className="mb-loading">
+                  Loading...
+                </td>
+              </tr>
             ) : filteredBeds.length === 0 ? (
-              <tr><td colSpan="5" className="mb-loading">No beds found matching filters.</td></tr>
+              <tr>
+                <td colSpan="5" className="mb-loading">
+                  No beds found matching filters.
+                </td>
+              </tr>
             ) : (
-              // NOTE: We iterate over currentBeds (Paginated data) instead of filteredBeds
               currentBeds.map((bed) => {
                 let statusClass = "badge-available";
                 let statusText = "Available";
@@ -275,15 +308,32 @@ const ManageBeds = () => {
                 return (
                   <tr key={bed.id} className="mb-tr">
                     <td className="mb-td">
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div style={{ padding: "8px", background: "#f1f5f9", borderRadius: "8px", color: "#475569" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "8px",
+                            background: "#f1f5f9",
+                            borderRadius: "8px",
+                            color: "#475569",
+                          }}
+                        >
                           <BedDouble size={18} />
                         </div>
-                        <span style={{ fontWeight: "700", color: "#1e293b" }}>{bed.bedNumber}</span>
+                        <span style={{ fontWeight: "700", color: "#1e293b" }}>
+                          {bed.bedNumber}
+                        </span>
                       </div>
                     </td>
                     <td className="mb-td">
-                      <span style={{ fontWeight: "600", color: "#475569" }}>{bed.roomNumber}</span>
+                      <span style={{ fontWeight: "600", color: "#475569" }}>
+                        {bed.roomNumber}
+                      </span>
                     </td>
                     <td className="mb-td">
                       <span className={`mb-badge ${statusClass}`}>
@@ -291,22 +341,47 @@ const ManageBeds = () => {
                       </span>
                     </td>
                     <td className="mb-td">
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
                         <div
                           className={`mb-toggle-container ${bed.underMaintenance ? "mb-toggle-active" : "mb-toggle-inactive"} ${isWarden ? "mb-toggle-disabled" : ""}`}
                           onClick={() => toggleMaintenance(bed)}
                         >
-                          <div className={`mb-toggle-circle ${bed.underMaintenance ? "circle-active" : "circle-inactive"}`}></div>
+                          <div
+                            className={`mb-toggle-circle ${bed.underMaintenance ? "circle-active" : "circle-inactive"}`}
+                          ></div>
                         </div>
-                        <span style={{ fontSize: "12px", fontWeight: "600", color: bed.underMaintenance ? "#d97706" : "#94a3b8" }}>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            color: bed.underMaintenance ? "#d97706" : "#94a3b8",
+                          }}
+                        >
                           {bed.underMaintenance ? "Active" : "Off"}
                         </span>
                       </div>
                     </td>
                     {!isWarden && (
                       <td className="mb-td">
-                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                          <button onClick={() => { setBedToDelete(bed.id); setIsDeleteModalOpen(true); }} className="mb-delete-btn">
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            onClick={() => {
+                              setBedToDelete(bed.id);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            className="mb-delete-btn"
+                          >
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -319,29 +394,50 @@ const ManageBeds = () => {
           </tbody>
         </table>
 
-        {/* --- Pagination Controls (NEW) --- */}
         {!loading && filteredBeds.length > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 20px", borderTop: "1px solid #e2e8f0" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "15px 20px",
+              borderTop: "1px solid #e2e8f0",
+            }}
+          >
             <div style={{ fontSize: "13px", color: "#64748b" }}>
-              Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredBeds.length)} of {filteredBeds.length} entries
+              Showing {indexOfFirstItem + 1} to{" "}
+              {Math.min(indexOfLastItem, filteredBeds.length)} of{" "}
+              {filteredBeds.length} entries
             </div>
             <div style={{ display: "flex", gap: "5px" }}>
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 style={{
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  padding: "6px", borderRadius: "6px", border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px",
+                  borderRadius: "6px",
+                  border: "1px solid #e2e8f0",
                   background: currentPage === 1 ? "#f1f5f9" : "white",
                   cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                  color: currentPage === 1 ? "#94a3b8" : "#475569"
+                  color: currentPage === 1 ? "#94a3b8" : "#475569",
                 }}
               >
                 <ChevronLeft size={16} />
               </button>
-              
-              {/* Simple Page Indicator */}
-              <span style={{ display: "flex", alignItems: "center", padding: "0 10px", fontSize: "13px", fontWeight: "600", color: "#475569" }}>
+
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 10px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  color: "#475569",
+                }}
+              >
                 Page {currentPage} of {totalPages}
               </span>
 
@@ -349,11 +445,16 @@ const ManageBeds = () => {
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 style={{
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  padding: "6px", borderRadius: "6px", border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px",
+                  borderRadius: "6px",
+                  border: "1px solid #e2e8f0",
                   background: currentPage === totalPages ? "#f1f5f9" : "white",
-                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                  color: currentPage === totalPages ? "#94a3b8" : "#475569"
+                  cursor:
+                    currentPage === totalPages ? "not-allowed" : "pointer",
+                  color: currentPage === totalPages ? "#94a3b8" : "#475569",
                 }}
               >
                 <ChevronRight size={16} />
@@ -365,12 +466,29 @@ const ManageBeds = () => {
 
       {/* --- Add Bed Modal --- */}
       {isModalOpen && (
-        <div className="mb-overlay" onClick={() => !isSubmitting && setIsModalOpen(false)}>
+        <div
+          className="mb-overlay"
+          onClick={() => !isSubmitting && setIsModalOpen(false)}
+        >
           <div className="mb-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "5px", color: "#111827", marginTop: 0 }}>
+            <h3
+              style={{
+                fontSize: "20px",
+                fontWeight: "700",
+                marginBottom: "5px",
+                color: "#111827",
+                marginTop: 0,
+              }}
+            >
               Add New Bed
             </h3>
-            <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "20px" }}>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#6b7280",
+                marginBottom: "20px",
+              }}
+            >
               Manually add a bed to a room.
             </p>
             <form onSubmit={handleCreate}>
@@ -380,13 +498,17 @@ const ManageBeds = () => {
                   className="mb-select"
                   style={{ width: "100%" }}
                   value={formData.roomId}
-                  onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, roomId: e.target.value })
+                  }
                   required
                   disabled={isSubmitting}
                 >
                   <option value="">-- Select --</option>
                   {rooms.map((r) => (
-                    <option key={r.id} value={r.id}>{r.roomNumber}</option>
+                    <option key={r.id} value={r.id}>
+                      {r.roomNumber}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -396,17 +518,31 @@ const ManageBeds = () => {
                   className="mb-input"
                   placeholder="e.g. B-101-1"
                   value={formData.bedNumber}
-                  onChange={(e) => setFormData({ ...formData, bedNumber: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bedNumber: e.target.value })
+                  }
                   required
                   disabled={isSubmitting}
                 />
               </div>
               <div className="mb-modal-footer">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="mb-btn-cancel" disabled={isSubmitting}>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="mb-btn-cancel"
+                  disabled={isSubmitting}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="mb-add-btn" disabled={isSubmitting} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {isSubmitting && <Loader2 className="animate-spin" size={16} />}
+                <button
+                  type="submit"
+                  className="mb-add-btn"
+                  disabled={isSubmitting}
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  {isSubmitting && (
+                    <Loader2 className="animate-spin" size={16} />
+                  )}
                   {isSubmitting ? "Saving..." : "Save Bed"}
                 </button>
               </div>

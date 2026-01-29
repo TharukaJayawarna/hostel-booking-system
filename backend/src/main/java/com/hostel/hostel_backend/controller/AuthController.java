@@ -3,15 +3,10 @@ package com.hostel.hostel_backend.controller;
 import com.hostel.hostel_backend.controller.request.LoginRequestDTO;
 import com.hostel.hostel_backend.controller.response.ApiResponse;
 import com.hostel.hostel_backend.controller.response.AuthResponse;
-import com.hostel.hostel_backend.exception.AppException;
 import com.hostel.hostel_backend.model.User;
-import com.hostel.hostel_backend.repository.UserRepository;
-import com.hostel.hostel_backend.service.UserService;
-import com.hostel.hostel_backend.util.JwtUtils;
+import com.hostel.hostel_backend.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -22,15 +17,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    private final UserService userService;
-    private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final JwtUtils jwtUtils;
+    private final AuthenticationService authenticationService;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<String>> register(@RequestBody User user) throws AppException {
+    public ResponseEntity<ApiResponse<String>> register(@RequestBody User user) {
         try {
-            userService.registerUser(user);
+            authenticationService.registerUser(user);
             return ResponseEntity.ok(ApiResponse.success("User registered successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -39,42 +31,15 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody LoginRequestDTO loginRequest) {
-        try {
-            // 1. Authenticate using Spring Security Manager
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
-                    )
-            );
-
-            // 2. If Auth successful, fetch User and Generate Token
-            var user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow();
-            var jwtToken = jwtUtils.generateToken(user);
-
-            // 3. Create Response
-            AuthResponse response = AuthResponse.builder()
-                    .token(jwtToken)
-                    .username(user.getUsername())
-                    .role(user.getRole())
-                    .firstName(user.getFirstName())
-                    .lastName(user.getLastName())
-                    .email(user.getEmail())
-                    .phone(user.getContactNumber())
-                    .build();
-
-            return ResponseEntity.ok(ApiResponse.success("Login successful", response));
-
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid Username or Password"));
-        }
+        AuthResponse response = authenticationService.login(loginRequest);
+        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestBody Map<String, String> payload) {
         try {
             String email = payload.get("email");
-            userService.forgotPassword(email);
+            authenticationService.forgotPassword(email);
             return ResponseEntity.ok(ApiResponse.success("OTP sent to your email"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -88,7 +53,7 @@ public class AuthController {
             String otp = payload.get("otp");
             String newPassword = payload.get("newPassword");
 
-            userService.resetPassword(email, otp, newPassword);
+            authenticationService.resetPassword(email, otp, newPassword);
             return ResponseEntity.ok(ApiResponse.success("Password changed successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

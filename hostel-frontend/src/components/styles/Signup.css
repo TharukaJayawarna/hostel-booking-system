@@ -3,7 +3,7 @@
   min-height: 100vh;
   display: flex;
   background-color: white;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 /* Left Side - Image Section */
@@ -23,8 +23,15 @@
 
 .signup-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.7) 100%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to right,
+    rgba(15, 23, 42, 0.9) 0%,
+    rgba(15, 23, 42, 0.7) 100%
+  );
   z-index: 1;
 }
 
@@ -242,17 +249,15 @@
   margin-left: 5px;
 }
 
-/* Responsive */
 @media (max-width: 900px) {
   .signup-image-section {
     display: none !important;
   }
 }
-/* Existing styles... */
 
 /* Error State */
 .input-container.error {
-  border-color: #ef4444; /* Red color */
+  border-color: #ef4444;
   background-color: #fef2f2;
 }
 
@@ -270,9 +275,9 @@
 
 .password-toggle {
   position: absolute;
-  right: 15px; /* දකුණු කෙළවරේ සිට 15px ඇතුළට */
+  right: 15px;
   top: 50%;
-  transform: translateY(-50%); /* හරියටම මැදට ගැනීමට */
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: #94a3b8;
@@ -297,6 +302,6 @@
 
 @media (max-width: 600px) {
   .form-grid-row {
-    grid-template-columns: 1fr; /* Stack inputs on mobile */
+    grid-template-columns: 1fr;
   }
 }

@@ -21,19 +21,23 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
-    if (!formData.username.trim() || !formData.password.trim() || !formData.email.trim()) {
+    if (
+      !formData.username.trim() ||
+      !formData.password.trim() ||
+      !formData.email.trim()
+    ) {
       return notify.warning("Please fill all required fields");
     }
 
     try {
       setIsSubmitting(true);
       await userService.createUser(formData);
-      
+
       notify.success("User Created Successfully!");
-      setFormData(initialForm); // Reset form
-      onSuccess(); // Parent refresh
+      setFormData(initialForm);
+      onSuccess();
       onClose();
     } catch (e) {
       notify.error(e.response?.data?.message || "Creation Failed");
@@ -50,13 +54,19 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
         <div className="mu-modal-header">
           <div>
             <h3 className="mu-modal-title">Create New User</h3>
-            <p className="mu-modal-desc">Add a new administrator or warden to the system.</p>
+            <p className="mu-modal-desc">
+              Add a new administrator or warden to the system.
+            </p>
           </div>
-          <button onClick={onClose} className="mu-close-btn" disabled={isSubmitting}>
+          <button
+            onClick={onClose}
+            className="mu-close-btn"
+            disabled={isSubmitting}
+          >
             <X size={24} />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="mu-modal-body">
             <div className="mu-input-grid">
@@ -65,7 +75,9 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
                 <input
                   className="mu-input"
                   value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstName: e.target.value })
+                  }
                   required
                   disabled={isSubmitting}
                 />
@@ -75,7 +87,9 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
                 <input
                   className="mu-input"
                   value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
                   required
                   disabled={isSubmitting}
                 />
@@ -88,7 +102,9 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
                 <input
                   className="mu-input"
                   value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, username: e.target.value })
+                  }
                   required
                   disabled={isSubmitting}
                 />
@@ -99,7 +115,9 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
                   type="password"
                   className="mu-input"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   required
                   disabled={isSubmitting}
                 />
@@ -112,7 +130,9 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
                 type="email"
                 className="mu-input"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 required
                 disabled={isSubmitting}
               />
@@ -124,7 +144,9 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
                 <input
                   className="mu-input"
                   value={formData.contactNumber}
-                  onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contactNumber: e.target.value })
+                  }
                   placeholder="Optional"
                   disabled={isSubmitting}
                 />
@@ -134,7 +156,9 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
                 <select
                   className="mu-select"
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role: e.target.value })
+                  }
                   disabled={isSubmitting}
                 >
                   <option value="WARDEN">Warden (View Only)</option>
@@ -143,12 +167,22 @@ const UserFormModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
             </div>
           </div>
-          
+
           <div className="mu-modal-footer">
-            <button type="button" onClick={onClose} className="mu-cancel-btn" disabled={isSubmitting}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mu-cancel-btn"
+              disabled={isSubmitting}
+            >
               Cancel
             </button>
-            <button type="submit" className="mu-save-btn" disabled={isSubmitting} style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="submit"
+              className="mu-save-btn"
+              disabled={isSubmitting}
+              style={{ display: "flex", gap: "8px" }}
+            >
               {isSubmitting && <Loader2 className="animate-spin" size={16} />}
               {isSubmitting ? "Creating..." : "Create User"}
             </button>
