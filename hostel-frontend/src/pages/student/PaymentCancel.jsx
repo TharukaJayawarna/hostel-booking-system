@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useNotification } from "../../context/NotificationContext";
 import { XCircle, AlertCircle, Home, RefreshCcw } from "lucide-react";
@@ -10,8 +10,13 @@ const PaymentCancel = () => {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get("order_id");
 
+  const hasNotified = useRef(false);
+
   useEffect(() => {
-    notify.error("Payment process was cancelled.");
+    if (!hasNotified.current) {
+      notify.error("Payment process was cancelled.");
+      hasNotified.current = true;
+    }
   }, [notify]);
 
   return (

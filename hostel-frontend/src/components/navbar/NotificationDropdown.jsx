@@ -44,9 +44,58 @@ const NotificationDropdown = ({
 
   const stripHtml = (html) => {
     if (!html) return "";
+
+    try {
+      
+      const parsed = JSON.parse(html);
+      
+      
+      if (parsed.introMessage) {
+        return parsed.introMessage.substring(0, 100);
+      }
+      
+      
+      if (parsed.message) {
+        return stripHtmlFromString(parsed.message).substring(0, 100);
+      }
+      
+      
+      const firstText = Object.values(parsed).find(v => typeof v === 'string');
+      if (firstText) {
+        return stripHtmlFromString(firstText).substring(0, 100);
+      }
+      
+      return "Click to view details";
+    } catch {
+      
+      return stripHtmlFromString(html).substring(0, 100);
+    }
+  };
+
+  
+  const stripHtmlFromString = (str) => {
+    if (!str) return "";
+    
     const tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
+    tmp.innerHTML = str;
+
+    
+    const styles = tmp.getElementsByTagName("style");
+    while (styles.length > 0) {
+      styles[0].parentNode.removeChild(styles[0]);
+    }
+
+    
+    const scripts = tmp.getElementsByTagName("script");
+    while (scripts.length > 0) {
+      scripts[0].parentNode.removeChild(scripts[0]);
+    }
+
+    
+    let text = tmp.textContent || tmp.innerText || "";
+    
+    
+    return text.replace(/\s+/g, " ").trim();
   };
 
   const handleClearRequest = () => {
@@ -153,7 +202,7 @@ const NotificationDropdown = ({
         </div>
       </div>
 
-      {/*CONFIRMATION MODAL */}
+      {/* CONFIRMATION MODAL */}
       <ConfirmModal
         isOpen={isClearModalOpen}
         onClose={() => setIsClearModalOpen(false)}

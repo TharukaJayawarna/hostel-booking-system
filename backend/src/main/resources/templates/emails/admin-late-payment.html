@@ -2,29 +2,223 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{emails/common-layout}">
+<head>
+    <style>
+        .urgent-header {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid #dc2626;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+        }
+        .urgent-header h2 {
+            color: #991b1b;
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .urgent-icon {
+            width: 28px;
+            height: 28px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .alert-severe {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px solid #dc2626;
+            border-radius: 8px;
+            padding: 18px;
+            margin: 20px 0;
+            font-size: 15px;
+            line-height: 1.6;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+        }
+        .alert-severe strong {
+            color: #991b1b;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .payment-details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .payment-details-table tr {
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .payment-details-table tr:last-child {
+            border-bottom: none;
+        }
+        .payment-details-table td {
+            padding: 16px 20px;
+            vertical-align: middle;
+        }
+        .payment-details-table td:first-child {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            font-weight: 600;
+            color: #1e293b;
+            width: 35%;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .payment-details-table td:last-child {
+            color: #334155;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .detail-icon {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 6px;
+            color: #64748b;
+        }
+        .order-id {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            color: #1e40af;
+            display: inline-block;
+        }
+        .amount-display {
+            font-size: 18px;
+            font-weight: 700;
+            color: #dc2626;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .student-name {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .student-reg {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 400;
+        }
+        .action-required-box {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: #ffffff;
+            padding: 20px 25px;
+            border-radius: 8px;
+            margin-top: 30px;
+            font-size: 15px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+            border: 2px solid #991b1b;
+        }
+        .action-required-box strong {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .action-icon {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
 <body>
 <div layout:fragment="content">
-    <h2 style="color: #b91c1c; margin-top: 0;">URGENT: Late Payment Received 🚨</h2>
-    <div class="alert alert-red">
-        A payment was received <strong>AFTER</strong> the reservation had already expired/cancelled.
+    <div class="urgent-header">
+        <h2>
+            <svg class="urgent-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            URGENT: Late Payment Received
+        </h2>
+        <p style="margin: 0; font-size: 14px; color: #7f1d1d; font-weight: 500;">Immediate administrative action required</p>
     </div>
 
-    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+    <div class="alert-severe">
+        <svg style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#991b1b" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        A payment was received <strong>AFTER</strong> the reservation had already expired or been cancelled. This requires immediate verification and potential refund processing.
+    </div>
+
+    <table class="payment-details-table">
         <tr>
-            <td style="padding: 8px; font-weight: bold;">Order ID:</td>
-            <td style="padding: 8px;" th:text="${orderId}"></td>
+            <td>
+                <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+                Order ID
+            </td>
+            <td>
+                <span class="order-id" th:text="${orderId}"></span>
+            </td>
         </tr>
         <tr>
-            <td style="padding: 8px; font-weight: bold;">Amount:</td>
-            <td style="padding: 8px;" th:text="${amount}"></td>
+            <td>
+                <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                Payment Amount
+            </td>
+            <td>
+                <span class="amount-display" th:text="${amount}"></span>
+            </td>
         </tr>
         <tr>
-            <td style="padding: 8px; font-weight: bold;">Student:</td>
-            <td style="padding: 8px;"><span th:text="${studentName}"></span> (<span th:text="${regNo}"></span>)</td>
+            <td>
+                <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Student Details
+            </td>
+            <td>
+                <div class="student-info">
+                    <span class="student-name" th:text="${studentName}"></span>
+                    <span class="student-reg">(<span th:text="${regNo}"></span>)</span>
+                </div>
+            </td>
         </tr>
     </table>
 
-    <p style="margin-top: 20px; font-weight: bold; color: #b91c1c;">ACTION REQUIRED: Please verify and process a manual REFUND if necessary.</p>
+    <div class="action-required-box">
+        <strong>
+            <svg class="action-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Action Required
+        </strong>
+        <div>Please verify this payment immediately and process a manual refund if necessary. Contact the student to explain the situation and arrange the refund procedure.</div>
+    </div>
 </div>
 </body>
 </html>

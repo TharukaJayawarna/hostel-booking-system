@@ -1,31 +1,80 @@
-import React from "react";
-import { X, Clock } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import "../styles/Navbar.css";
+import {
+  ReservationSuccessTemplate,
+  ReservationFailedTemplate,
+  SimpleTemplate,
+  LatePaymentTemplate,
+} from "./NotificationTemplates";
 
 const NotificationModal = ({ notification, onClose }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (notification) {
+      setTimeout(() => setIsVisible(true), 10);
+    }
+  }, [notification]);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 300);
+  };
+
   if (!notification) return null;
 
+  const renderContent = () => {
+    try {
+      const data = JSON.parse(notification.message);
+
+      switch (data.notificationType) {
+        // Success Cases
+        case "RESERVATION_CONFIRMED":
+        case "RESERVATION_SUCCESS":
+        case "DATES UPDATED":
+        case "BOOKING REACTIVATED":
+        case "NEW BED ASSIGNED":
+          return <ReservationSuccessTemplate data={data} />;
+
+        // Failure Cases
+        case "RESERVATION_FAILED":
+          return <ReservationFailedTemplate data={data} />;
+
+        case "LATE_PAYMENT":
+          return <LatePaymentTemplate data={data} />;
+
+        // Default
+        default:
+          return (
+            <SimpleTemplate
+              message={data.introMessage || JSON.stringify(data, null, 2)}
+            />
+          );
+      }
+    } catch (e) {
+      return <SimpleTemplate message={notification.message} />;
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close-btn" onClick={onClose}>
-          <X size={18} />
+    <div
+      className={`receipt-overlay ${isVisible ? "visible" : ""}`}
+      onClick={handleClose}
+    >
+      <div
+        className={`receipt-card ${isVisible ? "pop-up" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className="absolute-close-btn" onClick={handleClose}>
+          <X size={20} />
         </button>
 
-        <h3 className="modal-title">{notification.title}</h3>
-        <div className="modal-meta">
-          <Clock size={14} />{" "}
-          {new Date(notification.createdAt).toLocaleString()}
-        </div>
+        <div className="modal-content-wrapper">{renderContent()}</div>
 
-        <div
-          className="modal-body"
-          dangerouslySetInnerHTML={{ __html: notification.message }}
-        />
-
-        <div className="modal-footer">
-          <button className="btn-close-modal" onClick={onClose}>
-            Close Message
+        <div className="receipt-footer">
+          <button className="btn-receipt-ok" onClick={handleClose}>
+            OK, Got it
           </button>
         </div>
       </div>

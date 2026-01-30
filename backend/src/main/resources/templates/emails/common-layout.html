@@ -8,24 +8,145 @@
     <title>Hostel Management System</title>
     <style>
         /* Email Clients සඳහා Inline CSS අත්‍යවශ්‍ය වේ */
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .header { background-color: #4f46e5; padding: 30px; text-align: center; color: #ffffff; }
-        .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px; }
-        .header p { margin: 5px 0 0; color: #e0e7ff; font-size: 14px; }
-        .content { padding: 40px 30px; color: #374151; line-height: 1.6; font-size: 16px; }
-        .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; }
-        .button { display: inline-block; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
-        .alert { padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
-        .alert-red { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-        .alert-green { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .container {
+            max-width: 650px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e8edf2;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: #ffffff;
+            position: relative;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .header p {
+            margin: 8px 0 0;
+            color: #dbeafe;
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+        .content {
+            padding: 45px 40px;
+            color: #1f2937;
+            line-height: 1.7;
+            font-size: 15px;
+            background-color: #ffffff;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 30px 25px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .footer p {
+            margin: 8px 0;
+        }
+        .footer-logo {
+            font-weight: 600;
+            color: #475569;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 25px;
+            font-size: 15px;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            border-left: 4px solid;
+            line-height: 1.6;
+        }
+        .alert-red {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border-color: #dc2626;
+            border-left-color: #dc2626;
+        }
+        .alert-green {
+            background-color: #f0fdf4;
+            color: #166534;
+            border-color: #16a34a;
+            border-left-color: #16a34a;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+            margin: 20px 0;
+        }
+        .contact-info {
+            display: inline-block;
+            margin: 0 8px;
+            color: #64748b;
+        }
+        .contact-icon {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+        .security-notice {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 15px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>Hostel PMS</h1>
-        <p>Student Accommodation System</p>
+        <p>Student Accommodation Management System</p>
     </div>
 
     <div class="content">
@@ -34,9 +155,25 @@
     </div>
 
     <div class="footer">
-        <p>&copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2025</span> NSBM Green University Hostel.</p>
-        <p style="margin-top: 5px;">Mahenwatta, Pitipana, Homagama | +94 11 544 5000</p>
-        <p style="margin-top: 5px; color: #9ca3af;">This is an automated email. Please do not reply.</p>
+        <div class="footer-logo">NSBM Green University Hostel</div>
+        <div class="divider"></div>
+        <p>
+            <span class="contact-info">
+                <svg class="contact-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                Mahenwatta, Pitipana, Homagama
+            </span>
+            <span class="contact-info">
+                <svg class="contact-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                +94 11 544 5000
+            </span>
+        </p>
+        <p>&copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2025</span> NSBM Green University. All rights reserved.</p>
+        <p class="security-notice">This is an automated email. Please do not reply to this message.</p>
     </div>
 </div>
 </body>

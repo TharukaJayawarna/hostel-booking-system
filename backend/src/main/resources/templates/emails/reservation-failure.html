@@ -1,24 +1,150 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{emails/common-layout}">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style>
+        .failure-container {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .failure-icon-wrapper {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+            border: 3px solid #fca5a5;
+            position: relative;
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .failure-icon {
+            width: 40px;
+            height: 40px;
+            color: #dc2626;
+            stroke-width: 3;
+        }
+        .failure-header {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid #ef4444;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+        }
+        .failure-header h2 {
+            color: #991b1b;
+            margin: 0;
+            font-size: 24px;
+        }
+        .failure-details {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .ref-number {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            padding: 4px 10px;
+            border-radius: 6px;
+            color: #991b1b;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid #fca5a5;
+        }
+        .info-box {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 18px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #78350f;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+        }
+        .info-box-icon {
+            width: 18px;
+            height: 18px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .support-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left: 4px solid #22c55e;
+            padding: 18px;
+            border-radius: 8px;
+            margin: 25px 0;
+            font-size: 14px;
+            color: #166534;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+        }
+        .support-box strong {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            color: #15803d;
+        }
+        .support-icon {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
 <body>
-<div layout:fragment="content">
-    <div style="text-align: center;">
-        <div style="background-color: #fee2e2; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-            <span style="font-size: 30px; color: #ef4444;">✕</span>
+<div th:fragment="failure-content">
+    <div class="failure-container">
+        <div class="failure-icon-wrapper">
+            <svg class="failure-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
         </div>
-        <h2 style="color: #ef4444; margin-top: 0;">Booking Failed</h2>
+        <div class="failure-header">
+            <h2>Booking Failed</h2>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #7f1d1d; font-weight: 500;">Payment could not be completed</p>
+        </div>
     </div>
 
     <p>Dear <strong th:text="${studentName}">Student</strong>,</p>
 
-    <p>We regret to inform you that your reservation attempt (Ref: <strong th:text="${reservationNumber}">#123</strong>) was unsuccessful due to a payment failure or timeout.</p>
+    <div class="failure-details">
+        <p style="margin: 0; color: #475569; line-height: 1.6;">
+            We regret to inform you that your reservation attempt
+            <span style="display: inline-block; margin: 8px 0;">(Ref: <span class="ref-number" th:text="${reservationNumber}">#123</span>)</span>
+            was unsuccessful due to a payment failure or timeout.
+        </p>
+    </div>
 
-    <p>Your selected bed has been released. You may try to make a new reservation.</p>
+    <div class="info-box">
+        <svg class="info-box-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <strong>Important:</strong> Your selected bed has been released and is now available for other students. You may try to make a new reservation.
+    </div>
 
-    <div style="text-align: center;">
-        <a href="http://localhost:5173/hostel" class="button">Try Again</a>
+    <div class="support-box">
+        <strong>
+            <svg class="support-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            Need Help?
+        </strong>
+        <div>If you continue to experience issues, please contact our support team at +94 11 544 5000 or visit the hostel office.</div>
     </div>
 </div>
 </body>

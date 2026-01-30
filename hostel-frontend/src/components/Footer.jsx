@@ -21,7 +21,7 @@ const Footer = () => {
       <div className="footer-container">
         {/* Brand */}
         <div className="footer-column">
-          <div className="brand-title">
+          <div className="f-brand-title">
             <span>
               <img
                 src="https://img.freepik.com/free-vector/editable-hotel-logo-vector-business-corporate-identity-hostel_53876-111553.jpg?semt=ais_se_enriched&w=740&q=80"
@@ -31,11 +31,11 @@ const Footer = () => {
             </span>{" "}
             Hostel PMS
           </div>
-          <p className="brand-desc">
+          <p className="f-brand-desc">
             Providing safe, comfortable, and modern accommodation solutions for
             university students. Your home away from home.
           </p>
-          <div className="secure-badge">
+          <div className="f-secure-badge">
             <ShieldCheck size={14} /> Secure & Verified
           </div>
         </div>
@@ -95,15 +95,16 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Bottom Bar */}
-      <div className="footer-bottom">
-        <p>© {currentYear} Hostel Management System. All rights reserved.</p>
-
-        <div className="social-icons">
-          <Facebook size={20} className="social facebook" />
-          <Twitter size={20} className="social twitter" />
-          <Instagram size={20} className="social instagram" />
-          <Linkedin size={20} className="social linkedin" />
+      <div className="footer-bottom-minimal">
+        <div className="bottom-content">
+          <p className="copyright">© {currentYear} Hostel PMS. All rights reserved.</p>
+          
+          <div className="social-minimal">
+            <a href="#" aria-label="Facebook"><Facebook size={18} /></a>
+            <a href="#" aria-label="Twitter"><Twitter size={18} /></a>
+            <a href="#" aria-label="Instagram"><Instagram size={18} /></a>
+            <a href="#" aria-label="LinkedIn"><Linkedin size={18} /></a>
+          </div>
         </div>
       </div>
     </footer>

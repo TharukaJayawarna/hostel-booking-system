@@ -63,7 +63,7 @@ public class BedController {
             return ResponseEntity.ok(ApiResponse.success("Beds fetched with availability",
                     bedService.getBedsByRoomIdAndDateRange(roomId, checkIn, checkOut)));
         }
-        
+
         return ResponseEntity.ok(ApiResponse.success("Beds fetched", bedService.getBedsByRoomId(roomId)));
     }
 

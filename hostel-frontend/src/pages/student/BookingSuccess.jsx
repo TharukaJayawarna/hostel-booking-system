@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "../../context/NotificationContext";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
   CheckCircle,
@@ -11,7 +10,6 @@ import {
   User,
   Download,
   Loader2,
-  Clock,
   ArrowRight,
   Receipt,
   Mail,
@@ -23,7 +21,6 @@ const BookingSuccess = () => {
   const notify = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
-  const receiptRef = useRef(null);
 
   const [isCopied, setIsCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -65,37 +62,296 @@ const BookingSuccess = () => {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const handleDownload = async () => {
-    const element = receiptRef.current;
-    if (!element) return;
-
+  const handleDownload = () => {
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
+      const doc = new jsPDF();
+
+      const displayStudentId =
+        studentId || location.state?.studentRegNo || "N/A";
+      const formattedAmount = amount
+        ? parseFloat(amount).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          })
+        : "0.00";
+
+      let nights = 1;
+      let duration = "1 Month";
+      if (checkIn && checkOut) {
+        const start = new Date(checkIn);
+        const end = new Date(checkOut);
+        const diffTime = Math.abs(end - start);
+        nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        duration =
+          nights > 30
+            ? `${Math.floor(nights / 30)} Month(s)`
+            : `${nights} Night(s)`;
+      }
+
+      const primary = [25, 118, 210];
+      const secondary = [13, 71, 161];
+      const accent = [255, 152, 0];
+      const success = [46, 125, 50];
+      const textDark = [33, 33, 33];
+      const textLight = [97, 97, 97];
+      const bgLight = [245, 245, 245];
+      const highlight = [255, 243, 224];
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+
+      doc.setFillColor(primary[0], primary[1], primary[2]);
+      doc.rect(0, 0, pageWidth, 45, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(28);
+      doc.text("HOSTEL PMS", margin, 20);
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text("NSBM Green University", margin, 28);
+
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(pageWidth - 65, 12, 50, 20, 2, 2, "F");
+      doc.setTextColor(primary[0], primary[1], primary[2]);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("RECEIPT", pageWidth - 40, 20, { align: "center" });
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`#${orderId || "000001"}`, pageWidth - 40, 27, {
+        align: "center",
       });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
+      let y = 55;
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("FROM:", margin, y);
 
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      y += 5;
+      doc.text("Hostel Property Management System", margin, y);
+      y += 4;
+      doc.text("Homagama, Western Province", margin, y);
+      y += 4;
+      doc.text("Sri Lanka", margin, y);
+      y += 4;
+      doc.text("📧 support@hostel.lk", margin, y);
+      y += 4;
+      doc.text("🌐 www.hostel.lk", margin, y);
 
-      let positionY = 10;
+      y = 55;
+      const rightX = 120;
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("RECEIPT DETAILS:", rightX, y);
 
-      pdf.addImage(imgData, "PNG", 0, positionY, pdfWidth, imgHeight);
-      pdf.save(`Hostel_Receipt_${orderId || "REF"}.pdf`);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      y += 5;
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      doc.text("Issue Date:", rightX, y);
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.text(new Date().toLocaleDateString("en-GB"), rightX + 30, y);
 
+      y += 4;
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      doc.text("Payment Status:", rightX, y);
+      doc.setTextColor(success[0], success[1], success[2]);
+      doc.setFont("helvetica", "bold");
+      doc.text("✓ PAID", rightX + 30, y);
+
+      y += 15;
+
+      doc.setFillColor(bgLight[0], bgLight[1], bgLight[2]);
+      doc.roundedRect(margin, y, pageWidth - 2 * margin, 28, 2, 2, "F");
+
+      y += 6;
+      doc.setTextColor(primary[0], primary[1], primary[2]);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("BILLED TO:", margin + 5, y);
+
+      y += 6;
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFontSize(11);
+      doc.text(studentName || "Guest Student", margin + 5, y);
+
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      doc.text(`Student ID: ${displayStudentId}`, margin + 5, y);
+
+      y += 4;
+      if (studentEmail) doc.text(`📧 ${studentEmail}`, margin + 5, y);
+
+      y += 4;
+      if (studentPhone) doc.text(`📱 ${studentPhone}`, margin + 5, y);
+
+      y += 20;
+
+      doc.setFillColor(secondary[0], secondary[1], secondary[2]);
+      doc.rect(margin, y, pageWidth - 2 * margin, 10, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("DESCRIPTION", margin + 3, y + 6);
+      doc.text("DURATION", 100, y + 6, { align: "center" });
+      doc.text("QTY", 130, y + 6, { align: "center" });
+      doc.text("RATE", 155, y + 6, { align: "right" });
+      doc.text("AMOUNT", pageWidth - margin - 3, y + 6, { align: "right" });
+
+      y += 15;
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(`Hostel Accommodation Fee`, margin + 3, y);
+
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      doc.text(`Room: ${roomNumber} | Bed: ${bedNumber}`, margin + 3, y);
+
+      y += 4;
+      doc.text(`Check-in: ${checkIn}`, margin + 3, y);
+      y += 4;
+      doc.text(`Check-out: ${checkOut}`, margin + 3, y);
+
+      y -= 8;
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.text(duration, 100, y, { align: "center" });
+      doc.text("1", 130, y, { align: "center" });
+      doc.text(formattedAmount, 155, y, { align: "right" });
+      doc.text(formattedAmount, pageWidth - margin - 3, y, { align: "right" });
+
+      y += 18;
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+
+      y += 10;
+      const summaryX = 125;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+
+      doc.text("Subtotal:", summaryX, y);
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.text(`LKR ${formattedAmount}`, pageWidth - margin, y, {
+        align: "right",
+      });
+
+      y += 6;
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      doc.text("Tax (0%):", summaryX, y);
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.text("LKR 0.00", pageWidth - margin, y, { align: "right" });
+
+      y += 6;
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      doc.text("Discount:", summaryX, y);
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.text("LKR 0.00", pageWidth - margin, y, { align: "right" });
+
+      y += 8;
+      doc.setFillColor(highlight[0], highlight[1], highlight[2]);
+      doc.roundedRect(
+        summaryX - 5,
+        y - 5,
+        pageWidth - margin - summaryX + 5,
+        12,
+        2,
+        2,
+        "F",
+      );
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(secondary[0], secondary[1], secondary[2]);
+      doc.text("TOTAL AMOUNT:", summaryX, y + 3);
+      doc.setTextColor(accent[0], accent[1], accent[2]);
+      doc.setFontSize(14);
+      doc.text(`LKR ${formattedAmount}`, pageWidth - margin, y + 3, {
+        align: "right",
+      });
+
+      y += 25;
+
+      doc.setFillColor(bgLight[0], bgLight[1], bgLight[2]);
+      doc.roundedRect(margin, y, pageWidth - 2 * margin, 25, 2, 2, "F");
+
+      y += 6;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(primary[0], primary[1], primary[2]);
+      doc.text("PAYMENT INFORMATION", margin + 5, y);
+
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(textDark[0], textDark[1], textDark[2]);
+      doc.text("Payment Method: Online Portal Transfer", margin + 5, y);
+
+      y += 4;
+      doc.text(
+        `Transaction Date: ${new Date().toLocaleDateString("en-GB")}`,
+        margin + 5,
+        y,
+      );
+
+      y += 4;
+      doc.setTextColor(success[0], success[1], success[2]);
+      doc.text("✓ Payment successfully received and confirmed", margin + 5, y);
+
+      y = pageHeight - 35;
+
+      doc.setDrawColor(primary[0], primary[1], primary[2]);
+      doc.setLineWidth(1);
+      doc.line(margin, y, pageWidth - margin, y);
+
+      y += 8;
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.text("Thank you for choosing Hostel PMS!", pageWidth / 2, y, {
+        align: "center",
+      });
+
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(
+        "For any queries, please contact us at support@hostel.lk or visit www.hostel.lk",
+        pageWidth / 2,
+        y,
+        { align: "center" },
+      );
+
+      y += 8;
+      doc.setTextColor(textLight[0], textLight[1], textLight[2]);
+      doc.setFontSize(7);
+      doc.text(
+        "This is a computer-generated receipt and does not require a signature.",
+        pageWidth / 2,
+        y,
+        { align: "center" },
+      );
+
+      doc.save(`HostelReceipt_${orderId}_${displayStudentId}.pdf`);
       notify.success("Receipt downloaded successfully!");
     } catch (error) {
-      console.error("Download Error:", error);
-      notify.error("Failed to download receipt.");
+      console.error("PDF Generation Error:", error);
+      notify.error("Failed to generate receipt. Please try again.");
     } finally {
       setIsDownloading(false);
     }
@@ -109,7 +365,7 @@ const BookingSuccess = () => {
 
       <div className="bs-main-wrapper">
         <div className="bs-card-container">
-          <div ref={receiptRef} className="bs-receipt-card">
+          <div className="bs-receipt-card">
             {/* Header / Success Banner */}
             <div className="bs-success-banner">
               <div className="bs-icon-pulse">
@@ -211,9 +467,7 @@ const BookingSuccess = () => {
           </div>
 
           <div className="bs-actions">
-            <button className="bs-btn-secondary" onClick={() => navigate("/")}>
-              <Home size={18} /> Home
-            </button>
+            
             <button
               className="bs-btn-primary"
               onClick={handleDownload}

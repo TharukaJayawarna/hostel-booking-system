@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final ReservationServiceImpl reservationService;
     private final NotificationServiceImpl notificationService;
     private final EmailService emailService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -138,16 +140,23 @@ public class PaymentServiceImpl implements PaymentService {
 
             // 2. Student Notification
             if (reservation.getUser() != null) {
-                Map<String, Object> studentVars = new HashMap<>();
-                studentVars.put("studentName", reservation.getStudentName());
-                studentVars.put("amount", payhereAmount);
+                try {
+                    Map<String, Object> notificationData = new HashMap<>();
+                    notificationData.put("notificationType", "LATE_PAYMENT");
+                    notificationData.put("reservationNumber", orderId);
+                    notificationData.put("amount", "LKR " + payhereAmount);
+                    notificationData.put("introMessage", "Payment received for a cancelled/rejected reservation.");
 
-                String studentContent = emailService.getHtmlContent("student-late-payment-notification", studentVars);
-                notificationService.createNotification(
-                        reservation.getUser(),
-                        "Payment Received - Booking Issue",
-                        studentContent
-                );
+                    String jsonMessage = objectMapper.writeValueAsString(notificationData);
+
+                    notificationService.createNotification(
+                            reservation.getUser(),
+                            "Action Needed: Payment Issue",
+                            jsonMessage
+                    );
+                } catch (Exception e) {
+                    log.error("Error creating notification json", e);
+                }
             }
 
             return "OK";

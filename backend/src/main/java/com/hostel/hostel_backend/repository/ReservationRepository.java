@@ -48,4 +48,13 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
                                          @Param("newCheckIn") LocalDate newCheckIn,
                                          @Param("newCheckOut") LocalDate newCheckOut,
                                          @Param("statuses") List<ReservationStatus> statuses);
+
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.reservationStatus IN :statuses " +
+            "AND (r.fromDate < :blockEnd AND r.toDate > :blockStart)")
+    List<Reservation> findOverlappingReservationsForAdmin(
+            @Param("blockStart") LocalDate blockStart,
+            @Param("blockEnd") LocalDate blockEnd,
+            @Param("statuses") List<ReservationStatus> statuses
+    );
 }

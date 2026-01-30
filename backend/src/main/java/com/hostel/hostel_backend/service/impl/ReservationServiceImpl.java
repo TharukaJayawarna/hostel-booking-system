@@ -22,6 +22,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
+
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -43,6 +45,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final UserRepository userRepository;
     private final BlockedDateRepository blockedDateRepository;
     private final EmailService emailService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -56,7 +59,7 @@ public class ReservationServiceImpl implements ReservationService {
     private void validateDatesNotBlocked(LocalDate startDate, LocalDate endDate) {
         boolean isBlocked = blockedDateRepository.existsOverlappingDate(startDate, endDate);
         if (isBlocked) {
-            throw new AppException("Booking failed: Selected dates are blocked by administration (e.g., Maintenance/Holidays).", HttpStatus.BAD_REQUEST);
+            throw new AppException("Booking failed: Selected dates are blocked by administration." , HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -117,8 +120,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (linkedUser != null) {
-            String message = generateBillHtml(reservation, "Your reservation has been successfully created manually by the administration.");
-            notificationService.createNotification(linkedUser, "Reservation Confirmed ✅", message);
+            String message = generateNotificationJson("RESERVATION_CONFIRMED",reservation, "Your reservation has been successfully created manually by the administration.");
+            notificationService.createNotification(linkedUser, "Reservation Confirmed", message);
         }
     }
 
@@ -156,8 +159,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            String message = generateBillHtml(reservation, "Your reservation dates have been updated. Please find the revised details below.");
-            notificationService.createNotification(reservation.getUser(), "Dates Updated Successfully 📅", message);
+            String message = generateNotificationJson("DATES UPDATED",reservation, "Your reservation dates have been updated. Please find the revised details below.");
+            notificationService.createNotification(reservation.getUser(), "Dates Updated Successfully", message);
         }
     }
 
@@ -181,27 +184,26 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            Map<String, Object> vars = getCommonVariables(reservation, "Your reservation has been cancelled as per your request.");
-            vars.put("showCancellationWarning", true);
-            String message = emailService.getHtmlContent("reservation-bill", vars);
-            notificationService.createNotification(reservation.getUser(), "Reservation Cancelled 🚫", message);
+            String message = "Your reservation (" + reservation.getReservationNumber() + ") has been cancelled as per your request.\n" +
+                    "Status: CANCELLED";
+            notificationService.createNotification(reservation.getUser(), "Reservation Cancelled", message);
         }
     }
 
     public void sendSuccessEmail(Reservation res) {
         if (res.getUser() != null) {
-            String message = generateBillHtml(res, "Thank you for your reservation! Your payment has been received and booking confirmed.");
-            notificationService.createNotification(res.getUser(), "Booking Confirmed ✅", message);
+            String jsonMessage = generateNotificationJson("RESERVATION_SUCCESS", res, "Payment received and booking confirmed!");
+            notificationService.createNotification(res.getUser(), "Booking Confirmed", jsonMessage);
         }
     }
 
     public void sendFailureEmail(Reservation res) {
         if (res.getUser() != null) {
-            Map<String, Object> vars = new HashMap<>();
-            vars.put("studentName", res.getStudentName());
-            vars.put("reservationNumber", res.getReservationNumber());
-            String message = emailService.getHtmlContent("reservation-failure", vars);
-            notificationService.createNotification(res.getUser(), "Reservation Failed ❌", message);
+            String message = "Reservation Failed.\n" +
+                    "Reservation No: " + res.getReservationNumber() + "\n" +
+                    "Reason: Payment Rejected or Error.\n" +
+                    "Please contact support.";
+            notificationService.createNotification(res.getUser(), "Reservation Failed", message);
         }
     }
 
@@ -361,8 +363,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            String message = generateBillHtml(reservation, "Your booking has been manually reactivated by the administration.");
-            notificationService.createNotification(reservation.getUser(), "Booking Reactivated 🔄", message);
+            String message = generateNotificationJson("BOOKING REACTIVATED",reservation, "Your booking has been manually reactivated by the administration.");
+            notificationService.createNotification(reservation.getUser(), "Booking Reactivated", message);
         }
     }
 
@@ -396,8 +398,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            String message = generateBillHtml(reservation, "Since your original bed was unavailable, we have assigned you a new matching bed.");
-            notificationService.createNotification(reservation.getUser(), "New Bed Assigned 🛏️", message);
+            String message = generateNotificationJson("NEW BED ASSIGNED",reservation, "Since your original bed was unavailable, we have assigned you a new matching bed.");
+            notificationService.createNotification(reservation.getUser(), "New Bed Assigned", message);
         }
     }
 
@@ -483,9 +485,24 @@ public class ReservationServiceImpl implements ReservationService {
                 .build();
     }
 
-    private String generateBillHtml(Reservation res, String introMessage) {
-        Map<String, Object> variables = getCommonVariables(res, introMessage);
-        return emailService.getHtmlContent("reservation-bill", variables);
+//    private String generateBillHtml(Reservation res, String introMessage) {
+//        Map<String, Object> variables = getCommonVariables(res, introMessage);
+//        return emailService.getHtmlContent("reservation-bill", variables);
+//    }
+
+    private String generateNotificationJson(String type, Reservation res, String introMessage) {
+        try {
+            // Thymeleaf එකට ගත්ත variables ටිකම ගන්නවා
+            Map<String, Object> variables = getCommonVariables(res, introMessage);
+
+            // අමතරව 'type' එකත් දානවා Frontend එකට අඳුරගන්න
+            variables.put("notificationType", type);
+
+            // Map එක JSON String එකක් කරනවා
+            return objectMapper.writeValueAsString(variables);
+        } catch (Exception e) {
+            return "Error generating notification details.";
+        }
     }
 
     private Map<String, Object> getCommonVariables(Reservation res, String introMessage) {

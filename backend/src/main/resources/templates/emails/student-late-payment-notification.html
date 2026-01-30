@@ -1,19 +1,172 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{emails/common-layout}">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style>
+        .late-payment-header {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid #f59e0b;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+        }
+        .late-payment-header h2 {
+            color: #92400e;
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .warning-icon {
+            width: 28px;
+            height: 28px;
+            color: #f59e0b;
+        }
+        .amount-display {
+            font-size: 18px;
+            font-weight: 700;
+            color: #b45309;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 6px 14px;
+            border-radius: 6px;
+            display: inline-block;
+            border: 1px solid #fbbf24;
+            margin: 0 4px;
+        }
+        .auto-recovery-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left: 5px solid #22c55e;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+        }
+        .auto-recovery-box strong {
+            color: #15803d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        .recovery-icon {
+            width: 20px;
+            height: 20px;
+        }
+        .auto-recovery-box p {
+            margin: 0;
+            color: #166534;
+            line-height: 1.7;
+            font-size: 14px;
+        }
+        .time-highlight {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            border: 1px solid #6ee7b7;
+        }
+        .instructions-box {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border-left: 5px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+        }
+        .instructions-box strong {
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+        .instructions-icon {
+            width: 20px;
+            height: 20px;
+        }
+        .instructions-box ul {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+            color: #78350f;
+        }
+        .instructions-box li {
+            margin: 8px 0;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .instructions-box li strong {
+            display: inline;
+            color: #92400e;
+            margin: 0;
+        }
+        .info-highlight {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 18px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
 <body>
-<div layout:fragment="content">
-    <h2 style="color: #d97706; margin-top: 0;">Payment Issue Notification ⚠️</h2>
-    <p>Dear <span th:text="${studentName}">Student</span>,</p>
-
-    <p>We received your payment of <strong>LKR <span th:text="${amount}">0.00</span></strong>.</p>
-
-    <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; color: #92400e;">
-        <p style="margin: 0;"><strong>Notice:</strong> Your reservation time had expired before the payment process was completed.</p>
+<div th:fragment="late-payment">
+    <div class="late-payment-header">
+        <h2>
+            <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Late Payment Received
+        </h2>
+        <p style="margin: 0; font-size: 14px; color: #78350f; font-weight: 500;">Your payment was processed after reservation expiry</p>
     </div>
 
-    <p>Don't worry! Your payment has been recorded in our system. A member of our administration team will review this and contact you shortly regarding a refund or alternative arrangement.</p>
+    <p>Dear <span th:text="${studentName}">Student</span>,</p>
+
+    <div class="info-highlight">
+        <p style="margin: 0; color: #475569; line-height: 1.6;">
+            We received your payment of
+            <span class="amount-display">LKR <span th:text="${amount}">0.00</span></span>,
+            but your reservation time had already expired.
+        </p>
+    </div>
+
+    <div class="auto-recovery-box">
+        <strong>
+            <svg class="recovery-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            System Auto-Recovery
+        </strong>
+        <p>
+            If your selected bed is still available, the system will attempt to <strong>automatically re-allocate</strong> it to you within the next
+            <span class="time-highlight">10 minutes</span>.
+        </p>
+    </div>
+
+    <div class="instructions-box">
+        <strong>
+            <svg class="instructions-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            If you do not receive a confirmation email within 10 minutes:
+        </strong>
+        <ul>
+            <li>This means the bed is no longer available.</li>
+            <li>Please submit an <strong>Issue Form</strong> regarding this payment.</li>
+            <li>Administration will then assist you with an alternative room.</li>
+        </ul>
+    </div>
+
+    <p style="color: #475569;">Thank you for your patience and understanding.</p>
 </div>
 </body>
 </html>

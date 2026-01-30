@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{emails/common-layout}">
+<head>
+    <style>
+        .conflict-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .conflict-table th {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: #1e293b;
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 2px solid #cbd5e1;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .conflict-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #475569;
+            vertical-align: top;
+        }
+        .conflict-table tr:last-child td {
+            border-bottom: none;
+        }
+        .conflict-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .conflict-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .badge-approved {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .badge-pending {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+        .date-highlight {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            padding: 6px 12px;
+            border-radius: 6px;
+            color: #991b1b;
+            font-weight: 600;
+            display: inline-block;
+            border: 1px solid #fca5a5;
+        }
+        .conflict-header {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #dc2626;
+            margin-bottom: 25px;
+        }
+        .conflict-header h2 {
+            color: #dc2626;
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .conflict-icon {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+        }
+        .student-name {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+        .student-detail {
+            font-size: 12px;
+            color: #64748b;
+            margin: 2px 0;
+        }
+        .ref-number {
+            font-weight: 700;
+            color: #3b82f6;
+            font-size: 13px;
+        }
+        .bed-info {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .room-info {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .date-info {
+            font-size: 13px;
+        }
+        .date-separator {
+            font-size: 10px;
+            color: #94a3b8;
+            margin: 4px 0;
+        }
+        .note-box {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 25px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+        .conflict-count {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="conflict-header">
+        <h2>
+            <svg class="conflict-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Blocked Date Conflicts Detected
+        </h2>
+        <p style="margin: 0; font-size: 13px; color: #7f1d1d;">Immediate attention required for existing reservations</p>
+    </div>
+
+    <p>Dear Admin,</p>
+
+    <p>You have blocked the date range
+        <span class="date-highlight">
+            <span th:text="${startDate}"></span> to <span th:text="${endDate}"></span>
+        </span>
+    </p>
+
+    <p>However, there are <span class="conflict-count"><span th:text="${conflictCount}"></span></span> existing reservations within this period. Please review the affected students below and take necessary action.</p>
+
+    <div style="overflow-x: auto;">
+        <table class="conflict-table">
+            <thead>
+            <tr>
+                <th>Ref No</th>
+                <th>Student Information</th>
+                <th>Bed Assignment</th>
+                <th>Reservation Period</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="res : ${reservations}">
+                <td>
+                    <span class="ref-number" th:text="${res.reservationNumber}"></span>
+                </td>
+                <td>
+                    <div class="student-name" th:text="${res.studentName}"></div>
+                    <div class="student-detail">
+                        <svg style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span th:text="${res.studentRegistrationNumber}"></span>
+                    </div>
+                    <div class="student-detail">
+                        <svg style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 3px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                        <span th:text="${res.studentContactNumber}"></span>
+                    </div>
+                </td>
+                <td>
+                    <span th:if="${res.bed != null}">
+                        <div class="bed-info">
+                            <svg style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 20h18M3 8h18M3 8v11M21 8v11M6 8v11M18 8v11M6 8V6a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2"></path>
+                            </svg>
+                            Bed <span th:text="${res.bed.bedNumber}"></span>
+                        </div>
+                        <div class="room-info" th:text="${res.bed.room.roomNumber}"></div>
+                    </span>
+                    <span th:if="${res.bed == null}" style="color: #94a3b8; font-style: italic;">Not assigned</span>
+                </td>
+                <td>
+                    <div class="date-info" th:text="${res.fromDate}"></div>
+                    <div class="date-separator">
+                        <svg style="width: 10px; height: 10px; display: inline-block; vertical-align: middle;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <polyline points="19 12 12 19 5 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="date-info" th:text="${res.toDate}"></div>
+                </td>
+                <td>
+                    <span th:class="'badge ' + (${res.reservationStatus.name() == 'APPROVED'} ? 'badge-approved' : 'badge-pending')"
+                          th:text="${res.reservationStatus}">
+                    </span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="note-box">
+        <strong>Note:</strong> The dates have been blocked in the system. New bookings cannot be made for this period. Please contact the affected students to arrange alternative accommodation if necessary.
+    </div>
+</div>
+</body>
+</html>

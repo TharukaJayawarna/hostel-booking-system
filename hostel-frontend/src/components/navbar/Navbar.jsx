@@ -139,7 +139,7 @@ const Navbar = () => {
         <div className="nav-container">
           <Link to="/" className="logo-group">
             <img src={HOSTEL_LOGO} alt="Logo" className="logo-image" />
-            <span className="logo-text">Hostel Booking System</span>
+            <span className="n-logo-text">Hostel Booking System</span>
           </Link>
 
           {!isMobile ? (
