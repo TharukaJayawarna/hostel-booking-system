@@ -2,7 +2,9 @@
 .ss-container {
   font-family: "Inter", sans-serif;
   color: #1f2937;
-  padding-bottom: 40px;
+  padding-bottom: 20px;
+  margin: 5px auto;
+  max-width: 1200px;
 }
 
 /* Header */
@@ -34,7 +36,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 30px;
-  max-width: 1000px;
+  max-width: 100%;
 }
 
 /* Card Styles */
@@ -60,7 +62,7 @@
 
 /* --- Section 1: Max Days Inputs --- */
 .ss-input-group {
-  margin-bottom: 20px;
+  margin-bottom: 0px;
 }
 
 .ss-label {
@@ -227,3 +229,12 @@
     justify-content: center;
   }
 }
+.ss-type-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ss-type-badge.info { background: #eff6ff; color: #2563eb; }
+.ss-type-badge.warning { background: #fefce8; color: #ca8a04; }
+.ss-type-badge.critical { background: #fef2f2; color: #dc2626; }

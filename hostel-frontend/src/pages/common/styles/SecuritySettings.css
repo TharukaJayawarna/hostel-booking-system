@@ -1,0 +1,126 @@
+/* Container Styling */
+.sys-container {
+  max-width: 600px;
+  margin: 90px auto 30px auto;
+  /* margin-top: 100px; */
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  font-family: "Inter", sans-serif;
+}
+
+/* Header Section */
+.ss-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+}
+
+.ss-title {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* Common Content Area */
+.ss-content {
+  text-align: center;
+  padding: 20px;
+}
+
+/* Step 1: Initial State */
+.ss-icon-circle {
+  background: #eff6ff;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.ss-step-title {
+  margin-bottom: 10px;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.ss-description {
+  color: #64748b;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+.ss-btn-center {
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+/* Step 2: QR Scan */
+.ss-instruction {
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #334155;
+}
+
+.ss-instruction.mt {
+  margin-top: 25px;
+  margin-bottom: 10px;
+}
+
+.ss-qr-wrapper {
+  background: #fff;
+  padding: 15px;
+  display: inline-block;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.ss-input-wrapper-center {
+  max-width: 200px;
+  margin: 0 auto 20px;
+}
+
+.ss-otp-input {
+  text-align: center;
+  letter-spacing: 5px;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+/* Step 3: Success */
+.ss-success-container {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.ss-success-icon {
+  margin: 0 auto 20px;
+}
+
+.ss-success-title {
+  color: #15803d;
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+}
+
+.ss-back-btn {
+  margin-top: 20px;
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.ss-back-btn:hover {
+  color: #1d4ed8;
+}

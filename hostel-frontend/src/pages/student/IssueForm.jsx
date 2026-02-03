@@ -101,13 +101,6 @@ const IssueForm = () => {
     <div className="issue-page-container">
       <div className="issue-inner-wrapper">
         <div className="issue-header">
-          <button
-            className="issue-back-btn"
-            onClick={() => navigate("/")}
-            type="button"
-          >
-            <ArrowLeft size={16} /> Back Home
-          </button>
           <div className="issue-title-box">
             <h1 className="issue-title">Report an Issue</h1>
             <p className="issue-subtitle">

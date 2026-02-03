@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { QRCodeCanvas } from "qrcode.react"; // npm install qrcode.react
+import { QRCodeCanvas } from "qrcode.react";
 import authService from "../../services/auth.service";
 import { useNotification } from "../../context/NotificationContext";
-import { Shield, Smartphone, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
-import "../../components/styles/Login.css"; // Reuse login styles or create new
+import { Shield, Smartphone, CheckCircle, Loader2 } from "lucide-react";
+import "../../components/styles/Login.css"; // Reuse login styles (btn-login, form-input)
+import "./styles/SecuritySettings.css"; // Import the new CSS file
 
 const SecuritySettings = () => {
   const [step, setStep] = useState(1); // 1: Initial, 2: Scan QR, 3: Success
   const [qrUrl, setQrUrl] = useState("");
-  const [secret, setSecret] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const notify = useNotification();
@@ -20,9 +20,6 @@ const SecuritySettings = () => {
     try {
       const response = await authService.enableMfa(user.username);
       if (response.data.status === "SUCCESS") {
-        // Backend should return "otpauth://..." URL in data.qrCodeUrl
-        // If backend sends Google Chart URL, we can use it directly as image src
-        // But assumed backend sends the otpauth string or a valid URL.
         const url = response.data.data.qrCodeUrl; 
         setQrUrl(url);
         setStep(2);
@@ -53,48 +50,48 @@ const SecuritySettings = () => {
   };
 
   return (
-    <div style={{ maxWidth: "600px", margin: "40px auto", padding: "20px", background: "white", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px", borderBottom: "1px solid #eee", paddingBottom: "15px" }}>
+    <div className="sys-container">
+      {/* HEADER */}
+      <div className="ss-header">
         <Shield size={28} color="#2563eb" />
-        <h2 style={{ fontSize: "1.5rem", margin: 0, color: "#1e293b" }}>Two-Factor Authentication</h2>
+        <h2 className="ss-title">Two-Factor Authentication</h2>
       </div>
 
+      {/* STEP 1: INITIAL */}
       {step === 1 && (
-        <div style={{ textAlign: "center", padding: "20px" }}>
-          <div style={{ background: "#eff6ff", width: "60px", height: "60px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+        <div className="ss-content">
+          <div className="ss-icon-circle">
             <Smartphone size={32} color="#2563eb" />
           </div>
-          <h3 style={{ marginBottom: "10px" }}>Secure your account</h3>
-          <p style={{ color: "#64748b", marginBottom: "30px" }}>
+          <h3 className="ss-step-title">Secure your account</h3>
+          <p className="ss-description">
             Add an extra layer of security. Use Google Authenticator to generate verification codes.
           </p>
           <button 
             onClick={handleEnableClick}
             disabled={loading}
-            className="btn-login" 
-            style={{ maxWidth: "200px", margin: "0 auto" }}
+            className="btn-login ss-btn-center" 
           >
             {loading ? <Loader2 className="animate-spin" /> : "Enable 2FA"}
           </button>
         </div>
       )}
 
+      {/* STEP 2: SCAN QR */}
       {step === 2 && (
-        <div style={{ textAlign: "center" }}>
-          <p style={{ fontWeight: "600", marginBottom: "20px" }}>1. Scan this QR Code with Google Authenticator</p>
+        <div className="ss-content">
+          <p className="ss-instruction">1. Scan this QR Code with Google Authenticator</p>
           
-          <div style={{ background: "#fff", padding: "15px", display: "inline-block", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-             {/* If qrUrl is otpauth:// string, use QRCodeCanvas */}
+          <div className="ss-qr-wrapper">
              <QRCodeCanvas value={qrUrl} size={200} />
           </div>
 
-          <p style={{ fontWeight: "600", marginTop: "25px", marginBottom: "10px" }}>2. Enter the 6-digit code</p>
+          <p className="ss-instruction mt">2. Enter the 6-digit code</p>
           
-          <div className="input-wrapper" style={{ maxWidth: "200px", margin: "0 auto 20px" }}>
+          <div className="input-wrapper ss-input-wrapper-center">
             <input
               type="text"
-              className="form-input"
-              style={{ textAlign: "center", letterSpacing: "5px", fontSize: "1.2rem" }}
+              className="form-input ss-otp-input"
               placeholder="000 000"
               maxLength="6"
               value={otp}
@@ -102,20 +99,25 @@ const SecuritySettings = () => {
             />
           </div>
 
-          <button onClick={handleVerify} disabled={loading || otp.length < 6} className="btn-login">
+          <button 
+            onClick={handleVerify} 
+            disabled={loading || otp.length < 6} 
+            className="btn-login"
+          >
              {loading ? <Loader2 className="animate-spin" /> : "Verify & Activate"}
           </button>
         </div>
       )}
 
+      {/* STEP 3: SUCCESS */}
       {step === 3 && (
-        <div style={{ textAlign: "center", padding: "40px" }}>
-          <CheckCircle size={60} color="#22c55e" style={{ margin: "0 auto 20px" }} />
-          <h3 style={{ color: "#15803d" }}>You're all set!</h3>
-          <p style={{ color: "#64748b" }}>
+        <div className="ss-success-container">
+          <CheckCircle size={60} color="#22c55e" className="ss-success-icon" />
+          <h3 className="ss-success-title">You're all set!</h3>
+          <p className="ss-description">
             Your account is now secured with Google Authenticator. You will be asked for a code next time you log in.
           </p>
-          <button onClick={() => setStep(1)} style={{ marginTop: "20px", background: "none", border: "none", color: "#2563eb", cursor: "pointer", textDecoration: "underline" }}>
+          <button onClick={() => setStep(1)} className="ss-back-btn">
             Back to Settings
           </button>
         </div>

@@ -1,3 +1,4 @@
+com/hostel/hostel_backend/model/Announcement.class
 com/hostel/hostel_backend/service/impl/BedServiceImpl.class
 com/hostel/hostel_backend/controller/dto/IssueDTO.class
 com/hostel/hostel_backend/model/BlockedDate.class
@@ -24,6 +25,7 @@ com/hostel/hostel_backend/repository/HubRepository.class
 com/hostel/hostel_backend/controller/response/HubResponseDTO$HubResponseDTOBuilder.class
 com/hostel/hostel_backend/controller/request/CreateBedRequestDTO.class
 com/hostel/hostel_backend/controller/request/LoginRequestDTO.class
+com/hostel/hostel_backend/repository/AnnouncementRepository.class
 com/hostel/hostel_backend/exception/AppException.class
 com/hostel/hostel_backend/service/impl/ReservationServiceImpl.class
 com/hostel/hostel_backend/controller/UserController.class
@@ -37,6 +39,7 @@ com/hostel/hostel_backend/controller/request/CreateHubRequestDTO.class
 com/hostel/hostel_backend/model/Floor.class
 com/hostel/hostel_backend/controller/request/CreateRoomRequestDTO.class
 com/hostel/hostel_backend/service/impl/HubServiceImpl.class
+com/hostel/hostel_backend/controller/AnnouncementController.class
 com/hostel/hostel_backend/repository/BlockedDateRepository.class
 com/hostel/hostel_backend/controller/response/FloorResponseDTO$FloorResponseDTOBuilder.class
 com/hostel/hostel_backend/service/IssueService.class
@@ -70,6 +73,7 @@ com/hostel/hostel_backend/scheduler/BlockedDateCleanupScheduler.class
 com/hostel/hostel_backend/controller/response/ReservationListResponseDTO.class
 com/hostel/hostel_backend/service/impl/FloorServiceImpl.class
 com/hostel/hostel_backend/repository/UserRepository.class
+com/hostel/hostel_backend/service/AnnouncementService.class
 com/hostel/hostel_backend/service/impl/IssueServiceImpl.class
 com/hostel/hostel_backend/config/CloudinaryConfig.class
 com/hostel/hostel_backend/controller/response/BedsResponseDTO$BedsResponseDTOBuilder.class
@@ -84,6 +88,7 @@ com/hostel/hostel_backend/config/SecurityConfig.class
 com/hostel/hostel_backend/service/PaymentService.class
 com/hostel/hostel_backend/model/Reservation.class
 com/hostel/hostel_backend/controller/response/BedsResponseDTO.class
+com/hostel/hostel_backend/service/impl/AnnouncementServiceImpl.class
 com/hostel/hostel_backend/repository/ReservationRepository.class
 com/hostel/hostel_backend/service/AuthenticationService.class
 com/hostel/hostel_backend/controller/SettingsController.class

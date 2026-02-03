@@ -13,11 +13,14 @@ import {
   ChevronDown,
   Loader2,
   MapPin,
+  Megaphone, 
+  X // Import X for Close Button
 } from "lucide-react";
 import "./styles/Home.css";
 
 import hubService from "../../services/hub.service";
 import roomService from "../../services/room.service";
+import announcementService from "../../services/announcement.service";
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80";
@@ -29,9 +32,14 @@ const Home = () => {
   const [hubs, setHubs] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Announcements State
+  const [announcements, setAnnouncements] = useState([]);
+  const [showModal, setShowModal] = useState(false); // Modal State
 
   useEffect(() => {
     fetchData();
+    fetchAnnouncements();
   }, []);
 
   const fetchData = async () => {
@@ -53,6 +61,29 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAnnouncements = async () => {
+    try {
+      const res = await announcementService.getActiveAnnouncements();
+      if (res.data.status === "SUCCESS") {
+        const data = res.data.data;
+        setAnnouncements(data);
+
+        // Check if user has seen announcements in this session
+        const hasSeen = sessionStorage.getItem("hasSeenAnnouncements");
+        if (!hasSeen && data.length > 0) {
+          setShowModal(true); // Show Popup
+          sessionStorage.setItem("hasSeenAnnouncements", "true"); // Mark as seen
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
   };
 
   const priceList = useMemo(() => {
@@ -124,6 +155,37 @@ const Home = () => {
 
   return (
     <div className="home-container">
+      
+      {/* --- POPUP MODAL FOR ANNOUNCEMENTS --- */}
+      {showModal && announcements.length > 0 && (
+        <div className="ann-modal-overlay">
+          <div className="ann-modal-container">
+            <div className="ann-modal-header">
+              <div className="ann-modal-title">
+                <Megaphone size={24} color="#e11d48" />
+                <span>Important Updates</span>
+              </div>
+              <button className="ann-close-btn" onClick={closeModal}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="ann-modal-body">
+              {announcements.map((ann) => (
+                <div key={ann.id} className={`ann-modal-item ${ann.type.toLowerCase()}`}>
+                  <h4 className="ann-modal-heading">{ann.title}</h4>
+                  <p className="ann-modal-text">{ann.message}</p>
+                </div>
+              ))}
+            </div>
+            <div className="ann-modal-footer">
+              <button className="ann-ack-btn" onClick={closeModal}>
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="home-hero">
         <div className="hero-overlay"></div>
@@ -144,8 +206,25 @@ const Home = () => {
         </div>
       </div>
 
+      {/* --- INLINE ANNOUNCEMENTS (STILL VISIBLE AFTER CLOSING MODAL) --- */}
+      {announcements.length > 0 && (
+        <div className="announcement-wrapper">
+          {announcements.map((ann) => (
+            <div key={ann.id} className={`announcement-card ${ann.type.toLowerCase()}`}>
+              <div className="ann-icon-box">
+                <Megaphone size={20} />
+              </div>
+              <div className="ann-content">
+                <h4 className="ann-title">{ann.title}</h4>
+                <p className="ann-msg">{ann.message}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="info-grid">
-        {/* 1. Pricing Table */}
+        {/* Pricing Table */}
         <div className="price-container">
           <div className="section-title">
             <Wallet size={24} color="#4f46e5" /> Standard Rates
@@ -166,8 +245,7 @@ const Home = () => {
                 {loading ? (
                   <tr>
                     <td colSpan="5" className="price-loading">
-                      <Loader2 className="animate-spin" size={20} /> Loading
-                      Rates...
+                      <Loader2 className="animate-spin" size={20} /> Loading Rates...
                     </td>
                   </tr>
                 ) : Object.keys(priceList).length === 0 ? (
@@ -181,7 +259,6 @@ const Home = () => {
                     .sort()
                     .map((type) => (
                       <React.Fragment key={type}>
-                        {/* Shared Row */}
                         <tr className="price-tr">
                           <td className="price-td price-td-type" rowSpan="2">
                             <div className="room-type-cell">
@@ -194,34 +271,19 @@ const Home = () => {
                               <Unlock size={12} /> Shared
                             </div>
                           </td>
-                          <td className="price-td">
-                            <PriceCell price={priceList[type].shared.DAILY} />
-                          </td>
-                          <td className="price-td">
-                            <PriceCell price={priceList[type].shared.WEEKLY} />
-                          </td>
-                          <td className="price-td">
-                            <PriceCell price={priceList[type].shared.MONTHLY} />
-                          </td>
+                          <td className="price-td"><PriceCell price={priceList[type].shared.DAILY} /></td>
+                          <td className="price-td"><PriceCell price={priceList[type].shared.WEEKLY} /></td>
+                          <td className="price-td"><PriceCell price={priceList[type].shared.MONTHLY} /></td>
                         </tr>
-                        {/* Private Row */}
                         <tr className="price-tr">
                           <td className="price-td">
                             <div className="mode-cell mode-private">
                               <Lock size={12} /> Private
                             </div>
                           </td>
-                          <td className="price-td">
-                            <PriceCell price={priceList[type].private.DAILY} />
-                          </td>
-                          <td className="price-td">
-                            <PriceCell price={priceList[type].private.WEEKLY} />
-                          </td>
-                          <td className="price-td">
-                            <PriceCell
-                              price={priceList[type].private.MONTHLY}
-                            />
-                          </td>
+                          <td className="price-td"><PriceCell price={priceList[type].private.DAILY} /></td>
+                          <td className="price-td"><PriceCell price={priceList[type].private.WEEKLY} /></td>
+                          <td className="price-td"><PriceCell price={priceList[type].private.MONTHLY} /></td>
                         </tr>
                       </React.Fragment>
                     ))
@@ -230,12 +292,11 @@ const Home = () => {
             </table>
           </div>
           <p className="price-note">
-            * 'Shared' prices are per person. 'Private' prices are for the full
-            room occupancy.
+            * 'Shared' prices are per person. 'Private' prices are for the full room occupancy.
           </p>
         </div>
 
-        {/* 2. Refund Policy */}
+        {/* Refund Policy */}
         <div className="policy-container">
           <div className="section-title title-danger">
             <ShieldAlert size={24} /> Important Policy
@@ -243,37 +304,33 @@ const Home = () => {
           <div className="warning-box">
             <AlertTriangle size={32} className="warning-icon" />
             <div>
-              Please review carefully. Payments are{" "}
-              <strong>non-refundable</strong>.
+              Please review carefully. Payments are <strong>non-refundable</strong>.
             </div>
           </div>
           <div className="policy-list">
             <div className="policy-item">
               <ShieldAlert size={18} className="policy-icon" />
               <span>
-                <strong>STRICT NO-REFUND POLICY:</strong> All payments made are
-                final. We do not offer refunds for cancellations or early
-                check-outs.
+                <strong>STRICT NO-REFUND POLICY:</strong> All payments made are final. We do not offer refunds for cancellations or early check-outs.
               </span>
             </div>
             <div className="policy-item">
               <Info size={18} className="policy-icon" />
               <span>
-                Date changes may be considered based on room availability, but
-                paid amounts will not be returned.
+                Date changes may be considered based on room availability, but paid amounts will not be returned.
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* --- SCROLL INDICATOR --- */}
+      {/* Scroll Indicator */}
       <div className="action-indicator" onClick={scrollToHubs}>
         <div className="action-text">Explore Our Hubs</div>
         <ChevronDown size={32} color="#4f46e5" className="bounce-icon" />
       </div>
 
-      {/* --- HUB GRID SECTION --- */}
+      {/* Hub Grid Section */}
       <div className="hub-section" ref={hubSectionRef}>
         {loading ? (
           <div className="hub-loading">
@@ -283,19 +340,13 @@ const Home = () => {
         ) : (
           <div className="hub-grid">
             {hubs.map((hub) => (
-              <div
-                key={hub.id}
-                className="hub-card"
-                onClick={() => handleSelectHub(hub.id)}
-              >
+              <div key={hub.id} className="hub-card" onClick={() => handleSelectHub(hub.id)}>
                 <div className="hub-image-container">
                   <img
                     src={hub.image || DEFAULT_IMAGE}
                     alt={hub.hubNumber}
                     className="hub-image"
-                    onError={(e) => {
-                      e.target.src = DEFAULT_IMAGE;
-                    }}
+                    onError={(e) => { e.target.src = DEFAULT_IMAGE; }}
                     loading="lazy"
                   />
                   <div className="hub-badge-overlay">
@@ -305,19 +356,13 @@ const Home = () => {
                 <div className="hub-content">
                   <h3 className="hub-name">{hub.hubNumber}</h3>
                   <div className="hub-stats-row">
-                    <span className="stat-tag">
-                      {hub.noOfFloors || 0} Floors
-                    </span>
+                    <span className="stat-tag">{hub.noOfFloors || 0} Floors</span>
                     <span className="stat-tag">{hub.noOfRooms || 0} Rooms</span>
                   </div>
                   <div className="hub-desc-box">
                     <p className="hub-desc-text">
-                      <MapPin
-                        size={14}
-                        style={{ minWidth: "14px", marginTop: "2px" }}
-                      />
-                      {hub.description ||
-                        "Located within the university premises with easy access to all facilities."}
+                      <MapPin size={14} style={{ minWidth: "14px", marginTop: "2px" }} />
+                      {hub.description || "Located within the university premises with easy access to all facilities."}
                     </p>
                   </div>
                   <button className="btn-view-hub">
