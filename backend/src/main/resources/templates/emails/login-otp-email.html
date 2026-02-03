@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{emails/common-layout}">
+<head>
+    <style>
+        /* Keeping the same styles for consistency */
+        .login-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid #3b82f6;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+        .login-header h2 {
+            color: #0f172a;
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-icon {
+            width: 28px;
+            height: 28px;
+            color: #3b82f6;
+        }
+        .otp-container {
+            text-align: center;
+            margin: 35px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-radius: 12px;
+            border: 2px solid #93c5fd;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        .otp-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1e40af;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .otp-code {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 8px;
+            color: #1e40af;
+            background: #ffffff;
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: 2px dashed #3b82f6;
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+        }
+        .info-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 18px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .info-box strong {
+            color: #1e40af;
+            font-weight: 700;
+        }
+        .warning-box {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 18px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #78350f;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+        }
+        .warning-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .security-tips {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left: 4px solid #22c55e;
+            padding: 18px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 13px;
+            color: #166534;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+        }
+        .security-tips h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #15803d;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .security-tips ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .security-tips li {
+            margin: 6px 0;
+            line-height: 1.5;
+        }
+        .shield-icon {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="login-header">
+        <h2>
+            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Login Verification
+        </h2>
+        <p style="margin: 0; font-size: 14px; color: #475569; font-weight: 500;">Two-Factor Authentication (2FA)</p>
+    </div>
+
+    <p>Hello <strong th:text="${name}">User</strong>,</p>
+
+    <p>A sign-in attempt was made to your Hostel PMS account. For your security, please use the following One-Time Password (OTP) to complete the login process:</p>
+
+    <div class="otp-container">
+        <div class="otp-label">Your Login Code</div>
+        <div class="otp-code" th:text="${otp}">123456</div>
+    </div>
+
+    <div class="info-box">
+        <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        This code is valid for <strong>5 minutes only</strong>.
+    </div>
+
+    <div class="warning-box">
+        <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <strong>Did not try to sign in?</strong> This means someone else has your password. <br>
+        Please <a href="#" style="color: #92400e; text-decoration: underline;">reset your password</a> immediately.
+    </div>
+
+    <div class="security-tips">
+        <h4>
+            <svg class="shield-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Security Tips
+        </h4>
+        <ul>
+            <li>Never share your code with anyone.</li>
+            <li>Our support team will never ask for this code.</li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>

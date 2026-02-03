@@ -38,4 +38,22 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.success("User deleted successfully"));
     }
+
+    @PutMapping("/{username}/reset-2fa")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> resetUser2FA(@PathVariable String username) throws ResourceNotFoundException {
+        userService.resetTwoFactorAuth(username);
+        return ResponseEntity.ok(ApiResponse.success("2FA Reset Successfully. User reverted to Email OTP."));
+    }
+
+    @PutMapping("/{username}/toggle-2fa")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> toggleUserTwoFactor(
+            @PathVariable String username,
+            @RequestParam boolean enabled) throws ResourceNotFoundException {
+
+        userService.updateUserTwoFactorStatus(username, enabled);
+        String status = enabled ? "Enabled" : "Disabled";
+        return ResponseEntity.ok(ApiResponse.success("2FA " + status + " successfully for " + username));
+    }
 }

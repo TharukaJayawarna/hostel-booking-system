@@ -339,3 +339,47 @@
     min-height: 100vh;
   }
 }
+
+/* --- NEW: Resend OTP Styles --- */
+.resend-container {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: center;
+  min-height: 24px; /* prevents jumping */
+}
+
+.resend-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+
+.resend-btn:hover {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+}
+
+.resend-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resend-timer {
+  color: #64748b;
+}
+
+.resend-timer span {
+  font-weight: 700;
+  color: #475569;
+  font-variant-numeric: tabular-nums; /* prevents jittering numbers */
+}

@@ -103,6 +103,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("File is too large! Maximum allowed size is 10MB."));
     }
 
+
     // 11. Global Exception (500)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGlobalException(Exception ex) {

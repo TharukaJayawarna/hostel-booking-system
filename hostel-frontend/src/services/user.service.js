@@ -15,8 +15,18 @@ const deleteUser = (userId) => {
   return api.delete(`/users/${userId}`);
 };
 
+const resetTwoFactorAuth = (username) => {
+  return api.put(`/users/${username}/reset-2fa`);
+};
+
+const toggleUserTwoFactor = (username, enabled) => {
+  return api.put(`/users/${username}/toggle-2fa?enabled=${enabled}`);
+};
+
 export default {
   getAllUsers,
   createUser,
   deleteUser,
+  resetTwoFactorAuth,
+  toggleUserTwoFactor,
 };

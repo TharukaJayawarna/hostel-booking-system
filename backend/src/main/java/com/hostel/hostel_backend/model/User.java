@@ -24,12 +24,30 @@ public class User implements UserDetails {
     private String email;
     private String contactNumber;
     private String role;
-    private String otp;
-    private LocalDateTime otpGeneratedTime;
+
+    // 1. OTP for Login (2FA)
+    private String twoFactorOtp;
+    private LocalDateTime twoFactorOtpGeneratedTime;
+
+    // 2. OTP for Password Reset
+    private String resetOtp;
+    private LocalDateTime resetOtpGeneratedTime;
+
+    @Column(columnDefinition = "boolean default true")
+    private boolean twoFactorEnabled = true;
+
+    private boolean isMfaEnabled = false;
+    private String mfaSecret;
+
+    @Column(columnDefinition = "integer default 0")
+    private int failedOtpAttempts;
+
+    @Column(columnDefinition = "integer default 0")
+    private int failedLoginAttempts;
+    private LocalDateTime accountLockTime;
 
     @OneToMany(mappedBy ="user",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Reservation> reservations;
-
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -40,7 +58,15 @@ public class User implements UserDetails {
     public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        if (accountLockTime != null) {
+            if (accountLockTime.isBefore(LocalDateTime.now())) {
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
 
     @Override
     public boolean isCredentialsNonExpired() { return true; }

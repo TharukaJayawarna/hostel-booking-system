@@ -10,4 +10,6 @@ public interface UserService extends UserDetailsService {
     List<User> getAllUsers();
     void createUser(User user);
     void deleteUser(Long id) throws ResourceNotFoundException;
+    void resetTwoFactorAuth(String username) throws ResourceNotFoundException;
+    void updateUserTwoFactorStatus(String username, boolean enabled) throws ResourceNotFoundException;
 }

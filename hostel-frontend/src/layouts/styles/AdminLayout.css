@@ -2,7 +2,7 @@
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #f3f4f6;
+  background-color: #f8fafc;
   font-family: "Inter", sans-serif;
   position: relative;
 }

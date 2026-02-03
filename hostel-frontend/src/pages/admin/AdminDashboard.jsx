@@ -257,9 +257,9 @@ const AdminDashboard = () => {
           <div>
             <div className="ad-card-label">Active Reservations</div>
             <div className="ad-card-value">{stats.activeReservations}</div>
-            <div className="ad-card-trend trend-neutral">
+            {/* <div className="ad-card-trend trend-neutral">
               Current active student bookings
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -427,7 +427,7 @@ const AdminDashboard = () => {
               <div className="ad-inv-info">
                 <div className="ad-inv-label">Max Booking Duration</div>
                 <div className="ad-inv-val">{stats.maxBookingDays} Days</div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="ad-inv-val-note">
                   Per reservation
                 </div>
               </div>
@@ -442,7 +442,7 @@ const AdminDashboard = () => {
                 <div className="ad-inv-label">Blocked Periods</div>
 
                 {stats.blockedDates.length === 0 ? (
-                  <div className="text-sm text-gray-400 mt-1 font-medium">
+                  <div className="ad-inv-val-note">
                     None
                   </div>
                 ) : (

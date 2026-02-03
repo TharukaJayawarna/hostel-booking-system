@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // 1. IMPORT useNavigate
 import {
   LayoutDashboard,
   Calendar,
@@ -11,12 +11,14 @@ import {
   LogOut,
   Settings,
   Users,
+  ShieldCheck,
 } from "lucide-react";
 import authService from "../services/auth.service";
 import "./styles/Sidebar.css";
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate(); // 2. DEFINE navigate
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -88,18 +90,24 @@ const Sidebar = () => {
           <>
             <div className="section-label">Administration</div>
             <NavItem to="/admin/users" icon={Users} label="Manage Users" />
-            <NavItem
-              to="/admin/settings"
-              icon={Settings}
-              label="System Settings"
-            />
+            <NavItem 
+          to="/admin/settings" 
+          icon={ShieldCheck} 
+          label="System Settings" 
+        />
           </>
+          
         )}
       </div>
 
-      {/* 4. FOOTER */}
+      {/* 5. FOOTER (Clickable User Card) */}
       <div className="sidebar-footer">
-        <div className="user-card">
+        <div 
+          className="user-card" 
+          onClick={() => navigate("/admin/security")} 
+          style={{ cursor: "pointer" }}
+          title="Go to Settings"
+        >
           <div className="user-avatar">
             {user && user.firstName ? user.firstName.charAt(0) : "U"}
           </div>

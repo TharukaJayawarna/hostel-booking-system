@@ -16,6 +16,9 @@ import {
   Phone,
   ChevronLeft,
   ChevronRight,
+  ToggleLeft,
+  ToggleRight,
+  RotateCcw
 } from "lucide-react";
 import "./styles/ManageUsers.css";
 
@@ -68,6 +71,55 @@ const ManageUsers = () => {
       notify.error("Failed to load users");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // --- Reset 2FA Logic ---
+  const handleReset2FA = async (username) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to reset 2FA for ${username}?\nThis will revert them to Email OTP.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await userService.resetTwoFactorAuth(username);
+      notify.success(`2FA reset for ${username}. Reverted to Email OTP.`);
+    } catch (error) {
+      notify.error("Failed to reset 2FA.");
+    }
+  };
+
+  // --- Toggle 2FA Logic ---
+  const handleToggle2FA = async (user) => {
+    const newStatus = !user.twoFactorEnabled; // Flip current status
+
+    // Optimistic Update (Update UI immediately)
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.username === user.username
+          ? { ...u, twoFactorEnabled: newStatus }
+          : u
+      )
+    );
+
+    try {
+      await userService.toggleUserTwoFactor(user.username, newStatus);
+      notify.success(
+        `2FA ${newStatus ? "Enabled" : "Disabled"} for ${user.username}`
+      );
+    } catch (error) {
+      // Revert if failed
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.username === user.username
+            ? { ...u, twoFactorEnabled: !newStatus }
+            : u
+        )
+      );
+      notify.error("Failed to update 2FA status");
     }
   };
 
@@ -125,7 +177,7 @@ const ManageUsers = () => {
       wardens: users.filter((u) => u.role === "WARDEN").length,
       students: users.filter((u) => u.role === "STUDENT").length,
     }),
-    [users],
+    [users]
   );
 
   const getBadgeClass = (role) => {
@@ -232,22 +284,21 @@ const ManageUsers = () => {
             <tr>
               <th className="mu-th">User Profile</th>
               <th className="mu-th">Access Role</th>
+              <th className="mu-th" style={{ textAlign: "center" }}>2FA Status</th>
               <th className="mu-th">Contact Info</th>
-              <th className="mu-th" style={{ textAlign: "right" }}>
-                Actions
-              </th>
+              <th className="mu-th" style={{ textAlign: "right" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="4" className="mu-loading">
+                <td colSpan="5" className="mu-loading">
                   Loading users...
                 </td>
               </tr>
             ) : filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan="4" className="mu-loading">
+                <td colSpan="5" className="mu-loading">
                   No users found matching this filter.
                 </td>
               </tr>
@@ -274,6 +325,36 @@ const ManageUsers = () => {
                       {getBadgeIcon(u.role)} {u.role}
                     </span>
                   </td>
+                  
+                  {/* --- NEW COLUMN: 2FA STATUS TOGGLE --- */}
+                  <td className="mu-td" style={{ textAlign: "center" }}>
+                    <button
+                      onClick={() => handleToggle2FA(u)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: u.twoFactorEnabled ? "#10b981" : "#94a3b8",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto",
+                      }}
+                      title={
+                        u.twoFactorEnabled
+                          ? "Click to Disable 2FA"
+                          : "Click to Enable 2FA"
+                      }
+                    >
+                      {u.twoFactorEnabled ? (
+                        <ToggleRight size={32} />
+                      ) : (
+                        <ToggleLeft size={32} />
+                      )}
+                    </button>
+                  </td>
+                  {/* -------------------------------------- */}
+
                   <td className="mu-td">
                     <div className="mu-contact-info">
                       <div className="mu-contact-item">
@@ -287,13 +368,29 @@ const ManageUsers = () => {
                   </td>
                   <td className="mu-td">
                     <div
-                      style={{ display: "flex", justifyContent: "flex-end" }}
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: "8px",
+                      }}
                     >
+                      {/* RESET BUTTON */}
+                      <button
+                        className="mu-action-btn"
+                        onClick={() => handleReset2FA(u.username)}
+                        title="Reset 2FA (Revert to Email OTP)"
+                        style={{ color: "#f59e0b", background: "#fffbeb" }}
+                      >
+                        <RotateCcw size={16} />
+                      </button>
+
+                      {/* DELETE BUTTON */}
                       {u.username !== "admin" && u.role !== "STUDENT" && (
                         <button
                           className="mu-action-btn"
                           onClick={() => openDeleteModal(u.id)}
                           title="Delete User"
+                          style={{ color: "#ef4444", background: "#fef2f2" }}
                         >
                           <Trash2 size={16} />
                         </button>

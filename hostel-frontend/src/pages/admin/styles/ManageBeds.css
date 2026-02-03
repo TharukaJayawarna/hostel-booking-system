@@ -161,6 +161,7 @@
   border: 1px solid #e5e7eb;
   background: white;
   font-size: 14px;
+  font-weight: 800;
   color: #374151;
   cursor: pointer;
   outline: none;
@@ -374,3 +375,4 @@
     transform: scale(1);
   }
 }
+

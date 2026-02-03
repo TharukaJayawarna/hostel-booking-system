@@ -8,6 +8,7 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 
 import { NotificationProvider } from "./context/NotificationContext";
+import SecuritySettings from "./pages/common/SecuritySettings";
 
 // Layouts
 import StudentLayout from "./layouts/StudentLayout";
@@ -66,6 +67,7 @@ function App() {
               <Route path="issue" element={<IssueForm />} />
               <Route path="contact" element={<Contact />} />
               <Route path="my-bookings" element={<MyBookings />} />
+              <Route path="security" element={<SecuritySettings />} />
             </Route>
           </Route>
 
@@ -82,6 +84,7 @@ function App() {
               <Route path="beds" element={<ManageBeds />} />
               <Route path="reservations" element={<ManageReservations />} />
               <Route path="calendar" element={<ReservationCalendar />} />
+              <Route path="security" element={<SecuritySettings />} />
             </Route>
           </Route>
 

@@ -66,4 +66,27 @@ public class UserServiceImpl implements UserService {
         }
         userRepository.deleteById(userId);
     }
+
+    @Override
+    @Transactional
+    public void updateUserTwoFactorStatus(String username, boolean enabled) throws ResourceNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setTwoFactorEnabled(enabled); // This saves the toggle status to DB
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void resetTwoFactorAuth(String username) throws ResourceNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setMfaEnabled(false);
+        user.setMfaSecret(null);
+        user.setTwoFactorEnabled(true); // Resetting usually means re-enabling email OTP
+
+        userRepository.save(user);
+    }
 }

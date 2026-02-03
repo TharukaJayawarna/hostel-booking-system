@@ -212,7 +212,7 @@ const ManageRooms = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="mr-stats-grid">
+      <div className="mro-stats-grid">
         <StatCard
           icon={Building}
           colorClass="icon-blue"

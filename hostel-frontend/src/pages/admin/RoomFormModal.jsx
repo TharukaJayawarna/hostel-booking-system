@@ -155,7 +155,7 @@ const RoomFormModal = ({
                 <div className="mr-input-group">
                   <label className="mr-label">Floor Location</label>
                   <select
-                    className="mr-select"
+                    className="mr-select-dd"
                     style={{
                       opacity: isEditMode ? 0.6 : 1,
                       cursor: isEditMode ? "not-allowed" : "pointer",
@@ -167,7 +167,7 @@ const RoomFormModal = ({
                     required={!isEditMode}
                     disabled={isEditMode || isSubmitting}
                   >
-                    <option value="">-- Select Floor --</option>
+                    <option value="">Select Floor</option>
                     {floors.map((f) => (
                       <option key={f.id} value={f.id}>
                         {f.hubNumber ? `${f.hubNumber} - ` : ""}
@@ -220,7 +220,7 @@ const RoomFormModal = ({
                 <div className="mr-input-group">
                   <label className="mr-label">Capacity (Type)</label>
                   <select
-                    className="mr-select"
+                    className="mr-select-dd"
                     value={formData.roomType}
                     onChange={(e) =>
                       setFormData({ ...formData, roomType: e.target.value })
@@ -235,7 +235,7 @@ const RoomFormModal = ({
                 <div className="mr-input-group">
                   <label className="mr-label">Reserved For</label>
                   <select
-                    className="mr-select"
+                    className="mr-select-dd"
                     value={formData.reservedFor}
                     onChange={(e) =>
                       setFormData({ ...formData, reservedFor: e.target.value })
@@ -267,7 +267,7 @@ const RoomFormModal = ({
               <div style={{ marginBottom: "15px" }}>
                 <label className="mr-label">Pricing Model</label>
                 <select
-                  className="mr-select"
+                  className="mr-select-dd"
                   value={formData.reservationPeriod}
                   onChange={(e) =>
                     setFormData({
@@ -422,14 +422,14 @@ const RoomFormModal = ({
           </div>
 
           <div className="mr-modal-footer">
-            <button
+            {/* <button
               type="button"
               onClick={onClose}
               className="mr-cancel-btn"
               disabled={isSubmitting}
             >
               Cancel
-            </button>
+            </button> */}
             <button
               type="submit"
               className="mr-save-btn"

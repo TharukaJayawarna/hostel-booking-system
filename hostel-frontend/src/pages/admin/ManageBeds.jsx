@@ -12,6 +12,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import ConfirmModal from "../../components/ConfirmModal";
 import "./styles/ManageBeds.css";
@@ -229,7 +230,7 @@ const ManageBeds = () => {
           <Search size={18} color="#9ca3af" />
           <input
             className="mb-search-input"
-            placeholder="Search by Bed Number..."
+            placeholder="Search Beds"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -471,72 +472,61 @@ const ManageBeds = () => {
           onClick={() => !isSubmitting && setIsModalOpen(false)}
         >
           <div className="mb-modal" onClick={(e) => e.stopPropagation()}>
-            <h3
-              style={{
-                fontSize: "20px",
-                fontWeight: "700",
-                marginBottom: "5px",
-                color: "#111827",
-                marginTop: 0,
-              }}
-            >
-              Add New Bed
-            </h3>
-            <p
-              style={{
-                fontSize: "13px",
-                color: "#6b7280",
-                marginBottom: "20px",
-              }}
-            >
-              Manually add a bed to a room.
-            </p>
+            {/* Header with Close Button */}
+            <div className="mb-modal-header">
+              <div>
+                <h3 className="mb-modal-title">Add New Bed</h3>
+                <p className="mb-modal-desc">Manually add a bed to a room.</p>
+              </div>
+              <button
+                className="mb-close-btn"
+                onClick={() => setIsModalOpen(false)}
+                disabled={isSubmitting}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
             <form onSubmit={handleCreate}>
-              <div className="mb-form-group">
-                <label className="mb-label">Select Room</label>
-                <select
-                  className="mb-select"
-                  style={{ width: "100%" }}
-                  value={formData.roomId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, roomId: e.target.value })
-                  }
-                  required
-                  disabled={isSubmitting}
-                >
-                  <option value="">-- Select --</option>
-                  {rooms.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.roomNumber}
-                    </option>
-                  ))}
-                </select>
+              <div className="mb-modal-body">
+                <div className="mb-form-group">
+                  <label className="mb-label">Select Room</label>
+                  <select
+                    className="mb-select"
+                    value={formData.roomId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, roomId: e.target.value })
+                    }
+                    required
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Select Room</option>
+                    {rooms.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.roomNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-form-group">
+                  <label className="mb-label">Bed Number</label>
+                  <input
+                    className="mb-input"
+                    placeholder="e.g. B-101-1"
+                    value={formData.bedNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, bedNumber: e.target.value })
+                    }
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
-              <div className="mb-form-group">
-                <label className="mb-label">Bed Number</label>
-                <input
-                  className="mb-input"
-                  placeholder="e.g. B-101-1"
-                  value={formData.bedNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, bedNumber: e.target.value })
-                  }
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
+              
               <div className="mb-modal-footer">
                 <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="mb-btn-cancel"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
                   type="submit"
-                  className="mb-add-btn"
+                  className="mb-save-btn"
                   disabled={isSubmitting}
                   style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >

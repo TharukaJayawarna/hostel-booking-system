@@ -459,40 +459,26 @@ const ManageReservations = () => {
         </table>
 
         {!loading && filteredReservations.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "15px 20px",
-              borderTop: "1px solid #e2e8f0",
-            }}
-          >
-            <div style={{ fontSize: "13px", color: "#64748b" }}>
+          <div className="mr-pagination">
+            <div className="mr-page-info">
               Showing {indexOfFirstItem + 1} to{" "}
               {Math.min(indexOfLastItem, filteredReservations.length)} of{" "}
               {filteredReservations.length} entries
             </div>
-            <div style={{ display: "flex", gap: "5px" }}>
+            
+            <div className="mr-page-controls">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className="mr-page-btn"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={18} />
               </button>
-              <span
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "0 10px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  color: "#475569",
-                }}
-              >
+              
+              <span className="mr-page-count">
                 Page {currentPage} of {totalPages}
               </span>
+              
               <button
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
@@ -500,7 +486,7 @@ const ManageReservations = () => {
                 disabled={currentPage === totalPages}
                 className="mr-page-btn"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={18} />
               </button>
             </div>
           </div>

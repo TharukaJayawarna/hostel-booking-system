@@ -388,7 +388,7 @@ const ManageFloors = () => {
                     required
                     disabled={isSubmitting}
                   >
-                    <option value="">-- Choose a Hub --</option>
+                    <option value="">Choose a Hub</option>
                     {hubs.map((h) => (
                       <option key={h.id} value={h.id}>
                         {h.hubNumber}
@@ -411,14 +411,7 @@ const ManageFloors = () => {
                 </div>
               </div>
               <div className="mf-modal-footer">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="mf-cancel-btn"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
+                
                 <button
                   type="submit"
                   className="mf-save-btn"

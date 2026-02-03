@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // 1. Import useNavigate
 import {
   Bell,
   CheckCircle2,
@@ -7,6 +8,7 @@ import {
   Info,
   Trash2,
   LogOut,
+  Settings, // 2. Import Settings Icon
 } from "lucide-react";
 import ConfirmModal from "../ConfirmModal";
 import "../styles/Navbar.css";
@@ -20,6 +22,17 @@ const NotificationDropdown = ({
   onLogout,
 }) => {
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const navigate = useNavigate(); // 3. Initialize Hook
+
+  // --- NEW: Handle Settings Navigation ---
+  const handleSettingsClick = () => {
+    if (user.role === "STUDENT") {
+      navigate("/security");
+    } else {
+      navigate("/admin/settings");
+    }
+  };
+  // -------------------------------------
 
   const getNotifStyle = (title) => {
     const t = title.toLowerCase();
@@ -44,57 +57,37 @@ const NotificationDropdown = ({
 
   const stripHtml = (html) => {
     if (!html) return "";
-
     try {
-      
       const parsed = JSON.parse(html);
-      
-      
       if (parsed.introMessage) {
         return parsed.introMessage.substring(0, 100);
       }
-      
-      
       if (parsed.message) {
         return stripHtmlFromString(parsed.message).substring(0, 100);
       }
-      
-      
       const firstText = Object.values(parsed).find(v => typeof v === 'string');
       if (firstText) {
         return stripHtmlFromString(firstText).substring(0, 100);
       }
-      
       return "Click to view details";
     } catch {
-      
       return stripHtmlFromString(html).substring(0, 100);
     }
   };
 
-  
   const stripHtmlFromString = (str) => {
     if (!str) return "";
-    
     const tmp = document.createElement("DIV");
     tmp.innerHTML = str;
-
-    
     const styles = tmp.getElementsByTagName("style");
     while (styles.length > 0) {
       styles[0].parentNode.removeChild(styles[0]);
     }
-
-    
     const scripts = tmp.getElementsByTagName("script");
     while (scripts.length > 0) {
       scripts[0].parentNode.removeChild(scripts[0]);
     }
-
-    
     let text = tmp.textContent || tmp.innerText || "";
-    
-    
     return text.replace(/\s+/g, " ").trim();
   };
 
@@ -110,11 +103,44 @@ const NotificationDropdown = ({
   return (
     <>
       <div className="dropdown-menu">
-        <div className="dropdown-header">
-          <div className="dd-user">
-            {user.firstName} {user.lastName}
+        {/* UPDATED HEADER WITH SETTINGS BUTTON */}
+        <div className="dropdown-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div className="dd-user">
+              {user.firstName} {user.lastName}
+            </div>
+            <div className="dd-email">{user.email}</div>
           </div>
-          <div className="dd-email">{user.email}</div>
+          
+          <button 
+            onClick={handleSettingsClick}
+            className="dd-settings-btn"
+            title="Account Settings"
+            style={{
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                padding: '6px',
+                color: '#64748b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => {
+                e.currentTarget.style.color = '#2563eb';
+                e.currentTarget.style.background = '#eff6ff';
+                e.currentTarget.style.borderColor = '#bfdbfe';
+            }}
+            onMouseOut={(e) => {
+                e.currentTarget.style.color = '#64748b';
+                e.currentTarget.style.background = 'white';
+                e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+          >
+            <Settings size={18} />
+          </button>
         </div>
 
         <div className="notif-section">
@@ -126,7 +152,6 @@ const NotificationDropdown = ({
               </span>
             )}
 
-            {/* Clear All Button */}
             {notifications.length > 0 && (
               <button
                 className="clear-btn"
@@ -202,7 +227,6 @@ const NotificationDropdown = ({
         </div>
       </div>
 
-      {/* CONFIRMATION MODAL */}
       <ConfirmModal
         isOpen={isClearModalOpen}
         onClose={() => setIsClearModalOpen(false)}

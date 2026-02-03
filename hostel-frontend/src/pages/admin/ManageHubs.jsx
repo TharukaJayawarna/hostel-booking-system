@@ -405,14 +405,14 @@ const ManageHubs = () => {
                 </div>
               </div>
               <div className="mh-modal-footer">
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="mh-cancel-btn"
                   disabled={isSubmitting}
                 >
                   Cancel
-                </button>
+                </button> */}
                 <button
                   type="submit"
                   className="mh-save-btn"
