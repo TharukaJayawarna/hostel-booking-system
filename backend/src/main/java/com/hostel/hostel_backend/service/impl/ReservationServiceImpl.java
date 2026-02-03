@@ -184,9 +184,8 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
 
         if (reservation.getUser() != null) {
-            String message = "Your reservation (" + reservation.getReservationNumber() + ") has been cancelled as per your request.\n" +
-                    "Status: CANCELLED";
-            notificationService.createNotification(reservation.getUser(), "Reservation Cancelled", message);
+            String jsonMessage = generateNotificationJson("RESERVATION_CANCELLED", reservation, "Your reservation has been cancelled as per your request.");
+            notificationService.createNotification(reservation.getUser(), "Reservation Cancelled", jsonMessage);
         }
     }
 
@@ -199,11 +198,11 @@ public class ReservationServiceImpl implements ReservationService {
 
     public void sendFailureEmail(Reservation res) {
         if (res.getUser() != null) {
-            String message = "Reservation Failed.\n" +
+            String jsonMessage = generateNotificationJson("RESERVATION_FAILED",res,
                     "Reservation No: " + res.getReservationNumber() + "\n" +
                     "Reason: Payment Rejected or Error.\n" +
-                    "Please contact support.";
-            notificationService.createNotification(res.getUser(), "Reservation Failed", message);
+                    "Please contact support.");
+            notificationService.createNotification(res.getUser(), "Reservation Failed", jsonMessage);
         }
     }
 

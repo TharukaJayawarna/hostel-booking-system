@@ -175,6 +175,70 @@ export const ReservationFailedTemplate = ({ data }) => {
   );
 };
 
+// 5. RESERVATION CANCELLED TEMPLATE
+export const ReservationCancelledTemplate = ({ data }) => {
+  return (
+    <div style={{ padding: "0 5px" }}>
+      {/* Header */}
+      <div style={{ 
+        background: "#fef2f2", 
+        borderLeft: "6px solid #ef4444", 
+        padding: "20px", 
+        borderRadius: "8px", 
+        marginBottom: "20px" 
+      }}>
+        <h2 style={{ color: "#991b1b", margin: "0 0 5px 0", fontSize: "20px", fontWeight: 700, display: "flex", alignItems: "center", gap: "10px" }}>
+          <XCircle size={28} color="#ef4444" />
+          Reservation Cancelled
+        </h2>
+        <p style={{ margin: 0, fontSize: "14px", color: "#7f1d1d", fontWeight: 500 }}>
+          Your booking has been officially cancelled
+        </p>
+      </div>
+
+      <p style={{ fontSize: "14px", color: "#334155", marginBottom: "15px" }}>
+        Dear <strong>{data.studentName || "Student"}</strong>,
+      </p>
+
+      {/* Details Box */}
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "15px", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+          <tbody>
+            <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+              <td style={{ padding: "10px 0", color: "#64748b" }}>Booking Ref:</td>
+              <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 700, color: "#1e293b" }}>{data.reservationNumber}</td>
+            </tr>
+            <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+              <td style={{ padding: "10px 0", color: "#64748b" }}>Room / Bed:</td>
+              <td style={{ padding: "10px 0", textAlign: "right", color: "#1e293b" }}>{data.roomNumber} / Bed {data.bedNumber}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "10px 0", color: "#64748b" }}>Cancelled Date:</td>
+              <td style={{ padding: "10px 0", textAlign: "right", color: "#1e293b" }}>
+                {new Date().toLocaleDateString()}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Important Note Box */}
+      <div style={{ background: "#fffbeb", border: "1px solid #fbbf24", borderRadius: "8px", padding: "15px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+          <AlertTriangle size={20} color="#b45309" style={{ minWidth: "20px", marginTop: "2px" }} />
+          <div style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.5 }}>
+            <strong>Please Note:</strong> As per our hostel policy, payments are generally non-refundable. If this cancellation was due to a system error or if you believe you are eligible for a refund, please contact the IT office immediately.
+          </div>
+        </div>
+      </div>
+
+      <p style={{ fontSize: "13px", color: "#94a3b8", textAlign: "center", marginTop: "25px", borderTop: "1px solid #e2e8f0", paddingTop: "15px" }}>
+        If you wish to book again, please visit the reservation page.
+      </p>
+    </div>
+  );
+};
+
 // 3. LATE PAYMENT TEMPLATE 
 export const LatePaymentTemplate = ({ data }) => {
   return (

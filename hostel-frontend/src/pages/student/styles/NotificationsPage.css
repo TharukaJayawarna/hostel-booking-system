@@ -1,0 +1,89 @@
+.notif-page-container {
+  display: flex;
+  height: calc(100vh - 80px); /* Adjust based on navbar height */
+  background: #f8fafc;
+  max-width: 1200px;
+  margin: 20px auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+/* Sidebar List */
+.notif-sidebar {
+  width: 350px;
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.notif-header {
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notif-header h2 { margin: 0; font-size: 1.2rem; color: #1e293b; }
+.notif-header .badge { background: #f1f5f9; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; }
+
+.notif-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.notif-card {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.notif-card:hover { background: #f8fafc; }
+.notif-card.active { background: #eff6ff; border-left: 4px solid #3b82f6; }
+.notif-card.unread .notif-card-title { font-weight: 700; color: #0f172a; }
+
+.notif-card-title { font-size: 0.9rem; color: #475569; margin-bottom: 4px; }
+.notif-card-time { font-size: 0.75rem; color: #94a3b8; }
+
+/* Right Content Area */
+.notif-content-area {
+  flex: 1;
+  background: #fff;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.notif-detail-header {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.nd-icon-large svg { width: 40px; height: 40px; }
+
+.notif-detail-header h1 { margin: 0 0 5px 0; font-size: 1.5rem; color: #1e293b; }
+.nd-meta { display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.9rem; }
+
+.notif-detail-body {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.notif-empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}

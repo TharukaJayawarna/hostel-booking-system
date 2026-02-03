@@ -6,7 +6,9 @@ import {
   ReservationFailedTemplate,
   SimpleTemplate,
   LatePaymentTemplate,
+  ReservationCancelledTemplate,
 } from "./NotificationTemplates";
+import { ca } from "date-fns/locale";
 
 const NotificationModal = ({ notification, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -40,6 +42,9 @@ const NotificationModal = ({ notification, onClose }) => {
         // Failure Cases
         case "RESERVATION_FAILED":
           return <ReservationFailedTemplate data={data} />;
+        
+        case "RESERVATION_CANCELLED":
+          return <ReservationCancelledTemplate data={data} />;
 
         case "LATE_PAYMENT":
           return <LatePaymentTemplate data={data} />;
