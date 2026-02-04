@@ -84,11 +84,32 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public List<RoomResponseDTO> getAllRooms() {
         return roomRepository.findAll().stream()
-                .map(this::mapToDTO)
+                .map(room -> mapToDTO(room, null))
                 .collect(Collectors.toList());
     }
 
-    private RoomResponseDTO mapToDTO(Room room) {
+    // mapToDTO method eka overload karamu nathnam thiyena eka wenas karamu
+    private RoomResponseDTO mapToDTO(Room room, List<Long> bookedBedIds) {
+        int total = room.getBeds() != null ? room.getBeds().size() : 0;
+        int available = 0;
+
+        if (room.getBeds() != null) {
+            available = (int) room.getBeds().stream()
+                    .filter(b -> {
+                        // 1. Maintenance nam available na
+                        if (Boolean.TRUE.equals(b.getUnderMaintenance())) return false;
+
+                        // 2. Booked IDs list ekak dunna nam, eke me bed ID eka thiyenawada balanna
+                        if (bookedBedIds != null) {
+                            return !bookedBedIds.contains(b.getId());
+                        }
+
+                        // 3. Dates dila nattam (General view), parana widiyatama isBooked balanna puluwan
+                        return !Boolean.TRUE.equals(b.getIsBooked());
+                    })
+                    .count();
+        }
+
         return RoomResponseDTO.builder()
                 .id(room.getId())
                 .roomNumber(room.getRoomNumber())
@@ -102,27 +123,29 @@ public class RoomServiceImpl implements RoomService {
                 .floorNumber(room.getFloor().getFloorNumber())
                 .hubNumber(room.getFloor().getHub().getHubNumber())
                 .comment(room.getComment())
+                .availableBeds(available) // Calculated available count
+                .totalBeds(total)
                 .build();
     }
 
     @Override
     public List<RoomResponseDTO> getPublicRooms() {
-        return roomRepository.findByIsPrivateFalse().stream().map(this::mapToDTO).collect(Collectors.toList());
+        return roomRepository.findByIsPrivateFalse().stream().map(room -> mapToDTO(room, null)).collect(Collectors.toList());
     }
 
     @Override
     public List<RoomResponseDTO> getPublicRoomsByFloor(Long floorId) {
-        return roomRepository.findByFloorIdAndIsPrivateFalse(floorId).stream().map(this::mapToDTO).collect(Collectors.toList());
+        return roomRepository.findByFloorIdAndIsPrivateFalse(floorId).stream().map(room -> mapToDTO(room, null)).collect(Collectors.toList());
     }
 
     @Override
     public List<RoomResponseDTO> getAllRoomsByFloor(Long floorId) {
-        return roomRepository.findByFloorId(floorId).stream().map(this::mapToDTO).collect(Collectors.toList());
+        return roomRepository.findByFloorId(floorId).stream().map(room -> mapToDTO(room, null)).collect(Collectors.toList());
     }
 
     @Override
     public RoomResponseDTO getRoomById(Long roomId) throws ResourceNotFoundException {
-        return roomRepository.findById(roomId).map(this::mapToDTO).orElseThrow(() -> new ResourceNotFoundException("Room not found"));
+        return roomRepository.findById(roomId).map(room -> mapToDTO(room, null)).orElseThrow(() -> new ResourceNotFoundException("Room not found"));
     }
 
     @Override
@@ -158,23 +181,32 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     public List<RoomResponseDTO> getRoomsByPrivacy(Boolean isPrivate) {
-        return roomRepository.findByIsPrivate(isPrivate).stream().map(this::mapToDTO).collect(Collectors.toList());
+        return roomRepository.findByIsPrivate(isPrivate).stream().map(room -> mapToDTO(room, null)).collect(Collectors.toList());
     }
 
     @Override
     public List<RoomResponseDTO> getRoomsByReservationPeriod(ReservationPeriod reservationPeriod) {
-        return roomRepository.findByReservationPeriod(reservationPeriod).stream().map(this::mapToDTO).collect(Collectors.toList());
+        return roomRepository.findByReservationPeriod(reservationPeriod).stream().map(room -> mapToDTO(room, null)).collect(Collectors.toList());
     }
 
     @Override
     public List<RoomResponseDTO> getRoomsByReservedFor(ReservedFor reservedFor) {
-        return roomRepository.findByReservedFor(reservedFor).stream().map(this::mapToDTO).collect(Collectors.toList());
+        return roomRepository.findByReservedFor(reservedFor).stream().map(room -> mapToDTO(room, null)).collect(Collectors.toList());
     }
 
     @Override
     public List<RoomResponseDTO> getAvailableRooms(Long hubId, LocalDate checkIn, LocalDate checkOut) {
         long days = ChronoUnit.DAYS.between(checkIn, checkOut);
-        List<ReservationStatus> activeStatuses = Arrays.asList(ReservationStatus.COMPLETED, ReservationStatus.PENDING, ReservationStatus.APPROVED);
+        List<ReservationStatus> activeStatuses = Arrays.asList(
+                ReservationStatus.COMPLETED,
+                ReservationStatus.PENDING,
+                ReservationStatus.APPROVED
+        );
+
+        // 1. Search karana dineshaiyata book wela thiyena Bed IDs tika ganna
+        List<Long> bookedBedIds = roomRepository.findBookedBedIds(checkIn, checkOut, activeStatuses);
+
+        // 2. Available Rooms tika ganna
         List<Room> allAvailableRooms = roomRepository.findAvailableRooms(hubId, checkIn, checkOut, activeStatuses);
 
         return allAvailableRooms.stream()
@@ -182,7 +214,8 @@ public class RoomServiceImpl implements RoomService {
                     if (days == 30 || days == 60 || days == 90) return true;
                     return room.getReservationPeriod() == ReservationPeriod.DEFAULT;
                 })
-                .map(this::mapToDTO)
+                // 3. mapToDTO ekata bookedBedIds pass karanna
+                .map(room -> mapToDTO(room, bookedBedIds))
                 .collect(Collectors.toList());
     }
 

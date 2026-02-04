@@ -427,11 +427,16 @@ const FloorSelection = () => {
                           </div>
                           <div className="fs-room-meta">
                             <div className="fs-meta-item">
-                              <Users size={14} color="#64748b" /> Shared Room
+                              <Users size={14} color="#64748b" /> 
+                              {/* Room Type eka format karala ganna */}
+                              {room.roomType 
+                                ? `${room.roomType.replace("SHARING_", "")} Person Sharing` 
+                                : "Shared Room"}
                             </div>
-                            <div className="fs-meta-item">
-                              <BedDouble size={14} color="#64748b" /> Single Bed
-                              Booking
+                            {/* Available Beds Count Eka */}
+                            <div className="fs-meta-item" style={{ color: room.availableBeds > 0 ? "#16a34a" : "#dc2626", fontWeight: "600" }}>
+                              <BedDouble size={14} /> 
+                              {room.availableBeds} / {room.totalBeds} Beds Free
                             </div>
                           </div>
                           <div className="fs-price-tag">

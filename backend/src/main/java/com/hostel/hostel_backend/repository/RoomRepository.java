@@ -33,4 +33,11 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
                                   @Param("checkOut") LocalDate checkOut,
                                   @Param("statuses") List<ReservationStatus> statuses);
 
+    @Query("SELECT r.bed.id FROM Reservation r " +
+            "WHERE r.reservationStatus IN :statuses " +
+            "AND ((:checkIn < r.toDate) AND (:checkOut > r.fromDate))")
+    List<Long> findBookedBedIds(@Param("checkIn") LocalDate checkIn,
+                                @Param("checkOut") LocalDate checkOut,
+                                @Param("statuses") List<ReservationStatus> statuses);
+
 }
