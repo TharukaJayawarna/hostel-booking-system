@@ -26,6 +26,7 @@ import Contact from "./pages/student/Contact";
 import BookingSuccess from "./pages/student/BookingSuccess";
 import IssueForm from "./pages/student/IssueForm";
 import MyBookings from "./pages/student/MyBookings";
+import NotificationsPage from "./pages/student/NotificationsPage";
 
 // Auth Pages
 import Login from "./pages/auth/Login";
@@ -68,6 +69,7 @@ function App() {
               <Route path="contact" element={<Contact />} />
               <Route path="my-bookings" element={<MyBookings />} />
               <Route path="security" element={<SecuritySettings />} />
+              <Route path="notifications" element={<NotificationsPage />} />
             </Route>
           </Route>
 

@@ -30,6 +30,7 @@ com/hostel/hostel_backend/exception/AppException.class
 com/hostel/hostel_backend/service/impl/ReservationServiceImpl.class
 com/hostel/hostel_backend/controller/UserController.class
 com/hostel/hostel_backend/exception/GlobalExceptionHandler.class
+com/hostel/hostel_backend/config/WebSocketConfig.class
 com/hostel/hostel_backend/repository/BedRepository.class
 com/hostel/hostel_backend/model/Room.class
 com/hostel/hostel_backend/service/UserService.class

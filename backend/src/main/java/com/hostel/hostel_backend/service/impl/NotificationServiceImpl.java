@@ -6,6 +6,7 @@ import com.hostel.hostel_backend.repository.NotificationRepository;
 import com.hostel.hostel_backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -15,13 +16,15 @@ import java.util.List;
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public void createNotification(User user, String title, String message) {
         Notification notification = new Notification();
         notification.setUser(user);
         notification.setTitle(title);
         notification.setMessage(message);
-        notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
+        messagingTemplate.convertAndSend("/topic/notifications/" + user.getUsername(), savedNotification);
     }
 
     public List<Notification> getMyNotifications(String username) {

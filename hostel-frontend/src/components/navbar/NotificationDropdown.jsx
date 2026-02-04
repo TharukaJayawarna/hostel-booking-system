@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 1. Import useNavigate
+import { useNavigate } from "react-router-dom"; 
 import {
   Bell,
   CheckCircle2,
@@ -8,7 +8,7 @@ import {
   Info,
   Trash2,
   LogOut,
-  Settings, // 2. Import Settings Icon
+  Settings, 
 } from "lucide-react";
 import ConfirmModal from "../ConfirmModal";
 import "../styles/Navbar.css";
@@ -17,7 +17,7 @@ const NotificationDropdown = ({
   user,
   notifications,
   unreadCount,
-  onNotificationClick,
+//   onNotificationClick,
   onClearAll,
   onLogout,
 }) => {
@@ -32,7 +32,11 @@ const NotificationDropdown = ({
       navigate("/admin/settings");
     }
   };
-  // -------------------------------------
+  
+  const handleNotificationClick = (notif) => {
+    // Page ekata navigate wenawa selectedId eka pass karamin
+    navigate("/notifications", { state: { selectedId: notif.id } });
+  };
 
   const getNotifStyle = (title) => {
     const t = title.toLowerCase();
@@ -180,7 +184,7 @@ const NotificationDropdown = ({
                   <div
                     key={notif.id}
                     className={`notif-item ${notif.read ? "read" : "unread"}`}
-                    onClick={() => onNotificationClick(notif)}
+                    onClick={() => handleNotificationClick(notif)}
                   >
                     <div
                       className="notif-icon-box"

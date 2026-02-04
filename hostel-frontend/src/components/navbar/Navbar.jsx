@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // useNavigate import kala
 import { toast } from "react-toastify";
+import SockJS from "sockjs-client"; // Libraries install karala thiyenna one
+import Stomp from "stompjs";        // Libraries install karala thiyenna one
 import {
   Home,
   MessageCircleQuestion,
@@ -11,7 +13,6 @@ import {
 } from "lucide-react";
 
 import NotificationDropdown from "./NotificationDropdown";
-import NotificationModal from "./NotificationModal";
 import MobileMenu from "./MobileMenu";
 import "../styles/Navbar.css";
 
@@ -26,36 +27,91 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [selectedNotification, setSelectedNotification] = useState(null);
+  
+  // Notification Modal state ain kala (Page redirect nisa)
 
   const location = useLocation();
+  const navigate = useNavigate(); // Hook for redirection
   const profileMenuRef = useRef(null);
 
   const user = authService.getCurrentUser();
   const isStudent = user?.role === "STUDENT";
-
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+
+  // --- Window Resize & Scroll ---
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 900);
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleScroll);
+    
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
-  const fetchNotifications = async () => {
+  // --- Initial Notification Fetch ---
+  // App eka load weddi witharak parana notifications gannawa.
+  // setInterval eka AIN KARALA thiyenne server load eka adu karanna.
+  useEffect(() => {
     if (user && isStudent) {
-      try {
-        const res = await notificationService.getMyNotifications();
-        if (res.data.status === "SUCCESS") setNotifications(res.data.data);
-      } catch (error) {
-        console.error("Failed to load notifications");
+      fetchNotifications();
+    }
+  }, [user?.username]); // user change unoth aye load wenawa
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await notificationService.getMyNotifications();
+      if (res.data.status === "SUCCESS") {
+        setNotifications(res.data.data);
       }
+    } catch (error) {
+      console.error("Failed to load notifications", error);
     }
   };
 
+  // --- WebSocket Connection (Real-time) ---
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
+    if (!user) return;
 
+    // NOTE: Backend URL eka hariyatama danna (Default: 8080)
+    const socket = new SockJS("http://localhost:8080/ws");
+    const stompClient = Stomp.over(socket);
+    
+    // Debug messages console eken ain karanna
+    stompClient.debug = () => {}; 
+
+    stompClient.connect({}, () => {
+      // Backend eken ewana path eka: /topic/notifications/{username}
+      stompClient.subscribe(`/topic/notifications/${user.username}`, (message) => {
+        try {
+          const newNotification = JSON.parse(message.body);
+          
+          // Aluth notification eka list ekata add karanawa
+          setNotifications((prev) => [newNotification, ...prev]);
+          
+          // Podi popup message ekak (Toast)
+          toast.info(`New Notification: ${newNotification.title}`);
+        } catch (e) {
+          console.error("Error parsing notification", e);
+        }
+      });
+    }, (error) => {
+      // Connection fail unoth console eke pennanna
+      console.error("WebSocket connection error:", error);
+    });
+
+    return () => {
+      if (stompClient && stompClient.connected) {
+        stompClient.disconnect();
+      }
+    };
+  }, [user?.username]);
+
+  // --- Click Outside Listener ---
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         profileMenuRef.current &&
@@ -65,18 +121,8 @@ const Navbar = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-
-    if (isStudent) fetchNotifications();
-    const interval = setInterval(() => {
-      if (isStudent) fetchNotifications();
-    }, 60000);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      document.removeEventListener("mousedown", handleClickOutside);
-      clearInterval(interval);
-    };
-  }, [user?.username]);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -88,19 +134,15 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  const handleNotificationClick = async (notif) => {
-    setSelectedNotification(notif);
+  // --- REDIRECT FUNCTION ---
+  // Notification ekak click karama meka wada karanne
+  const handleNotificationClick = (notif) => {
     setShowProfileMenu(false);
-    if (!notif.read) {
-      try {
-        await notificationService.markAsRead(notif.id);
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)),
-        );
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    
+    // Notifications Page ekata redirect wenawa ID eka pass karamin
+    navigate("/student/notifications", { 
+      state: { selectedId: notif.id } 
+    });
   };
 
   const handleClearNotifications = async () => {
@@ -167,7 +209,7 @@ const Navbar = () => {
                   >
                     <div style={{ position: "relative" }}>
                       <div className="avatar-circle">
-                        {user.firstName.charAt(0)}
+                        {user.firstName?.charAt(0)}
                       </div>
                       {notifications.filter((n) => !n.read).length > 0 && (
                         <div className="notif-badge">
@@ -206,11 +248,6 @@ const Navbar = () => {
           )}
         </div>
       </nav>
-
-      <NotificationModal
-        notification={selectedNotification}
-        onClose={() => setSelectedNotification(null)}
-      />
 
       <MobileMenu
         isOpen={isMobileMenuOpen}
