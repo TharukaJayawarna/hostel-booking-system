@@ -17,7 +17,7 @@ const NotificationDropdown = ({
   user,
   notifications,
   unreadCount,
-//   onNotificationClick,
+  onNotificationClick,
   onClearAll,
   onLogout,
 }) => {
@@ -33,9 +33,11 @@ const NotificationDropdown = ({
     }
   };
   
-  const handleNotificationClick = (notif) => {
-    // Page ekata navigate wenawa selectedId eka pass karamin
-    navigate("/notifications", { state: { selectedId: notif.id } });
+  const handleItemClick = (notif) => {
+    // Dropdown eke logic eka wenuwata Parent (Navbar) eken ena function eka call karanna
+    if (onNotificationClick) {
+      onNotificationClick(notif);
+    }
   };
 
   const getNotifStyle = (title) => {
@@ -184,7 +186,7 @@ const NotificationDropdown = ({
                   <div
                     key={notif.id}
                     className={`notif-item ${notif.read ? "read" : "unread"}`}
-                    onClick={() => handleNotificationClick(notif)}
+                    onClick={() => handleItemClick(notif)}
                   >
                     <div
                       className="notif-icon-box"

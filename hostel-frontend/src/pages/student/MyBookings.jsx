@@ -3,7 +3,6 @@ import { useNotification } from "../../context/NotificationContext";
 import {
   Calendar,
   Clock,
-  MapPin,
   Ban,
   Edit3,
   CheckCircle2,
@@ -12,19 +11,16 @@ import {
   History,
   X,
   Ticket,
-  User,
-  CreditCard,
-  ShieldCheck,
   Loader2,
-  AlertCircle,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import ConfirmModal from "../../components/ConfirmModal";
-import "./styles/MyBookings.css";
+import GatePassModal from "./GatePassModal"; // <--- අලුත් Import එක මෙතැනට
 
+import "./styles/MyBookings.css";
 import reservationService from "../../services/reservation.service";
 
 const MyBookings = () => {
@@ -262,112 +258,13 @@ const MyBookings = () => {
         )}
       </div>
 
-      {/* --- GATE PASS MODAL --- */}
-      {isPassModalOpen && (
-        <div
-          className="modal-overlay"
-          onClick={() => setIsPassModalOpen(false)}
-        >
-          <div className="pass-card" onClick={(e) => e.stopPropagation()}>
-            <div className="pass-header">
-              <button
-                className="pass-close-btn"
-                onClick={() => setIsPassModalOpen(false)}
-              >
-                <X size={18} />
-              </button>
-              <div className="pass-title">Hostel Entry Pass</div>
-              <div className="pass-sub">Authorization Ticket</div>
-            </div>
-
-            <div className="pass-body">
-              {passLoading ? (
-                <div className="loading-msg">
-                  <Loader2 className="animate-spin" size={24} /> Loading
-                  details...
-                </div>
-              ) : passDetails ? (
-                <>
-                  <div className="status-row">
-                    <ShieldCheck size={18} /> Access Granted
-                  </div>
-
-                  <div className="pass-section">
-                    <div className="section-title">
-                      <User size={14} /> Student Details
-                    </div>
-                    <div className="info-row">
-                      <span className="row-label">Name</span>
-                      <span className="row-val">{passDetails.studentName}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="row-label">Reg No</span>
-                      <span className="row-val">
-                        {passDetails.studentRegistrationNumber}
-                      </span>
-                    </div>
-                    <div className="info-row">
-                      <span className="row-label">Email</span>
-                      <span className="row-val">
-                        {passDetails.studentEmail}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pass-section">
-                    <div className="section-title">
-                      <MapPin size={14} /> Accommodation
-                    </div>
-                    <div className="info-row">
-                      <span className="row-label">Room / Bed</span>
-                      <span className="row-val">
-                        {passDetails.roomNumber} / {passDetails.bedNumber}
-                      </span>
-                    </div>
-                    <div className="info-row">
-                      <span className="row-label">Valid From</span>
-                      <span className="row-val">{passDetails.checkIn}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="row-label">Valid Until</span>
-                      <span className="row-val">{passDetails.checkOut}</span>
-                    </div>
-                  </div>
-
-                  <div className="pass-section payment-section">
-                    <div className="section-title">
-                      <CreditCard size={14} /> Payment
-                    </div>
-                    <div className="info-row">
-                      <span className="row-label">Ref ID</span>
-                      <span className="row-val mono">
-                        {passDetails.reservationNumber}
-                      </span>
-                    </div>
-                    <div className="info-row">
-                      <span className="row-label">Amount</span>
-                      <span className="row-val amount">
-                        LKR {passDetails.amountPaid?.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="barcode-box">
-                    <div className="barcode-lines"></div>
-                    <div className="barcode-text">
-                      {passDetails.reservationNumber}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="error-msg">
-                  <AlertCircle size={20} /> Failed to load pass.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* --- NEW GATE PASS MODAL COMPONENT --- */}
+      <GatePassModal 
+        isOpen={isPassModalOpen}
+        onClose={() => setIsPassModalOpen(false)}
+        loading={passLoading}
+        passDetails={passDetails}
+      />
 
       {/* --- DATE CHANGE MODAL --- */}
       {isDateModalOpen && (

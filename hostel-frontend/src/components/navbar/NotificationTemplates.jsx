@@ -11,7 +11,8 @@ import {
   Clock, 
   RotateCcw, 
   CheckCircle2, 
-  HelpCircle 
+  HelpCircle ,
+  CreditCard,
 } from "lucide-react";
 
 export const ReservationSuccessTemplate = ({ data }) => {
@@ -100,8 +101,17 @@ export const ReservationSuccessTemplate = ({ data }) => {
             <td>Registration No</td>
             <td>{data.studentRegNo || "N/A"}</td>
           </tr>
+          <tr>
+            <td>Contact Number</td>
+            <td>{data.studentPhone || "N/A"}</td>
+          </tr>
+          <tr>
+            <td>Email</td>
+            <td>{data.studentEmail || "N/A"}</td>
+          </tr>
         </tbody>
       </table>
+      
 
       {/* Summary Box */}
       <div className="summary-box">

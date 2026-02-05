@@ -22,12 +22,12 @@ const Contact = () => {
     {
       question: "How do I book a room?",
       answer:
-        "You can book a room by logging into the student portal, selecting your preferred Hub -> Floor -> Room, and then choosing an available bed. Payment can be made online via PayHere.",
+        "You can book a room by logging into the student portal, selecting your preferred Building -> Floor -> Room, and then choosing an available bed. Payment can be made online via the payment gateway.",
     },
     {
       question: "Can I change my room after booking?",
       answer:
-        "Room changes are allowed only within the first week of booking, subject to availability. Please visit the hostel office or submit an 'Issue Report' to request a change.",
+        "Room changes are allowed only within the first week of booking, subject to availability. Please visit the warden's office or submit an 'Issue Report' to request a change.",
     },
     {
       question: "What is the refund policy?",
@@ -37,12 +37,12 @@ const Contact = () => {
     {
       question: "Who do I contact in case of an emergency?",
       answer:
-        "For medical or security emergencies, please call the 24/7 Hostel Security Hotline: +94 11 544 5999 or contact your floor warden immediately.",
+        "For medical or security emergencies, please call the 24/7 Security Hotline: +94 11 210 0500 or contact the residential warden immediately.",
     },
     {
       question: "Are visitors allowed in the hostel?",
       answer:
-        "Visitors are allowed only in the common lobby area between 9:00 AM and 6:00 PM. No visitors are allowed inside student rooms.",
+        "Visitors are allowed only in the designated lobby area between 9:00 AM and 5:00 PM. No visitors are allowed inside student living quarters.",
     },
   ];
 
@@ -60,8 +60,8 @@ const Contact = () => {
           </div>
           <h1 className="contact-title">Contact Administration</h1>
           <p className="contact-subtitle">
-            Have questions or need assistance? Reach out to us directly through
-            the channels below.
+            Have questions or need assistance? Reach out to the SLTC accommodation
+            team directly through the channels below.
           </p>
         </div>
 
@@ -76,9 +76,9 @@ const Contact = () => {
                 <div className="contact-card-content">
                   <div className="contact-card-label">Visit Us</div>
                   <div className="contact-card-value">
-                    NSBM Green University,
+                    SLTC Research University,
                     <br />
-                    Pitipana, Homagama
+                    Ingiriya Road, Padukka
                   </div>
                 </div>
               </div>
@@ -90,10 +90,10 @@ const Contact = () => {
                 <div className="contact-card-content">
                   <div className="contact-card-label">Call Us</div>
                   <div className="contact-card-value">
-                    +94 11 544 5000
+                    +94 11 210 0500
                     <br />
                     <span className="text-sm text-gray-500">
-                      Mon-Fri 8am-5pm
+                      Mon-Fri 8:30am-5pm
                     </span>
                   </div>
                 </div>
@@ -106,9 +106,9 @@ const Contact = () => {
                 <div className="contact-card-content">
                   <div className="contact-card-label">Email Us</div>
                   <div className="contact-card-value">
-                    inquiries@nsbm.ac.lk
+                    info@sltc.ac.lk
                     <br />
-                    support@hostel.nsbm.ac.lk
+                    accommodations@sltc.ac.lk
                   </div>
                 </div>
               </div>
@@ -118,26 +118,28 @@ const Contact = () => {
                   <Clock size={22} />
                 </div>
                 <div className="contact-card-content">
-                  <div className="contact-card-label">Hours</div>
+                  <div className="contact-card-label">Office Hours</div>
                   <div className="contact-card-value">
                     Weekdays: 8:30 - 5:00
                     <br />
-                    Weekends: 9:00 - 1:00
+                    Weekends: Closed
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Google Map Embed */}
+            {/* Google Map Embed (Correct SLTC Location) */}
             <div className="contact-map-container">
               <iframe
-                title="NSBM Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3961.575840369592!2d80.0389973147723!3d6.821329095069929!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae2523b05555555%3A0x546c3479b116fb70!2sNSBM%20Green%20University!5e0!3m2!1sen!2slk!4v1629876543210!5m2!1sen!2slk"
+                title="SLTC Research University Location"
+                // පහත URL එක මගින් SLTC Padukka පරිශ්‍රය හරියටම මැදට ගෙන පෙන්වයි
+                src="https://maps.google.com/maps?q=SLTC+Research+University,+Ingiriya+Road,+Padukka&t=&z=15&ie=UTF8&iwloc=&output=embed"
                 width="100%"
                 height="250"
                 style={{ border: 0, borderRadius: "12px" }}
                 allowFullScreen=""
                 loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
               ></iframe>
             </div>
 
@@ -145,15 +147,30 @@ const Contact = () => {
             <div className="contact-social-section">
               <div className="contact-social-label">Follow our updates</div>
               <div className="contact-social-row">
-                <button className="contact-social-btn fb">
+                <a 
+                  href="https://www.facebook.com/SLTCResearchUniversity" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="contact-social-btn fb"
+                >
                   <Facebook size={18} />
-                </button>
-                <button className="contact-social-btn tw">
+                </a>
+                <a 
+                  href="https://twitter.com/SLTC_LK" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="contact-social-btn tw"
+                >
                   <Twitter size={18} />
-                </button>
-                <button className="contact-social-btn ln">
+                </a>
+                <a 
+                  href="https://www.linkedin.com/school/sltc-research-university/" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="contact-social-btn ln"
+                >
                   <Linkedin size={18} />
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -164,8 +181,8 @@ const Contact = () => {
               <div className="pulse-dot"></div>
               <ShieldAlert size={28} className="text-red-600" />
               <div>
-                <div className="contact-emer-text">24/7 Security Hotline</div>
-                <div className="contact-emer-num">+94 11 544 5999</div>
+                <div className="contact-emer-text">Hostel Warden (Emergency)</div>
+                <div className="contact-emer-num">+94 11 210 0500</div>
               </div>
             </div>
 

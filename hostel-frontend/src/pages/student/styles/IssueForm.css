@@ -256,3 +256,76 @@
     margin-bottom: 15px;
   }
 }
+/* IssueForm.css */
+
+/* ... (ඔබේ කලින් styles එලෙසම තබා ගන්න) ... */
+
+/* Select Input Styling */
+.issue-select {
+  width: 100%;
+  padding: 10px 12px 10px 40px; /* Icon එකට ඉඩ */
+  font-size: 14px;
+  color: #1e293b;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  appearance: none; /* Default arrow අයින් කිරීමට */
+  cursor: pointer;
+}
+
+.issue-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Custom Dropdown Arrow */
+.issue-select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none; /* Click හරහා යාමට */
+}
+
+/* React DatePicker Customization to match your input style */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container {
+  display: block;
+}
+
+.date-picker-wrapper .issue-input {
+  width: 100%;
+  padding-left: 40px; /* Icon එකට ඉඩ */
+}
+
+/* Datepicker popup styling enhancements */
+.react-datepicker {
+  font-family: inherit !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.react-datepicker__header {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Z-index fix for icons in datepicker */
+.z-10 {
+  z-index: 10;
+}

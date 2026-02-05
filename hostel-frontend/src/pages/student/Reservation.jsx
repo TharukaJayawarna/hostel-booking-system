@@ -51,6 +51,7 @@ const Reservation = () => {
         studentName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
         email: user.email || "",
         contactNumber: user.contactNumber || user.phone || "",
+        registrationNumber: user.studentRegistrationNumber || "",
       }));
     }
   }, []);
@@ -150,15 +151,27 @@ const Reservation = () => {
       return;
     }
 
+    // --- FIX: Store data in Session Storage (Backup for Redirects) ---
+    const bookingDetails = {
+      ...formData,
+      bedNumber,
+      roomNumber,
+      checkIn,
+      checkOut,
+      amount: totalAmount,
+      orderId: data.orderId, // Save Order ID for key matching
+    };
+    // Save with unique key based on Order ID
+    sessionStorage.setItem(`booking_cache_${data.orderId}`, JSON.stringify(bookingDetails));
+
     const appUrl = import.meta.env.VITE_APP_BASE_URL;
     const notifyUrl = import.meta.env.VITE_PAYHERE_NOTIFY_URL;
-
     const isSandbox = import.meta.env.VITE_PAYHERE_IS_SANDBOX === "true";
 
     const paymentObject = {
       sandbox: isSandbox,
       merchant_id: data.merchantId,
-      return_url: `${appUrl}/payment-success`,
+      return_url: `${appUrl}/payment-success?order_id=${data.orderId}`, // Ensure order_id is in URL
       cancel_url: `${appUrl}/payment-cancel`,
       notify_url: notifyUrl,
       order_id: data.orderId,
@@ -185,27 +198,22 @@ const Reservation = () => {
 
         if (status === "APPROVED") {
           notify.success("Payment Verified & Booking Confirmed!");
-          navigate("/booking-success", {
+          
+          navigate("/payment-success", {
             state: {
-              ...formData,
+              status: "SUCCESS",
               orderId,
-              bedNumber,
-              roomNumber,
-              checkIn,
-              checkOut,
-              amount: totalAmount,
+              bookingDetails: bookingDetails // Try passing state first
             },
           });
         } else {
-          notify.warn(
-            "Payment verification pending. Please check status later.",
-          );
-          navigate("/payment-success?order_id=" + orderId);
+          notify.warn("Payment verification failed.");
+          navigate("/payment-cancel");
         }
       } catch (error) {
         console.error(error);
         notify.error("Failed to verify payment status.");
-        navigate("/payment-success?order_id=" + orderId);
+        navigate("/payment-cancel");
       } finally {
         setLoading(false);
       }
@@ -214,12 +222,14 @@ const Reservation = () => {
     window.payhere.onDismissed = function onDismissed() {
       setLoading(false);
       notify.info("Payment Cancelled by user.");
+      navigate("/payment-cancel");
     };
 
     window.payhere.onError = function onError(error) {
       setLoading(false);
       console.error("PayHere Error:", error);
       notify.error("Payment Gateway Error. Please try again.");
+      navigate("/payment-cancel");
     };
 
     window.payhere.startPayment(paymentObject);

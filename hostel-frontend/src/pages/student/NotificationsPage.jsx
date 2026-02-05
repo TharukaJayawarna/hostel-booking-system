@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import notificationService from "../../services/notification.service";
 import { 
   CheckCircle2, 
   AlertCircle, 
@@ -8,6 +7,9 @@ import {
   MailOpen,
   Clock
 } from "lucide-react";
+
+// Context Import (MEKA ALUTHIN ADD KALA)
+import { useNotification } from "../../context/NotificationContext";
 
 // Templates import
 import {
@@ -22,51 +24,59 @@ import "./styles/NotificationsPage.css";
 
 const NotificationsPage = () => {
   const location = useLocation();
-  const [notifications, setNotifications] = useState([]);
+  
+  // --- USE CONTEXT START ---
+  // Local state wenuwata Context eken data ha functions gannawa
+  const { inboxNotifications, markAsRead, fetchInbox } = useNotification();
+  // --- USE CONTEXT END ---
+
   const [selectedNotification, setSelectedNotification] = useState(null);
-  const [loading, setLoading] = useState(true);
+  
+  // Loading state eka context eken handle wena nisa methana lokuwata oni na,
+  // eth initial load eka check karanna thiyagamu.
+  const [loading, setLoading] = useState(false);
 
   const passedId = location.state?.selectedId;
 
+  // 1. Initial Data Load Check
   useEffect(() => {
-    fetchData();
-  }, [passedId]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const res = await notificationService.getMyNotifications(50);
-      if (res.data.status === "SUCCESS") {
-        const data = res.data.data;
-        setNotifications(data);
-
-        if (passedId) {
-          const target = data.find((n) => n.id === passedId);
-          if (target) handleSelect(target);
-          else if (data.length > 0) handleSelect(data[0]);
-        } else if (data.length > 0) {
-          handleSelect(data[0]);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+    // Context eke data nattam witharak fetch karanawa (Ex: Direct URL access)
+    if (inboxNotifications.length === 0) {
+        setLoading(true);
+        fetchInbox().then(() => setLoading(false));
     }
-  };
+  }, []);
 
-  const handleSelect = async (notif) => {
+  // 2. Handle Selection Logic (Passed ID or Default)
+  useEffect(() => {
+    if (inboxNotifications.length > 0) {
+        let target = null;
+
+        // A. Passed ID ekak thiyenawada balanawa
+        if (passedId) {
+            target = inboxNotifications.find((n) => n.id === passedId);
+        }
+
+        // B. Target ekak nattam saha thama mukuth select wela nattam, palaweni eka gannawa
+        if (!target && !selectedNotification && inboxNotifications.length > 0) {
+            target = inboxNotifications[0];
+        }
+
+        // C. Target ekak hoyagaththa nam, eka select karanawa
+        // (Loop wena eka nawaththanna checking ekak danawa)
+        if (target && target.id !== selectedNotification?.id) {
+            handleSelect(target);
+        }
+    }
+  }, [passedId, inboxNotifications]); // inboxNotifications update weddi meka run wenawa
+
+  const handleSelect = (notif) => {
     setSelectedNotification(notif);
+    
+    // Notification eka read nathnam, Context function eka call karanawa
+    // Ethakota Navbar eketh e welema update wenawa
     if (!notif.read) {
-      try {
-        await notificationService.markAsRead(notif.id);
-        const updatedList = notifications.map((n) =>
-          n.id === notif.id ? { ...n, read: true } : n
-        );
-        setNotifications(updatedList);
-      } catch (e) {
-        console.error(e);
-      }
+      markAsRead(notif.id);
     }
   };
 
@@ -134,20 +144,22 @@ const NotificationsPage = () => {
             <h2>Inbox</h2>
             <div className="sidebar-stats">
               <span className="stat-item">
-                <strong>{notifications.filter(n => !n.read).length}</strong> Unread
+                {/* USE CONTEXT DATA */}
+                <strong>{inboxNotifications.filter(n => !n.read).length}</strong> Unread
               </span>
               <span className="stat-dot">•</span>
               <span className="stat-item">
-                <strong>{notifications.length}</strong> Total
+                {/* USE CONTEXT DATA */}
+                <strong>{inboxNotifications.length}</strong> Total
               </span>
             </div>
           </div>
 
           <div className="notif-list-scroll custom-scrollbar">
-            {notifications.length === 0 ? (
+            {inboxNotifications.length === 0 ? (
               <div className="no-results">No notifications found</div>
             ) : (
-              notifications.map((notif) => (
+              inboxNotifications.map((notif) => (
                 <div
                   key={notif.id}
                   className={`notif-item ${selectedNotification?.id === notif.id ? "active" : ""} ${!notif.read ? "unread" : ""}`}

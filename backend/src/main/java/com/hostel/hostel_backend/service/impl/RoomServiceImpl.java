@@ -90,7 +90,6 @@ public class RoomServiceImpl implements RoomService {
 
     // mapToDTO method eka overload karamu nathnam thiyena eka wenas karamu
     private RoomResponseDTO mapToDTO(Room room, List<Long> bookedBedIds) {
-        int total = room.getBeds() != null ? room.getBeds().size() : 0;
         int available = 0;
 
         if (room.getBeds() != null) {
@@ -124,7 +123,6 @@ public class RoomServiceImpl implements RoomService {
                 .hubNumber(room.getFloor().getHub().getHubNumber())
                 .comment(room.getComment())
                 .availableBeds(available) // Calculated available count
-                .totalBeds(total)
                 .build();
     }
 

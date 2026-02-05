@@ -436,7 +436,7 @@ const FloorSelection = () => {
                             {/* Available Beds Count Eka */}
                             <div className="fs-meta-item" style={{ color: room.availableBeds > 0 ? "#16a34a" : "#dc2626", fontWeight: "600" }}>
                               <BedDouble size={14} /> 
-                              {room.availableBeds} / {room.totalBeds} Beds Free
+                              {room.availableBeds} Beds Available
                             </div>
                           </div>
                           <div className="fs-price-tag">

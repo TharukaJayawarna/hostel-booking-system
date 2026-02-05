@@ -223,6 +223,8 @@ public class PaymentServiceImpl implements PaymentService {
                 )
                 .studentName(reservation.getStudentName())
                 .studentEmail(reservation.getStudentEmail())
+                .studentRegistrationNumber(reservation.getStudentRegistrationNumber())
+                .studentContact(reservation.getStudentContactNumber())
                 .build();
     }
 }

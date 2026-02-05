@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // useNavigate import kala
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import SockJS from "sockjs-client"; // Libraries install karala thiyenna one
-import Stomp from "stompjs";        // Libraries install karala thiyenna one
+import SockJS from "sockjs-client";
+import Stomp from "stompjs";
 import {
   Home,
   MessageCircleQuestion,
@@ -16,29 +16,34 @@ import NotificationDropdown from "./NotificationDropdown";
 import MobileMenu from "./MobileMenu";
 import "../styles/Navbar.css";
 
-import notificationService from "../../services/notification.service";
 import authService from "../../services/auth.service";
+import { useNotification } from "../../context/NotificationContext"; // Import Context
 
 const HOSTEL_LOGO =
-  "https://img.freepik.com/free-vector/editable-hotel-logo-vector-business-corporate-identity-hostel_53876-111553.jpg?semt=ais_se_enriched&w=740&q=80";
-
+  "src/assets/logo.png";
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  
-  // Notification Modal state ain kala (Page redirect nisa)
+
+  // USE CONTEXT HERE
+  const { 
+    inboxNotifications, 
+    unreadCount, 
+    fetchInbox, 
+    addIncomingNotification, 
+    markAsRead, 
+    clearInbox 
+  } = useNotification();
 
   const location = useLocation();
-  const navigate = useNavigate(); // Hook for redirection
+  const navigate = useNavigate();
   const profileMenuRef = useRef(null);
 
   const user = authService.getCurrentUser();
   const isStudent = user?.role === "STUDENT";
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
 
-  // --- Window Resize & Scroll ---
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 900);
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -52,54 +57,35 @@ const Navbar = () => {
     };
   }, []);
 
-  // --- Initial Notification Fetch ---
-  // App eka load weddi witharak parana notifications gannawa.
-  // setInterval eka AIN KARALA thiyenne server load eka adu karanna.
+  // Fetch on load
   useEffect(() => {
     if (user && isStudent) {
-      fetchNotifications();
+      fetchInbox(); // Call context function
     }
-  }, [user?.username]); // user change unoth aye load wenawa
+  }, [user?.username, fetchInbox]);
 
-  const fetchNotifications = async () => {
-    try {
-      const res = await notificationService.getMyNotifications();
-      if (res.data.status === "SUCCESS") {
-        setNotifications(res.data.data);
-      }
-    } catch (error) {
-      console.error("Failed to load notifications", error);
-    }
-  };
-
-  // --- WebSocket Connection (Real-time) ---
+  // WebSocket
   useEffect(() => {
     if (!user) return;
-
-    // NOTE: Backend URL eka hariyatama danna (Default: 8080)
-    const socket = new SockJS("http://localhost:8080/ws");
+    const SOCKET_URL = import.meta.env.VITE_API_URL + "/ws";
+    const socket = new SockJS(SOCKET_URL);
     const stompClient = Stomp.over(socket);
-    
-    // Debug messages console eken ain karanna
     stompClient.debug = () => {}; 
 
     stompClient.connect({}, () => {
-      // Backend eken ewana path eka: /topic/notifications/{username}
       stompClient.subscribe(`/topic/notifications/${user.username}`, (message) => {
         try {
           const newNotification = JSON.parse(message.body);
           
-          // Aluth notification eka list ekata add karanawa
-          setNotifications((prev) => [newNotification, ...prev]);
+          // Use Context method to add
+          addIncomingNotification(newNotification);
           
-          // Podi popup message ekak (Toast)
           toast.info(`New Notification: ${newNotification.title}`);
         } catch (e) {
           console.error("Error parsing notification", e);
         }
       });
     }, (error) => {
-      // Connection fail unoth console eke pennanna
       console.error("WebSocket connection error:", error);
     });
 
@@ -108,15 +94,12 @@ const Navbar = () => {
         stompClient.disconnect();
       }
     };
-  }, [user?.username]);
+  }, [user?.username, addIncomingNotification]);
 
-  // --- Click Outside Listener ---
+  // Click Outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        profileMenuRef.current &&
-        !profileMenuRef.current.contains(event.target)
-      ) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setShowProfileMenu(false);
       }
     };
@@ -134,28 +117,23 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  // --- REDIRECT FUNCTION ---
-  // Notification ekak click karama meka wada karanne
   const handleNotificationClick = (notif) => {
     setShowProfileMenu(false);
     
-    // Notifications Page ekata redirect wenawa ID eka pass karamin
-    navigate("/student/notifications", { 
+    // Mark as read via context immediately
+    markAsRead(notif.id);
+
+    navigate("/notifications", { 
       state: { selectedId: notif.id } 
     });
   };
 
   const handleClearNotifications = async () => {
-    if (notifications.length === 0) return;
-    if (!window.confirm("Are you sure you want to clear all notifications?"))
-      return;
-    try {
-      await notificationService.clearAllNotifications();
-      setNotifications([]);
-      toast.success("Notifications cleared.");
-    } catch (e) {
-      toast.error("Failed to clear notifications.");
-    }
+    if (inboxNotifications.length === 0) return;
+    if (!window.confirm("Are you sure you want to clear all notifications?")) return;
+    
+    clearInbox(); // Context function
+    toast.success("Notifications cleared.");
   };
 
   const NavLink = ({ to, icon: Icon, label }) => {
@@ -163,11 +141,7 @@ const Navbar = () => {
     return (
       <Link to={to} className={`nav-item ${isActive ? "active" : ""}`}>
         {Icon && (
-          <Icon
-            size={18}
-            strokeWidth={2.5}
-            style={{ opacity: isActive ? 1 : 0.7 }}
-          />
+          <Icon size={18} strokeWidth={2.5} style={{ opacity: isActive ? 1 : 0.7 }} />
         )}
         {label}
         {isActive && <div className="active-dot"></div>}
@@ -188,17 +162,9 @@ const Navbar = () => {
             <div className="nav-links">
               <NavLink to="/" icon={Home} label="Home" />
               {isStudent && (
-                <NavLink
-                  to="/my-bookings"
-                  icon={CalendarCheck}
-                  label="My Bookings"
-                />
+                <NavLink to="/my-bookings" icon={CalendarCheck} label="My Bookings" />
               )}
-              <NavLink
-                to="/issue"
-                icon={MessageCircleQuestion}
-                label="Report Issue"
-              />
+              <NavLink to="/issue" icon={MessageCircleQuestion} label="Report Issue" />
               <NavLink to="/contact" icon={Phone} label="Contact" />
 
               {user ? (
@@ -208,13 +174,9 @@ const Navbar = () => {
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                   >
                     <div style={{ position: "relative" }}>
-                      <div className="avatar-circle">
-                        {user.firstName?.charAt(0)}
-                      </div>
-                      {notifications.filter((n) => !n.read).length > 0 && (
-                        <div className="notif-badge">
-                          {notifications.filter((n) => !n.read).length}
-                        </div>
+                      <div className="avatar-circle">{user.firstName?.charAt(0)}</div>
+                      {unreadCount > 0 && (
+                        <div className="notif-badge">{unreadCount}</div>
                       )}
                     </div>
                     <div className="n-user-name">{user.firstName}</div>
@@ -224,8 +186,8 @@ const Navbar = () => {
                   {showProfileMenu && (
                     <NotificationDropdown
                       user={user}
-                      notifications={notifications}
-                      unreadCount={notifications.filter((n) => !n.read).length}
+                      notifications={inboxNotifications} // Pass context data
+                      unreadCount={unreadCount}
                       onNotificationClick={handleNotificationClick}
                       onClearAll={handleClearNotifications}
                       onLogout={handleLogout}
@@ -233,16 +195,11 @@ const Navbar = () => {
                   )}
                 </div>
               ) : (
-                <Link to="/login" className="login-btn">
-                  Login
-                </Link>
+                <Link to="/login" className="login-btn">Login</Link>
               )}
             </div>
           ) : (
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setIsMobileMenuOpen(true)}
-            >
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu size={28} />
             </button>
           )}
@@ -254,7 +211,7 @@ const Navbar = () => {
         onClose={() => setIsMobileMenuOpen(false)}
         user={user}
         isStudent={isStudent}
-        notifications={notifications}
+        notifications={inboxNotifications}
         onNotificationClick={handleNotificationClick}
         onLogout={handleLogout}
       />

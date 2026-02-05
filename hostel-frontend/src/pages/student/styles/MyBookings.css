@@ -208,7 +208,7 @@
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: slideUp 0.3s ease-out;
-  margin-top: 60px;
+  margin-top: 50px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -226,7 +226,7 @@
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
-  margin-bottom: 5px;
+  margin-bottom: 1px;
 }
 
 .pass-sub {
@@ -258,8 +258,8 @@
 .status-row {
   display: flex;
   justify-content: center;
-  margin: 20px 0;
-  padding: 10px;
+  margin-bottom: 5px;
+  padding: 6px;
   background: #ecfdf5;
   border-radius: 12px;
   color: #166534;
@@ -271,9 +271,27 @@
 }
 
 .pass-section {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
-
+.barcode-box {
+  height: 60px;
+  background: #f8fafc;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  border: 2px dashed #e2e8f0;
+  color: #94a3b8;
+  font-size: 16px;
+  font-weight: 600;
+  flex-direction: column;
+  gap: 5px;
+}
+.barcode-lines {
+  display: flex;
+  gap: 4px;
+}
 .section-title {
   font-size: 11px;
   font-weight: 700;

@@ -22,5 +22,4 @@ public class RoomResponseDTO {
     private String hubNumber;
     private String comment;
     private Integer availableBeds;
-    private Integer totalBeds;
 }

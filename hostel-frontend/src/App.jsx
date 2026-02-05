@@ -27,6 +27,10 @@ import BookingSuccess from "./pages/student/BookingSuccess";
 import IssueForm from "./pages/student/IssueForm";
 import MyBookings from "./pages/student/MyBookings";
 import NotificationsPage from "./pages/student/NotificationsPage";
+import FAQ from "./pages/legal/FAQ";
+import Terms from "./pages/legal/Terms";
+import Privacy from "./pages/legal/Privacy";
+import CookiePolicy from "./pages/legal/CookiePolicy";
 
 // Auth Pages
 import Login from "./pages/auth/Login";
@@ -70,6 +74,10 @@ function App() {
               <Route path="my-bookings" element={<MyBookings />} />
               <Route path="security" element={<SecuritySettings />} />
               <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
             </Route>
           </Route>
 
